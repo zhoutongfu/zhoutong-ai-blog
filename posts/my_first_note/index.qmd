@@ -1,0 +1,60 @@
+---
+title: "Post Title"
+description: "One-line summary for listings and SEO."
+date: today
+author: "Your Name"
+categories: [LLMs, RL, Recommender Systems]  # Pick one or more
+draft: false
+---
+
+## TL;DR
+
+2–3 sentences: what problem this addresses, main takeaway, and who it’s for.
+
+---
+
+## 1. Motivation & Problem
+
+- Why does this topic matter?
+- What gap or pain does it address?
+- What will the reader learn or be able to do after reading?
+
+## 2. Background / Related Work
+
+- Minimal context needed to follow the post.
+- Key prior ideas, papers, or tools (with links).
+- How this post relates to or differs from them.
+
+## 3. Main Content
+
+### 3.1 Core idea or method
+
+- Central concept, algorithm, or design.
+- Short definitions if needed.
+- One focused example or diagram if it helps.
+
+### 3.2 Implementation or walkthrough (optional)
+
+- Steps, code snippets, or configs.
+- Enough detail to reproduce, without turning into full docs.
+
+### 3.3 Results or evaluation (optional)
+
+- What you measured or observed.
+- Tables/figures if useful.
+- Caveats and limitations.
+
+## 4. Discussion
+
+- Practical implications.
+- When to use (or not use) this approach.
+- Open questions or future directions.
+
+## 5. Takeaways & References
+
+- 3–5 bullet takeaways.
+- Key papers, posts, or repos (with links).
+
+---
+
+*Template: duplicate this outline for new technical posts and fill in each section.*

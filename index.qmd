@@ -1,0 +1,13 @@
+---
+title: "Research Notes"
+listing:
+  contents: posts
+  sort: "date desc"
+  type: default
+  categories: true
+  sort-ui: false
+  filter-ui: false
+page-layout: full
+---
+
+Welcome to my learning log. Here, I document my deep dives into LLMs, Reinforcement Learning, and Recommender Systems.

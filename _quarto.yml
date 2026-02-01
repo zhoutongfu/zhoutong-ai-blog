@@ -1,0 +1,20 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Your Name | AI Research Log"
+  description: "Notes on LLMs, RL, and Recommender Systems."
+  navbar:
+    right:
+      - icon: github
+        href: https://github.com/zhoutongfu
+  sidebar:
+    style: "floating"
+    contents: auto
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-location: right
