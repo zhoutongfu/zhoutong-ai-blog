@@ -1,5 +1,4 @@
 ---
-title: "Research Notes"
 listing:
   contents: posts
   sort: "date desc"
@@ -10,4 +9,4 @@ listing:
 page-layout: full
 ---
 
-Welcome to my learning log. Here, I document my deep dives into LLMs, Reinforcement Learning, and Recommender Systems.
+Documenting hands-on explorations in LLM architecture and post-training. I focus on bridging deep research insights with the practical constraints of large-scale production systems.

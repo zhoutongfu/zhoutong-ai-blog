@@ -1,1 +1,6 @@
 /* css styles */
+
+/* Hide left sidebar (nav) on index page; keep right column (categories/TOC) */
+body.index-page #quarto-sidebar {
+  display: none !important;
+}

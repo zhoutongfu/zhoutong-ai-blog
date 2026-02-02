@@ -3,10 +3,12 @@ project:
   output-dir: docs
 
 website:
-  title: "Your Name | AI Research Log"
-  description: "Notes on LLMs, RL, and Recommender Systems."
+  title: "Zhoutong | AI Research Log"
+  description: "Notes on LLMs, Post Training, and Recommender Systems."
   navbar:
     right:
+      - icon: linkedin
+        href: https://www.linkedin.com/in/zhoutongfu/
       - icon: github
         href: https://github.com/zhoutongfu
   sidebar:

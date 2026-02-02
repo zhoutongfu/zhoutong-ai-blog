@@ -4,7 +4,7 @@
     "href": "about.html",
     "title": "About",
     "section": "",
-    "text": "Profile\n\n\nAbout this blog\n\nTwitter · LinkedIn · Github",
+    "text": "Profile\n\n\nAbout this blog\n\nLinkedIn · Github",
     "crumbs": [
       "About"
     ]
@@ -12,12 +12,12 @@
   {
     "objectID": "posts/my_first_note/index.html",
     "href": "posts/my_first_note/index.html",
-    "title": "Post Title",
+    "title": "The Rise of Static Memory in LLMs",
     "section": "",
-    "text": "2–3 sentences: what problem this addresses, main takeaway, and who it’s for.",
+    "text": "Improving reasoning is a core objective of modern AI. However, recent research suggests a critical limit: a model’s ultimate reasoning capacity is fixed by the fundamental knowledge “primitives” acquired during Pre-Training. While Post-Training strategies like Reinforcement Learning (RL) can enhance skills, they cannot create knowledge from scratch; they can only build upon the latent foundation laid earlier (Zhang et al., 2025).\n\n\n\nStandard Transformers face a computational inefficiency challenge when scaling this knowledge foundation. Research on interpretability indicates that dense models do not retain knowledge in a static database; instead, they dynamically “compute” it (Templeton et al., 2024; Ameisen et al., 2025).\nEven a simple recall task, such as retrieving “The Golden Gate Bridge,” necessitates a costly, multi-step sequence of feature interactions across the model’s layers. This design leads to a “Memory-Compute” bottleneck: we use the same expensive matrix multiplications to calculate complex math problems as we do to recall that “Paris is the capital of France.”\nTo achieve further scalability, we need architectures that separate the functions of “knowing” from “thinking” (Lindsey et al., 2025).",
     "crumbs": [
       "Posts",
-      "Post Title"
+      "The Rise of Static Memory in LLMs"
     ]
   },
   {
@@ -89,8 +89,85 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Research Notes",
+    "title": "Zhoutong | AI Research Log",
     "section": "",
-    "text": "Welcome to my learning log. Here, I document my deep dives into LLMs, Reinforcement Learning, and Recommender Systems.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPost Title\n\n\n\nLLMs\n\nRL\n\nRecommender Systems\n\n\n\nOne-line summary for listings and SEO.\n\n\n\n\n\nFeb 1, 2026\n\n\nYour Name\n\n\n\n\n\nNo matching items"
+    "text": "Documenting hands-on explorations in LLM architecture and post-training. I focus on bridging deep research insights with the practical constraints of large-scale production systems.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe Rise of Static Memory in LLMs\n\n\n\nLLMs\n\nArchitecture\n\nMemory\n\n\n\nHow STEM, Gemma 3n (PLE), and DeepSeek Engram are decoupling knowledge from reasoning.\n\n\n\n\n\nJan 26, 2025\n\n\nZhoutong Fu\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/my_first_note/index.html#background-the-memory-compute-bottleneck",
+    "href": "posts/my_first_note/index.html#background-the-memory-compute-bottleneck",
+    "title": "The Rise of Static Memory in LLMs",
+    "section": "",
+    "text": "Improving reasoning is a core objective of modern AI. However, recent research suggests a critical limit: a model’s ultimate reasoning capacity is fixed by the fundamental knowledge “primitives” acquired during Pre-Training. While Post-Training strategies like Reinforcement Learning (RL) can enhance skills, they cannot create knowledge from scratch; they can only build upon the latent foundation laid earlier (Zhang et al., 2025).\n\n\n\nStandard Transformers face a computational inefficiency challenge when scaling this knowledge foundation. Research on interpretability indicates that dense models do not retain knowledge in a static database; instead, they dynamically “compute” it (Templeton et al., 2024; Ameisen et al., 2025).\nEven a simple recall task, such as retrieving “The Golden Gate Bridge,” necessitates a costly, multi-step sequence of feature interactions across the model’s layers. This design leads to a “Memory-Compute” bottleneck: we use the same expensive matrix multiplications to calculate complex math problems as we do to recall that “Paris is the capital of France.”\nTo achieve further scalability, we need architectures that separate the functions of “knowing” from “thinking” (Lindsey et al., 2025).",
+    "crumbs": [
+      "Posts",
+      "The Rise of Static Memory in LLMs"
+    ]
+  },
+  {
+    "objectID": "posts/my_first_note/index.html#the-solution-static-memory-architectures",
+    "href": "posts/my_first_note/index.html#the-solution-static-memory-architectures",
+    "title": "The Rise of Static Memory in LLMs",
+    "section": "2. The Solution: Static Memory Architectures",
+    "text": "2. The Solution: Static Memory Architectures\nThree new architectures—STEM (Meta/CMU), PLE (Google DeepMind), and Engram (DeepSeek)—address this by moving static information into Embedding Modules. Instead of computing facts, these models retrieve them.\n\nComparison of Static Memory Architectures\n\n\n\n\n\n\n\n\nFeature\nGemma 3n PLE (DeepMind)\nSTEM (Meta/CMU)\nEngram (DeepSeek)\n\n\n\n\nCore Concept\nAugmentation: Adds extra embeddings to modulate layers.\nReplacement: Swaps FFN Up-Projection for a Lookup Table.\nComplement: Adds a “Memory Module” alongside the backbone.\n\n\nMechanism\nPer-Layer Embeddings (Streamed)\nToken-indexed Lookup (Static)\nHashed N-Gram Lookup (Contextual)\n\n\nHardware Goal\nOn-Device Efficiency (Low VRAM)\nTraining Stability & Interpretability\nMassive Scaling (Memory vs. Logic)\n\n\nKey Win\nRunning 8B models on 3GB RAM phones\n“Surgical” Knowledge Editing\n+5.0 on Reasoning (BBH)",
+    "crumbs": [
+      "Posts",
+      "The Rise of Static Memory in LLMs"
+    ]
+  },
+  {
+    "objectID": "posts/my_first_note/index.html#gemma-3n-per-layer-embeddings",
+    "href": "posts/my_first_note/index.html#gemma-3n-per-layer-embeddings",
+    "title": "The Rise of Static Memory in LLMs",
+    "section": "3. Gemma 3n (Per Layer Embeddings)",
+    "text": "3. Gemma 3n (Per Layer Embeddings)\nRef: Gemma 3n Technical Report (2025)\nGemma 3n is engineered specifically for mobile/edge deployment. Its goal is to fit a model with “8B parameter intelligence” onto a device that only has RAM for a 2B model.\n\nThe Architecture\n\nPLE (Per Layer Embeddings): Instead of storing all weights in VRAM, it keeps massive embedding tables in the slower System RAM (CPU).\nStreaming: As the neural network processes layer \\(i\\), the specific embedding for that layer is streamed from the CPU to the NPU just in time.\nModulation: PLEs do not replace the FFN; they modulate the residual stream or FFN output.\n\n\n\nCore Implementation\nThe mechanism works by retrieving a massive, token-specific embedding vector pre-sliced for every decoder layer.\n# Conceptual implementation based on Gemma 3n\n# Ref: gemma3n/modeling_gemma3n.py\n\nclass Gemma3nModel(nn.Module):\n    def __init__(self, config):\n        # The massive \"Memory Bank\" storing all layer-specific vectors for every token.\n        # Total Size: Vocab_PLE x (Num_Layers * PLE_Dim)\n        self.embed_tokens_per_layer = Gemma3nTextScaledWordEmbedding(\n            config.vocab_size_per_layer_input,\n            config.num_hidden_layers * config.hidden_size_per_layer_input,\n            self.padding_idx,\n            embed_scale=config.hidden_size_per_layer_input * 0.5,\n        )\n\n    def get_per_layer_inputs(self, input_ids: torch.LongTensor) -&gt; torch.Tensor:\n        # Look up the massive vector and \"slice\" it for each layer.\n        # Output: [Batch, Seq_Len, Num_Layers, PLE_Dim]\n        return self.embed_tokens_per_layer(input_ids).reshape(\n            *input_ids.shape,\n            self.config.num_hidden_layers,\n            self.hidden_size_per_layer_input,\n        )\n\n    # Inside the decoder layer forward pass:\n    def forward_layer(self, first_prediction, per_layer_input):\n        # A. GATE: Use context to determine \"how much\" memory to read.\n        first_prediction = self.per_layer_input_gate(first_prediction)\n        first_prediction = self.act_fn(first_prediction)\n        \n        # B. MODULATE: Inject retrieved static memory via element-wise multiplication.\n        first_prediction = torch.multiply(first_prediction, per_layer_input)\n        \n        # C. PROJECT: Mix result back into main residual stream.\n        first_prediction = self.per_layer_projection(first_prediction)\n        first_prediction = self.post_per_layer_input_norm(first_prediction)\n        \n        # D. ADD\n        return first_prediction",
+    "crumbs": [
+      "Posts",
+      "The Rise of Static Memory in LLMs"
+    ]
+  },
+  {
+    "objectID": "posts/my_first_note/index.html#stem-scaling-transformers-with-embedding-modules",
+    "href": "posts/my_first_note/index.html#stem-scaling-transformers-with-embedding-modules",
+    "title": "The Rise of Static Memory in LLMs",
+    "section": "4. STEM (Scaling Transformers with Embedding Modules)",
+    "text": "4. STEM (Scaling Transformers with Embedding Modules)\nRef: He et al. (2026)\nSTEM identifies that the Up-Projection matrix in a Feed-Forward Network (FFN) acts largely as a “Key” lookup in a Key-Value memory system.\n\n\n\nFigure 2: Schematics comparing (a) SwiGLU FFN, (b) MoE FFN, and (c) STEM with a single prefetched token embedding.\n\n\n\nThe Architecture\nSTEM replaces the dense Up-Projection matrix (\\(W^u\\)) with a static, token-indexed embedding table (\\(U_{token\\_id}\\)). It retains the Gate and Down projections as dense layers.\n\\[ y = W_{down}(\\text{SiLU}(W_{gate}x) \\odot \\text{Lookup}(TokenID)) \\]\n\n\nKey Benefits\n\nInterpretability: Because embeddings are linked to individual tokens, researchers can perform “Knowledge Editing”. By swapping the “Spain” embedding for “Germany” in specific layers, the model can be tricked into “hallucinating” consistent facts (e.g., saying the capital of Spain is Berlin) without changing the input text.\nEfficiency: It removes approximately 1/3 of the FFN parameters from the active compute path.\n\n\n\n\nFigure 3: Knowledge injection/edit demonstration. Swapping the PLE for ‘Spain’ with ‘Germany’ flips the generated capital from Madrid to Berlin.\n\n\n# Ref: lingua/stem.py\n\nclass STEMFFN(nn.Module):\n    def __init__(self, config):\n        super().__init__()\n        # 1. Gate Projection (W_g) - Kept Dense\n        self.gate_proj = nn.Linear(config.hidden_size, config.intermediate_size, bias=False)\n\n        # 2. Down Projection (W_d) - Kept Dense\n        self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)\n\n        # 3. STEM Embedding Table (U_l) - THE REPLACEMENT\n        # Replaces the dense \"Up Projection\" (W_u).\n        # Size: [Vocab Size x FFN Intermediate Size]\n        self.stem_embedding = nn.Embedding(config.vocab_size, config.intermediate_size)\n        self.act_fn = nn.SiLU()\n\n    def forward(self, x, input_ids):\n        # Step A: Compute the Gate (Contextual)\n        gate_output = self.act_fn(self.gate_proj(x))\n\n        # Step B: Retrieve Static Memory (Content)\n        # Instead of computing (W_u * x), we just look up the vector for the token.\n        stem_output = self.stem_embedding(input_ids)\n\n        # Step C: Combine (Gating)\n        # Multiply static fact by dynamic context.\n        activated_output = gate_output * stem_output\n\n        # Step D: Project Down\n        output = self.down_proj(activated_output)\n\n        return output",
+    "crumbs": [
+      "Posts",
+      "The Rise of Static Memory in LLMs"
+    ]
+  },
+  {
+    "objectID": "posts/my_first_note/index.html#deepseek-engram",
+    "href": "posts/my_first_note/index.html#deepseek-engram",
+    "title": "The Rise of Static Memory in LLMs",
+    "section": "5. DeepSeek Engram",
+    "text": "5. DeepSeek Engram\nRef: Li et al. (2026)\nDeepSeek introduces “Conditional Memory” to address the inefficiency of using expensive compute to simulate knowledge retrieval.\n\n\n\nFigure 1: The Engram Architecture. The module augments the backbone by retrieving static N-gram memory and fusing it with dynamic hidden states.\n\n\n\nThe Architecture\n\nEngram Module: A dedicated module that augments the neural backbone, structurally separating storage from logic.\nModernized N-Grams: It uses Hashed N-Grams to map multi-token sequences (e.g., “The capital of”) to static embedding vectors via fast, constant-time \\(O(1)\\) retrieval.\nContext-Aware Gating: The retrieved memory is fused intelligently using the model’s current hidden state to suppress noise.\n\n\n\nKey Findings\nDeepSeek found a “U-Shaped Scaling Law,” indicating an optimal ratio exists between “Thinking Parameters” (MoE) and “Remembering Parameters” (Engram). Allocating ~20% of the parameter budget to Engram yields better results than a pure MoE model.\n\n\n\nFigure 3: Sparsity allocation and Engram scaling. Left: Validation loss exhibits a U-shape, with hybrid allocation surpassing Pure MoE.\n\n\nSurprisingly, offloading static knowledge improves reasoning benchmarks (BBH +5.0). By relieving the attention layers from the burden of “memorizing” facts, the model’s depth is freed up to perform complex logic (Li et al., 2026).",
+    "crumbs": [
+      "Posts",
+      "The Rise of Static Memory in LLMs"
+    ]
+  },
+  {
+    "objectID": "posts/my_first_note/index.html#conclusion",
+    "href": "posts/my_first_note/index.html#conclusion",
+    "title": "The Rise of Static Memory in LLMs",
+    "section": "Conclusion",
+    "text": "Conclusion\nThe current “Memory Wall,” where GPU processing speed exceeds memory bandwidth, has created a bottleneck. By decoupling knowledge storage from active parameters, these architectures allow us to scale “memory” massively without exploding GPU requirements, paving the way for models that can “know” more while “thinking” more efficiently.",
+    "crumbs": [
+      "Posts",
+      "The Rise of Static Memory in LLMs"
+    ]
+  },
+  {
+    "objectID": "posts/my_first_note/index.html#references",
+    "href": "posts/my_first_note/index.html#references",
+    "title": "The Rise of Static Memory in LLMs",
+    "section": "References",
+    "text": "References\nAmeisen, et al. (2025). Circuit Tracing: Revealing Computational Graphs in Language Models. Anthropic.\nGoogle DeepMind. (2025). Gemma 3n Technical Report. Google DeepMind.\nHe, et al. (2026). STEM: Scaling Transformers with Embedding Modules. ArXiv: 2601.10639.\nLi, et al. (2026). Conditional Memory via Scalable Lookup. ArXiv: 2601.07372.\nLindsey, et al. (2025). On the Biology of a Large Language Model. Anthropic.\nTempleton, et al. (2024). Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet. Anthropic.\nZhang, et al. (2025). On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models. ArXiv: 2512.07783.",
+    "crumbs": [
+      "Posts",
+      "The Rise of Static Memory in LLMs"
+    ]
   }
 ]
