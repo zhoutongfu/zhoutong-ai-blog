@@ -6,9 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Zhoutong Fu">
-<meta name="dcterms.date" content="2025-01-26">
-<meta name="description" content="How STEM, Gemma 3n (PLE), and DeepSeek Engram are decoupling knowledge from reasoning.">
+<meta name="author" content="Zhoutong">
+<meta name="dcterms.date" content="2026-02-01">
 
 <title>The Rise of Static Memory in LLMs – Zhoutong | AI Research Log</title>
 <style>
@@ -216,50 +215,55 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#background-the-memory-compute-bottleneck" id="toc-background-the-memory-compute-bottleneck" class="nav-link active" data-scroll-target="#background-the-memory-compute-bottleneck">1. Background: The Memory-Compute Bottleneck</a>
+  <li><a href="#the-rise-of-static-memory-in-llms" id="toc-the-rise-of-static-memory-in-llms" class="nav-link active" data-scroll-target="#the-rise-of-static-memory-in-llms">The Rise of Static Memory in LLMs</a>
   <ul class="collapse">
-  <li><a href="#knowledge-primitives-limit-reasoning" id="toc-knowledge-primitives-limit-reasoning" class="nav-link" data-scroll-target="#knowledge-primitives-limit-reasoning">Knowledge Primitives Limit Reasoning</a></li>
-  <li><a href="#the-cost-of-remembering" id="toc-the-cost-of-remembering" class="nav-link" data-scroll-target="#the-cost-of-remembering">The Cost of “Remembering”</a></li>
+  <li><a href="#background" id="toc-background" class="nav-link" data-scroll-target="#background">1. Background</a>
+  <ul class="collapse">
+  <li><a href="#the-need-for-scale-knowledge-primitives-limit-reasoning" id="toc-the-need-for-scale-knowledge-primitives-limit-reasoning" class="nav-link" data-scroll-target="#the-need-for-scale-knowledge-primitives-limit-reasoning">The Need for Scale: Knowledge Primitives Limit Reasoning</a></li>
+  <li><a href="#the-representation-reality-computing-vs.-retrieving" id="toc-the-representation-reality-computing-vs.-retrieving" class="nav-link" data-scroll-target="#the-representation-reality-computing-vs.-retrieving">The Representation Reality: Computing vs.&nbsp;Retrieving</a></li>
   </ul></li>
-  <li><a href="#the-solution-static-memory-architectures" id="toc-the-solution-static-memory-architectures" class="nav-link" data-scroll-target="#the-solution-static-memory-architectures">2. The Solution: Static Memory Architectures</a></li>
+  <li><a href="#overview-ple-stem-engram-longcat" id="toc-overview-ple-stem-engram-longcat" class="nav-link" data-scroll-target="#overview-ple-stem-engram-longcat">2. Overview: PLE, STEM, Engram, LongCat</a></li>
   <li><a href="#gemma-3n-per-layer-embeddings" id="toc-gemma-3n-per-layer-embeddings" class="nav-link" data-scroll-target="#gemma-3n-per-layer-embeddings">3. Gemma 3n (Per Layer Embeddings)</a>
   <ul class="collapse">
   <li><a href="#the-architecture" id="toc-the-architecture" class="nav-link" data-scroll-target="#the-architecture">The Architecture</a></li>
-  <li><a href="#core-implementation" id="toc-core-implementation" class="nav-link" data-scroll-target="#core-implementation">Core Implementation</a></li>
+  <li><a href="#core-model-code" id="toc-core-model-code" class="nav-link" data-scroll-target="#core-model-code">Core Model Code</a></li>
+  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings">Key Findings</a></li>
   </ul></li>
   <li><a href="#stem-scaling-transformers-with-embedding-modules" id="toc-stem-scaling-transformers-with-embedding-modules" class="nav-link" data-scroll-target="#stem-scaling-transformers-with-embedding-modules">4. STEM (Scaling Transformers with Embedding Modules)</a>
   <ul class="collapse">
   <li><a href="#the-architecture-1" id="toc-the-architecture-1" class="nav-link" data-scroll-target="#the-architecture-1">The Architecture</a></li>
-  <li><a href="#key-benefits" id="toc-key-benefits" class="nav-link" data-scroll-target="#key-benefits">Key Benefits</a></li>
+  <li><a href="#core-model-code-1" id="toc-core-model-code-1" class="nav-link" data-scroll-target="#core-model-code-1">Core Model Code</a></li>
+  <li><a href="#knowledge-specificity-interpretability" id="toc-knowledge-specificity-interpretability" class="nav-link" data-scroll-target="#knowledge-specificity-interpretability">Knowledge Specificity &amp; Interpretability</a></li>
+  <li><a href="#key-findings-1" id="toc-key-findings-1" class="nav-link" data-scroll-target="#key-findings-1">Key Findings</a></li>
   </ul></li>
-  <li><a href="#deepseek-engram" id="toc-deepseek-engram" class="nav-link" data-scroll-target="#deepseek-engram">5. DeepSeek Engram</a>
+  <li><a href="#engram-deepseek" id="toc-engram-deepseek" class="nav-link" data-scroll-target="#engram-deepseek">5. Engram (DeepSeek)</a>
   <ul class="collapse">
   <li><a href="#the-architecture-2" id="toc-the-architecture-2" class="nav-link" data-scroll-target="#the-architecture-2">The Architecture</a></li>
-  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings">Key Findings</a></li>
+  <li><a href="#key-findings-2" id="toc-key-findings-2" class="nav-link" data-scroll-target="#key-findings-2">Key Findings</a></li>
   </ul></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  <li><a href="#longcat-scaling-embeddings-outperforms-scaling-experts" id="toc-longcat-scaling-embeddings-outperforms-scaling-experts" class="nav-link" data-scroll-target="#longcat-scaling-embeddings-outperforms-scaling-experts">6. LongCat (Scaling Embeddings Outperforms Scaling Experts)</a>
+  <ul class="collapse">
+  <li><a href="#the-architecture-3" id="toc-the-architecture-3" class="nav-link" data-scroll-target="#the-architecture-3">The Architecture</a></li>
+  <li><a href="#key-findings-3" id="toc-key-findings-3" class="nav-link" data-scroll-target="#key-findings-3">Key Findings</a></li>
+  </ul></li>
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content page-columns page-full" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../posts/static_llm_memory/index.html">Posts</a></li><li class="breadcrumb-item"><a href="../../posts/static_llm_memory/index.html">The Rise of Static Memory in LLMs</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">The Rise of Static Memory in LLMs</h1>
   <div class="quarto-categories">
-    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">LLM</div>
     <div class="quarto-category">Architecture</div>
     <div class="quarto-category">Memory</div>
   </div>
   </div>
 
-<div>
-  <div class="description">
-    How STEM, Gemma 3n (PLE), and DeepSeek Engram are decoupling knowledge from reasoning.
-  </div>
-</div>
 
 
 <div class="quarto-title-meta">
@@ -267,14 +271,14 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Zhoutong Fu </p>
+             <p>Zhoutong </p>
           </div>
   </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 26, 2025</p>
+      <p class="date">February 1, 2026</p>
     </div>
   </div>
   
@@ -286,229 +290,293 @@ window.Quarto = {
 </header>
 
 
-<section id="background-the-memory-compute-bottleneck" class="level2">
-<h2 class="anchored" data-anchor-id="background-the-memory-compute-bottleneck">1. Background: The Memory-Compute Bottleneck</h2>
-<section id="knowledge-primitives-limit-reasoning" class="level3">
-<h3 class="anchored" data-anchor-id="knowledge-primitives-limit-reasoning">Knowledge Primitives Limit Reasoning</h3>
-<p>Improving reasoning is a core objective of modern AI. However, recent research suggests a critical limit: a model’s ultimate reasoning capacity is fixed by the fundamental knowledge “primitives” acquired during Pre-Training. While Post-Training strategies like Reinforcement Learning (RL) can enhance skills, they cannot create knowledge from scratch; they can only build upon the latent foundation laid earlier <em>(Zhang et al., 2025)</em>.</p>
+<section id="the-rise-of-static-memory-in-llms" class="level1 page-columns page-full">
+<h1>The Rise of Static Memory in LLMs</h1>
+<p><strong>Topics:</strong> LLM Knowledge, Embedding Scaling, Sparse Architectures</p>
+<section id="background" class="level2">
+<h2 class="anchored" data-anchor-id="background">1. Background</h2>
+<section id="the-need-for-scale-knowledge-primitives-limit-reasoning" class="level3">
+<h3 class="anchored" data-anchor-id="the-need-for-scale-knowledge-primitives-limit-reasoning">The Need for Scale: Knowledge Primitives Limit Reasoning</h3>
+<p>Improving reasoning remains a primary goal for modern AI, yet recent findings (Zhang et al., 2025 [8]) highlight a critical bottleneck: a model’s reasoning potential is capped by the knowledge “primitives” absorbed during Pre-Training. While Post-Training can refine how a model thinks, it cannot fabricate knowledge from scratch; it merely optimizes the foundation laid earlier. Consequently, achieving substantial breakthroughs in reasoning requires massively scaling the pre-training stage to embed a far richer set of facts and primitives.</p>
 </section>
-<section id="the-cost-of-remembering" class="level3">
-<h3 class="anchored" data-anchor-id="the-cost-of-remembering">The Cost of “Remembering”</h3>
-<p>Standard Transformers face a computational inefficiency challenge when scaling this knowledge foundation. Research on interpretability indicates that dense models do not retain knowledge in a static database; instead, they dynamically “compute” it <em>(Templeton et al., 2024; Ameisen et al., 2025)</em>.</p>
-<p>Even a simple recall task, such as retrieving “The Golden Gate Bridge,” necessitates a costly, multi-step sequence of feature interactions across the model’s layers. This design leads to a “Memory-Compute” bottleneck: we use the same expensive matrix multiplications to calculate complex math problems as we do to recall that “Paris is the capital of France.”</p>
-<p>To achieve further scalability, we need architectures that separate the functions of “knowing” from “thinking” <em>(Lindsey et al., 2025)</em>.</p>
+<section id="the-representation-reality-computing-vs.-retrieving" class="level3">
+<h3 class="anchored" data-anchor-id="the-representation-reality-computing-vs.-retrieving">The Representation Reality: Computing vs.&nbsp;Retrieving</h3>
+<p>Standard Transformers face a major inefficiency when scaling knowledge. Interpretability research from Anthropic [7, 1] reveals that dense models do not store information in a static database; instead, they dynamically “compute” it. Retrieving a simple concept like “The Golden Gate Bridge” triggers a complex, expensive sequence of feature interactions across layers. This architecture conflates storage with processing, forcing the model to burn valuable computational resources (FLOPs) just to “remember” rather than to “think”.</p>
 </section>
 </section>
-<section id="the-solution-static-memory-architectures" class="level2">
-<h2 class="anchored" data-anchor-id="the-solution-static-memory-architectures">2. The Solution: Static Memory Architectures</h2>
-<p>Three new architectures—<strong>STEM</strong> (Meta/CMU), <strong>PLE</strong> (Google DeepMind), and <strong>Engram</strong> (DeepSeek)—address this by moving static information into Embedding Modules. Instead of <em>computing</em> facts, these models <em>retrieve</em> them.</p>
+<section id="overview-ple-stem-engram-longcat" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="overview-ple-stem-engram-longcat">2. Overview: PLE, STEM, Engram, LongCat</h2>
+<p>Modern LLMs traditionally conflate “reasoning” (dynamic computation) with “knowledge” (static fact retrieval). We use the same expensive matrix multiplications to calculate math problems as we do to recall that “Paris is the capital of France”.</p>
+<p>Four emerging architectures—STEM (Meta/CMU) [6], PLE (Google DeepMind) [3], Engram (DeepSeek) [2], and LongCat (Meituan) [5]—address this by moving static information into Embedding Modules. Instead of computing facts, these models retrieve them. This shift decouples model capacity from inference cost, allowing for massive “memory” scaling without exploding GPU requirements.</p>
+<div class="column-page wide-comparison-table">
 <table class="caption-top table">
 <caption>Comparison of Static Memory Architectures</caption>
 <colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
 </colgroup>
 <thead>
 <tr class="header">
 <th style="text-align: left;">Feature</th>
-<th style="text-align: left;">Gemma 3n PLE <em>(DeepMind)</em></th>
-<th style="text-align: left;">STEM <em>(Meta/CMU)</em></th>
-<th style="text-align: left;">Engram <em>(DeepSeek)</em></th>
+<th style="text-align: left;">Gemma 3n PLE (DeepMind)</th>
+<th style="text-align: left;">STEM (Meta/CMU)</th>
+<th style="text-align: left;">Engram (DeepSeek)</th>
+<th style="text-align: left;">LongCat (Meituan)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;"><strong>Core Concept</strong></td>
-<td style="text-align: left;"><strong>Augmentation:</strong> Adds extra embeddings to modulate layers.</td>
-<td style="text-align: left;"><strong>Replacement:</strong> Swaps FFN Up-Projection for a Lookup Table.</td>
-<td style="text-align: left;"><strong>Complement:</strong> Adds a “Memory Module” alongside the backbone.</td>
+<td style="text-align: left;"><strong>Date</strong></td>
+<td style="text-align: left;">June 26, 2025</td>
+<td style="text-align: left;">Jan 15, 2026</td>
+<td style="text-align: left;">Jan 12, 2026</td>
+<td style="text-align: left;">Jan 29, 2026</td>
 </tr>
 <tr class="even">
+<td style="text-align: left;"><strong>Core Concept</strong></td>
+<td style="text-align: left;">Augmentation: Adds extra embeddings to modulate/augment layers.</td>
+<td style="text-align: left;">Replacement: Swaps FFN Up-Projection for a Lookup Table.</td>
+<td style="text-align: left;">Complement: Adds a “Memory Module” alongside the Neural Backbone.</td>
+<td style="text-align: left;">Input Augmentation: Expands the model’s vocabulary/input capacity rather than depth.</td>
+</tr>
+<tr class="odd">
 <td style="text-align: left;"><strong>Mechanism</strong></td>
 <td style="text-align: left;">Per-Layer Embeddings (Streamed)</td>
 <td style="text-align: left;">Token-indexed Lookup (Static)</td>
 <td style="text-align: left;">Hashed N-Gram Lookup (Contextual)</td>
+<td style="text-align: left;">Input-Level N-Gram Lookup: Averages N-gram vectors into the input.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><strong>Hardware Goal</strong></td>
 <td style="text-align: left;">On-Device Efficiency (Low VRAM)</td>
 <td style="text-align: left;">Training Stability &amp; Interpretability</td>
 <td style="text-align: left;">Massive Scaling (Memory vs.&nbsp;Logic)</td>
+<td style="text-align: left;">Cache Efficiency: Uses “N-gram Caching” to bypass communication bottlenecks.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><strong>Key Win</strong></td>
 <td style="text-align: left;">Running 8B models on 3GB RAM phones</td>
 <td style="text-align: left;">“Surgical” Knowledge Editing</td>
-<td style="text-align: left;">+5.0 on Reasoning (BBH)</td>
+<td style="text-align: left;">+5.0 on Reasoning (BBH) by offloading facts</td>
+<td style="text-align: left;">Pareto Efficiency: Beats parameter-equivalent MoEs on Coding &amp; Agentic tasks.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Model Size</strong></td>
+<td style="text-align: left;">2B (Effective 4B)</td>
+<td style="text-align: left;">1B (Evaluated at 350M &amp; 1B)</td>
+<td style="text-align: left;">40B (Tested up to 100B Engram module)</td>
+<td style="text-align: left;">68.5B (~31B of which are static N-gram embeddings)</td>
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 <section id="gemma-3n-per-layer-embeddings" class="level2">
 <h2 class="anchored" data-anchor-id="gemma-3n-per-layer-embeddings">3. Gemma 3n (Per Layer Embeddings)</h2>
-<p><strong>Ref:</strong> <em>Gemma 3n Technical Report (2025)</em></p>
-<p>Gemma 3n is engineered specifically for mobile/edge deployment. Its goal is to fit a model with “8B parameter intelligence” onto a device that only has RAM for a 2B model.</p>
 <section id="the-architecture" class="level3">
 <h3 class="anchored" data-anchor-id="the-architecture">The Architecture</h3>
+<p>Gemma 3n is engineered specifically for <strong>mobile/edge deployment</strong> [3]. Its goal is to fit a model with “8B parameter intelligence” onto a device that only has RAM for a 2B model.</p>
 <ul>
-<li><strong>PLE (Per Layer Embeddings):</strong> Instead of storing all weights in VRAM, it keeps massive embedding tables in the slower System RAM (CPU).</li>
+<li><strong>PLE (Per Layer Embeddings):</strong> Instead of storing all weights in the GPU/NPU memory (VRAM), it keeps massive embedding tables in the slower <strong>System RAM (CPU)</strong>.</li>
 <li><strong>Streaming:</strong> As the neural network processes layer <span class="math inline">\(i\)</span>, the specific embedding for that layer is streamed from the CPU to the NPU just in time.</li>
-<li><strong>Modulation:</strong> PLEs do not replace the FFN; they modulate the residual stream or FFN output.</li>
+<li><strong>Mechanism:</strong> PLEs do not usually <em>replace</em> the FFN. Instead, they <strong>modulate</strong> the residual stream or the FFN output. The STEM paper notes that PLEs are often much lower dimension (e.g., 256 dim) compared to the model’s width.</li>
 </ul>
 </section>
-<section id="core-implementation" class="level3">
-<h3 class="anchored" data-anchor-id="core-implementation">Core Implementation</h3>
-<p>The mechanism works by retrieving a massive, token-specific embedding vector pre-sliced for every decoder layer.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Conceptual implementation based on Gemma 3n</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ref: gemma3n/modeling_gemma3n.py</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Gemma3nModel(nn.Module):</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config):</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># The massive "Memory Bank" storing all layer-specific vectors for every token.</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Total Size: Vocab_PLE x (Num_Layers * PLE_Dim)</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.embed_tokens_per_layer <span class="op">=</span> Gemma3nTextScaledWordEmbedding(</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            config.vocab_size_per_layer_input,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>            config.num_hidden_layers <span class="op">*</span> config.hidden_size_per_layer_input,</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.padding_idx,</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>            embed_scale<span class="op">=</span>config.hidden_size_per_layer_input <span class="op">*</span> <span class="fl">0.5</span>,</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> get_per_layer_inputs(<span class="va">self</span>, input_ids: torch.LongTensor) <span class="op">-&gt;</span> torch.Tensor:</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Look up the massive vector and "slice" it for each layer.</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Output: [Batch, Seq_Len, Num_Layers, PLE_Dim]</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.embed_tokens_per_layer(input_ids).reshape(</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">*</span>input_ids.shape,</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.config.num_hidden_layers,</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.hidden_size_per_layer_input,</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Inside the decoder layer forward pass:</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward_layer(<span class="va">self</span>, first_prediction, per_layer_input):</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        <span class="co"># A. GATE: Use context to determine "how much" memory to read.</span></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        first_prediction <span class="op">=</span> <span class="va">self</span>.per_layer_input_gate(first_prediction)</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        first_prediction <span class="op">=</span> <span class="va">self</span>.act_fn(first_prediction)</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># B. MODULATE: Inject retrieved static memory via element-wise multiplication.</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>        first_prediction <span class="op">=</span> torch.multiply(first_prediction, per_layer_input)</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>        <span class="co"># C. PROJECT: Mix result back into main residual stream.</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>        first_prediction <span class="op">=</span> <span class="va">self</span>.per_layer_projection(first_prediction)</span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>        first_prediction <span class="op">=</span> <span class="va">self</span>.post_per_layer_input_norm(first_prediction)</span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>        <span class="co"># D. ADD</span></span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> first_prediction</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="core-model-code" class="level3">
+<h3 class="anchored" data-anchor-id="core-model-code">Core Model Code</h3>
+<p>The Per-Layer Embedding (PLE) mechanism works by retrieving a massive, token-specific embedding vector that is pre-sliced to provide a unique “knowledge” input for every decoder layer [9]. As the model processes a token, each layer accesses its specific slice and dynamically gates it using the current hidden state—essentially using the active context to determine how much of the static retrieved knowledge to admit.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The massive "Memory Bank" storing all layer-specific vectors for every token.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Total Size: Vocab_PLE x (Num_Layers * PLE_Dim)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Example Dimensions: 2M tokens x (40 layers * 256 dim)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="va">self</span>.embed_tokens_per_layer <span class="op">=</span> Gemma3nTextScaledWordEmbedding(</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    config.vocab_size_per_layer_input,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    config.num_hidden_layers <span class="op">*</span> config.hidden_size_per_layer_input,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.padding_idx,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    embed_scale<span class="op">=</span>config.hidden_size_per_layer_input<span class="op">**</span><span class="fl">0.5</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_per_layer_inputs(<span class="va">self</span>, input_ids: torch.LongTensor) <span class="op">-&gt;</span> torch.Tensor:</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Look up the massive vector and "slice" it for each layer.</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Input:  [Batch, Seq_Len]</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Output: [Batch, Seq_Len, Num_Layers, PLE_Dim]</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">self</span>.embed_tokens_per_layer(input_ids).reshape(</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span>input_ids.shape,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.config.num_hidden_layers,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.hidden_size_per_layer_input,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Inside the decoder loop, we pass the specific slice for this layer:</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># per_layer_input = per_layer_inputs[:, :, layer_idx, :] </span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Shape: [Batch, Seq_Len, PLE_Dim]</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># ... inside the layer's forward pass ...</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co"># A. GATE: Use the current context (hidden state) to determine "how much" memory to read.</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Project from Model_Dim (e.g., 2560) -&gt; PLE_Dim (e.g., 256)</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>first_prediction <span class="op">=</span> <span class="va">self</span>.per_layer_input_gate(first_prediction)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>first_prediction <span class="op">=</span> <span class="va">self</span>.act_fn(first_prediction)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="co"># B. MODULATE: Inject the retrieved static memory via element-wise multiplication.</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Dynamic Context (Gate) * Static Memory (PLE Vector)</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>first_prediction <span class="op">=</span> torch.multiply(first_prediction, per_layer_input)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="co"># C. PROJECT: Mix the result back into the main residual stream.</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Project from PLE_Dim (e.g., 256) -&gt; Model_Dim (e.g., 2560)</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>first_prediction <span class="op">=</span> <span class="va">self</span>.per_layer_projection(first_prediction)</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>first_prediction <span class="op">=</span> <span class="va">self</span>.post_per_layer_input_norm(first_prediction)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="co"># D. ADD: Add to the model's prediction stream</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>corrected_predictions[<span class="dv">1</span>:] <span class="op">+=</span> first_prediction</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="key-findings" class="level3">
+<h3 class="anchored" data-anchor-id="key-findings">Key Findings</h3>
+<ol type="1">
+<li><strong>VRAM Breakthrough:</strong> Allows running high-capacity models on phones with 3-4GB of RAM.</li>
+<li><strong>Parameters vs.&nbsp;Compute:</strong> It massively increases the <em>parameter count</em> (knowledge capacity) without increasing the <em>FLOPs</em> (compute cost) or the <em>active VRAM usage</em>.</li>
+</ol>
 </section>
 </section>
 <section id="stem-scaling-transformers-with-embedding-modules" class="level2">
 <h2 class="anchored" data-anchor-id="stem-scaling-transformers-with-embedding-modules">4. STEM (Scaling Transformers with Embedding Modules)</h2>
-<p><strong>Ref:</strong> <em>He et al.&nbsp;(2026)</em></p>
-<p>STEM identifies that the Up-Projection matrix in a Feed-Forward Network (FFN) acts largely as a “Key” lookup in a Key-Value memory system.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="images/stem_schematic.png" class="img-fluid figure-img"></p>
-<figcaption>Figure 2: Schematics comparing (a) SwiGLU FFN, (b) MoE FFN, and (c) STEM with a single prefetched token embedding.</figcaption>
-</figure>
-</div>
 <section id="the-architecture-1" class="level3">
 <h3 class="anchored" data-anchor-id="the-architecture-1">The Architecture</h3>
-<p>STEM replaces the dense Up-Projection matrix (<span class="math inline">\(W^u\)</span>) with a static, token-indexed embedding table (<span class="math inline">\(U_{token\_id}\)</span>). It retains the Gate and Down projections as dense layers.</p>
-<p><span class="math display">\[ y = W_{down}(\text{SiLU}(W_{gate}x) \odot \text{Lookup}(TokenID)) \]</span></p>
-</section>
-<section id="key-benefits" class="level3">
-<h3 class="anchored" data-anchor-id="key-benefits">Key Benefits</h3>
+<p>STEM [6] identifies that the Up-Projection matrix in a Feed-Forward Network (FFN) acts largely as a “Key” lookup in a Key-Value memory system.</p>
 <ul>
-<li><strong>Interpretability:</strong> Because embeddings are linked to individual tokens, researchers can perform “Knowledge Editing”. By swapping the “Spain” embedding for “Germany” in specific layers, the model can be tricked into “hallucinating” consistent facts (e.g., saying the capital of Spain is Berlin) without changing the input text.</li>
-<li><strong>Efficiency:</strong> It removes approximately 1/3 of the FFN parameters from the active compute path.</li>
+<li><strong>Change:</strong> It replaces the dense Up-Projection matrix (<span class="math inline">\(W^u\)</span>) with a static, token-indexed embedding table (<span class="math inline">\(U_{token_id}\)</span>).</li>
+<li><strong>Retention:</strong> It keeps the Gate Projection (<span class="math inline">\(W^g\)</span>) and Down Projection (<span class="math inline">\(W^d\)</span>) as dense layers.</li>
+<li><strong>Formula:</strong> <span class="math inline">\(y = W_{down}(\text{SiLU}(W_{gate}x) \odot \text{Lookup}(TokenID))\)</span></li>
 </ul>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="images/stem_knowledge_edit.png" class="img-fluid figure-img"></p>
-<figcaption>Figure 3: Knowledge injection/edit demonstration. Swapping the PLE for ‘Spain’ with ‘Germany’ flips the generated capital from Madrid to Berlin.</figcaption>
-</figure>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ref: lingua/stem.py</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> STEMFFN(nn.Module):</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config):</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 1. Gate Projection (W_g) - Kept Dense</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.gate_proj <span class="op">=</span> nn.Linear(config.hidden_size, config.intermediate_size, bias<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 2. Down Projection (W_d) - Kept Dense</span></span>
+<p><img src="images/stem_schematic.png" class="img-fluid" alt="Schematics of (a) SwiGLU FFN, (b) MoE FFN, and (c) STEM with a single prefetched token embedding."> <em>Figure: Schematics of (a) SwiGLU FFN, (b) MoE FFN, and (c) STEM.</em></p>
+</section>
+<section id="core-model-code-1" class="level3">
+<h3 class="anchored" data-anchor-id="core-model-code-1">Core Model Code</h3>
+<p>The snippet below reflects the core logic [10].</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> STEMFFN(nn.Module):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config):</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 1. Gate Projection (W_g) - Kept Dense</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Determines "how much" of the knowledge to let through based on context.</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.gate_proj <span class="op">=</span> nn.Linear(config.hidden_size, config.intermediate_size, bias<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 2. Down Projection (W_d) - Kept Dense</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Projects the result back to the model's hidden dimension.</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.down_proj <span class="op">=</span> nn.Linear(config.intermediate_size, config.hidden_size, bias<span class="op">=</span><span class="va">False</span>)</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 3. STEM Embedding Table (U_l) - THE REPLACEMENT</span></span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Replaces the dense "Up Projection" (W_u).</span></span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Size: [Vocab Size x FFN Intermediate Size]</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.stem_embedding <span class="op">=</span> nn.Embedding(config.vocab_size, config.intermediate_size)</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.act_fn <span class="op">=</span> nn.SiLU()</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="co"># This is the "Static Memory" containing layer-local facts for each token.</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.stem_embedding <span class="op">=</span> nn.Embedding(config.vocab_size, config.intermediate_size)</span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x, input_ids):</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step A: Compute the Gate (Contextual)</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        gate_output <span class="op">=</span> <span class="va">self</span>.act_fn(<span class="va">self</span>.gate_proj(x))</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step B: Retrieve Static Memory (Content)</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Instead of computing (W_u * x), we just look up the vector for the token.</span></span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>        stem_output <span class="op">=</span> <span class="va">self</span>.stem_embedding(input_ids)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step C: Combine (Gating)</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Multiply static fact by dynamic context.</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        activated_output <span class="op">=</span> gate_output <span class="op">*</span> stem_output</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step D: Project Down</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> <span class="va">self</span>.down_proj(activated_output)</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> output</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.act_fn <span class="op">=</span> nn.SiLU()</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x, input_ids):</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># x shape: [Batch, Seq_Len, Hidden_Dim]</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># input_ids shape: [Batch, Seq_Len]</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step A: Compute the Gate (Contextual)</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Formula: SiLU(W_g * x)</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        <span class="co"># The gate looks at the *context* (x) to decide activation.</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        gate_output <span class="op">=</span> <span class="va">self</span>.act_fn(<span class="va">self</span>.gate_proj(x))</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step B: Retrieve Static Memory (Content)</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Formula: U_l[t]</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Instead of computing (W_u * x), we just look up the vector for the token.</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        <span class="co"># This vector represents the "fact" or "value" tied to this specific token in this layer.</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        stem_output <span class="op">=</span> <span class="va">self</span>.stem_embedding(input_ids)</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step C: Combine (Gating)</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Formula: Gate * STEM_Embedding</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>        <span class="co"># We multiply the static fact (stem_output) by the dynamic context (gate_output).</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>        <span class="co"># If the gate is 0, the model ignores this fact for the current context.</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>        activated_output <span class="op">=</span> gate_output <span class="op">*</span> stem_output</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Step D: Project Down</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Formula: W_d * (Activated_Output)</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>        output <span class="op">=</span> <span class="va">self</span>.down_proj(activated_output)</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> output</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="knowledge-specificity-interpretability" class="level3">
+<h3 class="anchored" data-anchor-id="knowledge-specificity-interpretability">Knowledge Specificity &amp; Interpretability</h3>
+<p>The STEM embeddings are inherently linked to individual tokens. Viewing this through a memory lens, this embedding is intended to consolidate the essential information tied to its corresponding token. Consequently, these embeddings can potentially serve as steering vectors.</p>
+<p><img src="images/stem_knowledge_edit.png" class="img-fluid" alt="Knowledge injection/edit demonstration. Swapping the PLE for “Spain” to “Germany” flips the generated capital from Madrid to Berlin."> <em>Figure: Knowledge injection/edit demonstration.</em></p>
+</section>
+<section id="key-findings-1" class="level3">
+<h3 class="anchored" data-anchor-id="key-findings-1">Key Findings</h3>
+<ol type="1">
+<li><strong>Training Stability:</strong> Unlike Mixture-of-Experts (MoE), which suffers from load-balancing issues and loss spikes, STEM trains as stably as dense models.</li>
+<li><strong>Efficiency:</strong> Removes ~1/3 of FFN parameters from the active compute path.</li>
+<li><strong>Interpretability (The “Killer Feature”):</strong> Because embeddings are tied to specific tokens (e.g., “Spain”), researchers can perform <strong>Knowledge Editing</strong>. By swapping the “Spain” embedding for “Germany” in specific layers, the model can be tricked into “hallucinating” consistent facts (e.g., saying the capital of Spain is Berlin) without changing the input text.</li>
+</ol>
 </section>
 </section>
-<section id="deepseek-engram" class="level2">
-<h2 class="anchored" data-anchor-id="deepseek-engram">5. DeepSeek Engram</h2>
-<p><strong>Ref:</strong> <em>Li et al.&nbsp;(2026)</em></p>
-<p>DeepSeek introduces “Conditional Memory” to address the inefficiency of using expensive compute to simulate knowledge retrieval.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="images/engram_architecture.png" class="img-fluid figure-img"></p>
-<figcaption>Figure 1: The Engram Architecture. The module augments the backbone by retrieving static N-gram memory and fusing it with dynamic hidden states.</figcaption>
-</figure>
-</div>
+<section id="engram-deepseek" class="level2">
+<h2 class="anchored" data-anchor-id="engram-deepseek">5. Engram (DeepSeek)</h2>
 <section id="the-architecture-2" class="level3">
 <h3 class="anchored" data-anchor-id="the-architecture-2">The Architecture</h3>
+<p><strong>DeepSeek introduces “Conditional Memory”</strong> [2] to address a fundamental inefficiency: while Transformers excel at <em>reasoning</em> (via Conditional Computation/MoE), they lack a native primitive for <em>remembering</em>, often wasting expensive compute to simulate knowledge retrieval.</p>
 <ul>
-<li><strong>Engram Module:</strong> A dedicated module that augments the neural backbone, structurally separating storage from logic.</li>
-<li><strong>Modernized N-Grams:</strong> It uses Hashed N-Grams to map multi-token sequences (e.g., “The capital of”) to static embedding vectors via fast, constant-time <span class="math inline">\(O(1)\)</span> retrieval.</li>
-<li><strong>Context-Aware Gating:</strong> The retrieved memory is fused intelligently using the model’s current hidden state to suppress noise.</li>
+<li><strong>Engram Module:</strong> A dedicated module that augments the neural backbone, structurally separating the storage of static patterns from dynamic logic processing.</li>
+<li><strong>Modernized N-Grams:</strong> Instead of standard single-token lookups, the model uses <strong>Hashed N-Grams</strong> to map multi-token sequences (e.g., “The capital of”) to static embedding vectors via fast, constant-time <span class="math inline">\(O(1)\)</span> retrieval.</li>
+<li><strong>Context-Aware Gating:</strong> The retrieved memory is fused intelligently, not blindly. A gating mechanism uses the model’s current hidden state to evaluate the static fact, integrating it only when relevant to the context while suppressing noise.</li>
+</ul>
+<p><img src="images/engram_architecture.png" class="img-fluid" alt="The Engram Architecture. The module augments the backbone by retrieving static N-gram memory."> <em>Figure: The Engram Architecture.</em></p>
+</section>
+<section id="key-findings-2" class="level3">
+<h3 class="anchored" data-anchor-id="key-findings-2">Key Findings</h3>
+<ol type="1">
+<li><strong>The U-Shaped Scaling Law:</strong> DeepSeek found an optimal ratio between “Thinking Parameters” (MoE) and “Remembering Parameters” (Engram). Allocating ~20% of the parameter budget to Engram yields better results than a pure MoE model.</li>
+<li><strong>Reasoning Gains:</strong> Surprisingly, offloading static knowledge to Engram improves reasoning benchmarks significantly. <strong>Engram-27B</strong> outperforms a parameter-equivalent <strong>MoE-27B</strong> baseline (e.g., BBH +5.0, MMLU +3.0, MATH +2.4). <em>Why?</em> By relieving the attention layers from the burden of “memorizing” facts, the model’s depth is freed up to perform complex logic.</li>
+<li><strong>Needle-in-a-Haystack:</strong> Massive gains in long-context retrieval (84.2% -&gt; 97.0%). The “local dependencies” are handled by the lookup table, leaving the attention mechanism free to scan the full global context.</li>
+<li><strong>Zero-Cost “Infinite” Memory:</strong> Engram decouples model size from inference latency. Because the lookups are deterministic (based on N-grams), the system can <strong>prefetch</strong> embeddings from CPU memory (RAM) before the GPU needs them. Result: Offloading a massive 100B-parameter Engram table to host memory incurs a negligible throughput penalty (&lt; 2.8%).</li>
+</ol>
+<p><img src="images/engram_scaling.png" class="img-fluid" alt="Sparsity allocation and Engram scaling showing the U-shaped scaling law."> <em>Figure: Sparsity allocation and Engram scaling.</em></p>
+<p>Unlike previous works that simply demonstrate that external memory improves performance, this paper provides a rigorous ablation study. Through their “Sparsity Allocation” experiments, the authors reveal a fundamental U-shaped scaling law: purely scaling experts (MoE) or purely scaling memory (Engram) is suboptimal. Instead, they identify a precise “sweet spot”—allocating ~20-25% of sparse parameters to static memory minimizes validation loss.</p>
+</section>
+</section>
+<section id="longcat-scaling-embeddings-outperforms-scaling-experts" class="level2">
+<h2 class="anchored" data-anchor-id="longcat-scaling-embeddings-outperforms-scaling-experts">6. LongCat (Scaling Embeddings Outperforms Scaling Experts)</h2>
+<section id="the-architecture-3" class="level3">
+<h3 class="anchored" data-anchor-id="the-architecture-3">The Architecture</h3>
+<p>LongCat [5] challenges the dominant “Scaling Experts” (MoE) paradigm by proposing <strong>Embedding Scaling</strong>. Instead of adding more “brains” (experts) to the Feed-Forward Networks, it massively scales the <strong>Input Embedding Layer</strong> to capture rich local context.</p>
+<ul>
+<li><strong>Input-Only Integration:</strong> Unlike STEM (which replaces FFNs) or Engram (which runs parallel to the backbone), LongCat adds N-gram embeddings <em>only</em> at the input level.</li>
+<li><strong>Mechanism:</strong> The model retrieves massive N-gram vectors (2-grams, 3-grams) and <strong>averages</strong> them with the standard token embedding to create a “super-charged” input vector <span class="math inline">\(e_i\)</span>.</li>
+<li><strong>Standard Backbone:</strong> The rest of the Transformer (Attention &amp; FFNs) remains unchanged. It simply processes these denser, richer input vectors.</li>
+</ul>
+<p><img src="images/longcat_ngram.png" class="img-fluid" alt="The architecture of a N-gram Embedding layer from LongCat."> <em>Figure: The architecture of a N-gram Embedding layer.</em></p>
+</section>
+<section id="key-findings-3" class="level3">
+<h3 class="anchored" data-anchor-id="key-findings-3">Key Findings</h3>
+<ul>
+<li><strong>The “Fat Embedding” Pareto Frontier:</strong> The authors found that once the number of experts reaches a certain point, adding <strong>more memory</strong> (embeddings) yields better returns than adding more experts.</li>
+<li><strong>The 50% Allocation Rule:</strong> The optimal design allocates roughly <strong>50% of the total parameter budget</strong> to these static embeddings. <em>Example:</em> <strong>LongCat-Flash-Lite</strong> is a 68.5B parameter model, but <strong>~31.4B</strong> parameters are just the embedding table.</li>
+<li><strong>Wide vs.&nbsp;Deep:</strong> This method works best in <strong>wider</strong> models. In very deep models, the signal from the input embeddings tends to fade (“wash out”) as it propagates through many layers.</li>
+<li><strong>Performance:</strong> The 68.5B model (with only ~3B active params) outperformed parameter-equivalent MoE baselines, showing particular strength in <strong>coding and agentic tasks</strong> where local context is critical.</li>
 </ul>
 </section>
-<section id="key-findings" class="level3">
-<h3 class="anchored" data-anchor-id="key-findings">Key Findings</h3>
-<p>DeepSeek found a “U-Shaped Scaling Law,” indicating an optimal ratio exists between “Thinking Parameters” (MoE) and “Remembering Parameters” (Engram). Allocating ~20% of the parameter budget to Engram yields better results than a pure MoE model.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="images/engram_scaling.png" class="img-fluid figure-img"></p>
-<figcaption>Figure 3: Sparsity allocation and Engram scaling. Left: Validation loss exhibits a U-shape, with hybrid allocation surpassing Pure MoE.</figcaption>
-</figure>
-</div>
-<p>Surprisingly, offloading static knowledge improves <strong>reasoning benchmarks</strong> (BBH +5.0). By relieving the attention layers from the burden of “memorizing” facts, the model’s depth is freed up to perform complex logic <em>(Li et al., 2026)</em>.</p>
-</section>
-</section>
-<section id="conclusion" class="level2">
-<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
-<p>The current “Memory Wall,” where GPU processing speed exceeds memory bandwidth, has created a bottleneck. By decoupling knowledge storage from active parameters, these architectures allow us to scale “memory” massively without exploding GPU requirements, paving the way for models that can “know” more while “thinking” more efficiently.</p>
-<hr>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
-<p><strong>Ameisen, et al.&nbsp;(2025).</strong> <em>Circuit Tracing: Revealing Computational Graphs in Language Models.</em> Anthropic.</p>
-<p><strong>Google DeepMind. (2025).</strong> <em>Gemma 3n Technical Report.</em> Google DeepMind.</p>
-<p><strong>He, et al.&nbsp;(2026).</strong> <em>STEM: Scaling Transformers with Embedding Modules.</em> ArXiv: 2601.10639.</p>
-<p><strong>Li, et al.&nbsp;(2026).</strong> <em>Conditional Memory via Scalable Lookup.</em> ArXiv: 2601.07372.</p>
-<p><strong>Lindsey, et al.&nbsp;(2025).</strong> <em>On the Biology of a Large Language Model.</em> Anthropic.</p>
-<p><strong>Templeton, et al.&nbsp;(2024).</strong> <em>Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet.</em> Anthropic.</p>
-<p><strong>Zhang, et al.&nbsp;(2025).</strong> <em>On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models.</em> ArXiv: 2512.07783.</p>
+<ol type="1">
+<li>Ameisen, E. et al.&nbsp;(2025). <em>Circuit Tracing: Revealing Computational Graphs in Language Models.</em> Anthropic.</li>
+<li>Cheng, X. et al.&nbsp;(2026). <em>Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models.</em> arXiv:2601.07372.</li>
+<li>Google DeepMind (2025). <em>Gemma 3 Technical Report.</em> arXiv:2503.19786. Model card: <a href="https://deepmind.google/models/gemma/gemma-3n/">Gemma 3n</a>.</li>
+<li>Lindsey, J. et al.&nbsp;(2025). <em>On the Biology of a Large Language Model.</em> Anthropic.</li>
+<li>LongCat (2026). <em>Scaling Embeddings Outperforms Scaling Experts in Language Models.</em> arXiv:2601.21204.</li>
+<li>Sadhukhan, R. et al.&nbsp;(2026). <em>STEM: Scaling Transformers with Embedding Modules.</em> arXiv:2601.10639.</li>
+<li>Templeton, A. et al.&nbsp;(2024). <em>Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet.</em> Anthropic.</li>
+<li>Zhang, J. et al.&nbsp;(2025). <em>On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models.</em> arXiv:2512.07783.</li>
+<li>Google DeepMind. <em>Gemma 3n model code.</em> <code>gemma3n/modeling_gemma3n.py</code>.</li>
+<li>Lingua / STEM. <em>STEM model code.</em> <code>lingua/stem.py</code>.</li>
+</ol>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

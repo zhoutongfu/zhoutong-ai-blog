@@ -1,6 +1,13 @@
 /* css styles */
 
-/* Hide left sidebar (nav) on index page; keep right column (categories/TOC) */
-body.index-page #quarto-sidebar {
-  display: none !important;
+.wide-comparison-table {
+  font-size: 0.9em;
+  width: 100%;
+}
+
+/* Optional: ensure the table doesn't get cut off on small screens */
+.wide-comparison-table table {
+  width: 100%;
+  margin-bottom: 1rem;
+  vertical-align: top;
 }
