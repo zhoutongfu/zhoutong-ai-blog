@@ -73,20 +73,20 @@ ul.task-list li input[type="checkbox"] {
 <script>
 
   window.document.addEventListener("DOMContentLoaded", function (_event) {
-    const listingTargetEl = window.document.querySelector('#listing-listing .list');
+    const listingTargetEl = window.document.querySelector('#listing-research-log .list');
     if (!listingTargetEl) {
       // No listing discovered, do not attach.
       return; 
     }
 
     const options = {
-      valueNames: ['listing-date','listing-title','listing-author','listing-image','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
+      valueNames: ['listing-date','listing-title','listing-reading-time','listing-description','listing-image',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
       
-      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description","listing-categories"],
+      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description"],
     };
 
     window['quarto-listings'] = window['quarto-listings'] || {};
-    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
+    window['quarto-listings']['listing-research-log'] = new List('listing-research-log', options);
 
     if (window['quarto-listing-loaded']) {
       window['quarto-listing-loaded']();
@@ -177,7 +177,7 @@ window.Quarto = {
   </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
     <div class="sidebar-menu-container"> 
@@ -205,20 +205,30 @@ window.Quarto = {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QXJjaGl0ZWN0dXJl">Architecture <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TExN">LLM <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TWVtb3J5">Memory <span class="quarto-category-count">(1)</span></div></div></div>
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#a-brief-intro" id="toc-a-brief-intro" class="nav-link active" data-scroll-target="#a-brief-intro">A Brief Intro</a>
+  <ul class="collapse">
+  <li><a href="#recent-posts" id="toc-recent-posts" class="nav-link" data-scroll-target="#recent-posts">Recent Posts</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
-<main class="content column-body" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
 
-<p>Documenting hands-on explorations in LLM architecture and post-training. I focus on bridging deep research insights with the practical constraints of large-scale production systems.</p>
-
-
-
-
-<div class="quarto-listing quarto-listing-container-default" id="listing-listing">
+<section id="a-brief-intro" class="level1">
+<h1>A Brief Intro</h1>
+<p>I document hands-on explorations in LLM architecture and post-training. In an era of rapid research cycles, this log serves as a space to synthesize long-term trends and foundational modeling topics—specifically focusing on bridging deep research insights with the practical constraints of large-scale production systems.</p>
+<hr>
+<section id="recent-posts" class="level3">
+<h3 class="anchored" data-anchor-id="recent-posts">Recent Posts</h3>
+<div id="listing-research-log" class="quarto-listing quarto-listing-container-default">
 <div class="list quarto-listing-default">
 <div class="quarto-post image-right" data-index="0" data-categories="TExNJTJDQXJjaGl0ZWN0dXJlJTJDTWVtb3J5" data-listing-date-sort="1769932800000" data-listing-file-modified-sort="1769997039601" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2447">
 <div class="thumbnail"><a href="./posts/static_llm_memory/index.html" class="no-external">
@@ -230,15 +240,6 @@ window.Quarto = {
 <h3 class="no-anchor listing-title">
 <a href="./posts/static_llm_memory/index.html" class="no-external">The Rise of Static Memory in LLMs</a>
 </h3>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('TExN'); return false;">LLM</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QXJjaGl0ZWN0dXJl'); return false;">Architecture</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TWVtb3J5'); return false;">Memory</div>
-
-</div>
 <div class="delink listing-description"><a href="./posts/static_llm_memory/index.html" class="no-external">
 <strong>Topics:</strong> LLM Knowledge, Embedding Scaling, Sparse Architectures
 </a></div>
@@ -248,15 +249,20 @@ window.Quarto = {
 <div class="listing-date">
 Feb 1, 2026
 </div>
-<div class="listing-author">
-Zhoutong
-</div>
+<div class="listing-reading-time">13 min</div>
 </a>
 </div>
 </div>
 </div>
 <div class="listing-no-matching d-none">No matching items</div>
-</div></main> <!-- /main -->
+</div>
+
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
