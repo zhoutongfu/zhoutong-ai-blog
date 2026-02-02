@@ -9,8 +9,6 @@ format:
     code-fold: show
 ---
 
-# The Rise of Static Memory in LLMs
-
 **Topics:** LLM Knowledge, Embedding Scaling, Sparse Architectures
 
 ## 1. Background
