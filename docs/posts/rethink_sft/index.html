@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-17">
+
+<title>Rethinking Supervised Fine-Tuning: A First-Principles Derivation – Zhoutong | AI Research Log</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Zhoutong | AI Research Log</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/zhoutongfu/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/zhoutongfu"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../posts/static_llm_memory/index.html">Posts</a></li><li class="breadcrumb-item"><a href="../../posts/rethink_sft/index.html">Rethinking Supervised Fine-Tuning: A First-Principles Derivation</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Posts</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../posts/static_llm_memory/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Rise of Static Memory in LLMs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../posts/rethink_sft/index.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Rethinking Supervised Fine-Tuning: A First-Principles Derivation</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction-the-sft-paradox" id="toc-introduction-the-sft-paradox" class="nav-link active" data-scroll-target="#introduction-the-sft-paradox"><span class="header-section-number">1</span> Introduction: The SFT Paradox</a></li>
+  <li><a href="#the-mechanics-of-forgetting" id="toc-the-mechanics-of-forgetting" class="nav-link" data-scroll-target="#the-mechanics-of-forgetting"><span class="header-section-number">2</span> The Mechanics of Forgetting</a>
+  <ul class="collapse">
+  <li><a href="#the-root-cause-distributional-mismatch" id="toc-the-root-cause-distributional-mismatch" class="nav-link" data-scroll-target="#the-root-cause-distributional-mismatch"><span class="header-section-number">2.1</span> The Root Cause: Distributional Mismatch</a></li>
+  <li><a href="#rls-razor-the-mechanics-of-forgetting" id="toc-rls-razor-the-mechanics-of-forgetting" class="nav-link" data-scroll-target="#rls-razor-the-mechanics-of-forgetting"><span class="header-section-number">2.2</span> RL’s Razor: The Mechanics of Forgetting</a></li>
+  </ul></li>
+  <li><a href="#current-mitigations-and-their-limits" id="toc-current-mitigations-and-their-limits" class="nav-link" data-scroll-target="#current-mitigations-and-their-limits"><span class="header-section-number">3</span> Current Mitigations and Their Limits</a>
+  <ul class="collapse">
+  <li><a href="#data-replay-the-brute-force-approach" id="toc-data-replay-the-brute-force-approach" class="nav-link" data-scroll-target="#data-replay-the-brute-force-approach"><span class="header-section-number">3.1</span> Data Replay (The “Brute Force” Approach)</a></li>
+  <li><a href="#parameter-efficient-fine-tuning-the-constraint-approach" id="toc-parameter-efficient-fine-tuning-the-constraint-approach" class="nav-link" data-scroll-target="#parameter-efficient-fine-tuning-the-constraint-approach"><span class="header-section-number">3.2</span> Parameter-Efficient Fine-Tuning (The “Constraint” Approach)</a></li>
+  </ul></li>
+  <li><a href="#the-evolution-of-sft-deriving-contextual-on-policy-self-distillation" id="toc-the-evolution-of-sft-deriving-contextual-on-policy-self-distillation" class="nav-link" data-scroll-target="#the-evolution-of-sft-deriving-contextual-on-policy-self-distillation"><span class="header-section-number">4</span> The Evolution of SFT: Deriving Contextual On-Policy Self-Distillation</a>
+  <ul class="collapse">
+  <li><a href="#the-foundation-anchoring-via-trust-regions" id="toc-the-foundation-anchoring-via-trust-regions" class="nav-link" data-scroll-target="#the-foundation-anchoring-via-trust-regions"><span class="header-section-number">4.1</span> The Foundation: Anchoring via Trust Regions</a></li>
+  <li><a href="#the-mechanism-on-policy-distillation-and-reverse-kl" id="toc-the-mechanism-on-policy-distillation-and-reverse-kl" class="nav-link" data-scroll-target="#the-mechanism-on-policy-distillation-and-reverse-kl"><span class="header-section-number">4.2</span> The Mechanism: On-Policy Distillation and Reverse KL</a></li>
+  <li><a href="#the-synthesis-contextual-on-policy-self-distillation" id="toc-the-synthesis-contextual-on-policy-self-distillation" class="nav-link" data-scroll-target="#the-synthesis-contextual-on-policy-self-distillation"><span class="header-section-number">4.3</span> The Synthesis: Contextual On-Policy Self-Distillation</a></li>
+  </ul></li>
+  <li><a href="#a-taxonomy-of-contextual-self-distillation" id="toc-a-taxonomy-of-contextual-self-distillation" class="nav-link" data-scroll-target="#a-taxonomy-of-contextual-self-distillation"><span class="header-section-number">5</span> A Taxonomy of Contextual Self-Distillation</a>
+  <ul class="collapse">
+  <li><a href="#the-comparison-matrix" id="toc-the-comparison-matrix" class="nav-link" data-scroll-target="#the-comparison-matrix"><span class="header-section-number">5.1</span> The Comparison Matrix</a></li>
+  <li><a href="#type-a-context-demonstrations-sdft" id="toc-type-a-context-demonstrations-sdft" class="nav-link" data-scroll-target="#type-a-context-demonstrations-sdft"><span class="header-section-number">5.2</span> Type A: Context = Demonstrations (SDFT)</a></li>
+  <li><a href="#type-b-context-safety-specifications-deliberative-alignment" id="toc-type-b-context-safety-specifications-deliberative-alignment" class="nav-link" data-scroll-target="#type-b-context-safety-specifications-deliberative-alignment"><span class="header-section-number">5.3</span> Type B: Context = Safety Specifications (Deliberative Alignment)</a></li>
+  <li><a href="#type-c-context-system-prompts-opcd" id="toc-type-c-context-system-prompts-opcd" class="nav-link" data-scroll-target="#type-c-context-system-prompts-opcd"><span class="header-section-number">5.4</span> Type C: Context = System Prompts (OPCD)</a></li>
+  <li><a href="#type-d-context-privileged-information-pid-opsd" id="toc-type-d-context-privileged-information-pid-opsd" class="nav-link" data-scroll-target="#type-d-context-privileged-information-pid-opsd"><span class="header-section-number">5.5</span> Type D: Context = Privileged Information (PID / OPSD)</a></li>
+  </ul></li>
+  <li><a href="#conclusion-the-perfect-pre-rl-state" id="toc-conclusion-the-perfect-pre-rl-state" class="nav-link" data-scroll-target="#conclusion-the-perfect-pre-rl-state"><span class="header-section-number">6</span> Conclusion: The Perfect Pre-RL State</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">7</span> References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../posts/static_llm_memory/index.html">Posts</a></li><li class="breadcrumb-item"><a href="../../posts/rethink_sft/index.html">Rethinking Supervised Fine-Tuning: A First-Principles Derivation</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Rethinking Supervised Fine-Tuning: A First-Principles Derivation</h1>
+<p class="subtitle lead">Contextual On-Policy Self-Distillation as the Unified Solution to Forgetting</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Fine-tuning</div>
+    <div class="quarto-category">Distillation</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">February 17, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-the-sft-paradox" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="introduction-the-sft-paradox"><span class="header-section-number">1</span> Introduction: The SFT Paradox</h2>
+<p>We typically view Supervised Fine-Tuning (SFT) as a process of <em>addition</em>: we feed a model new data to add new capabilities. But for anyone who has trained LLMs at scale, the reality feels more like <em>subtraction</em>. As we force a generalist model to mimic a narrow set of “gold” responses, we often trigger catastrophic forgetting, erasing the model’s subtle pre-trained priors in favor of rote memorization.</p>
+<p><strong>Why does this happen?</strong> This post argues that standard SFT is mathematically flawed for post-training. By treating fine-tuning as simple behavioral cloning on external datasets, we violate the fundamental “Trust Regions” required for stable learning.</p>
+<p>In this deep dive, we will reconstruct the SFT objective from first principles. We will derive a unified framework, <strong>Contextual On-Policy Self-Distillation</strong>, which solves the forgetting problem by treating fine-tuning not as “learning from outsiders,” but as “learning from one’s better self.” We will show how recent state-of-the-art methods (from SDFT [5] to Thinking Machines [1]) are not different algorithms, but simply different “contexts” applied to this single, powerful mechanism.</p>
+</section>
+<section id="the-mechanics-of-forgetting" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="the-mechanics-of-forgetting"><span class="header-section-number">2</span> The Mechanics of Forgetting</h2>
+<p>Capability regression during post-training or continual training, often termed “catastrophic forgetting”, is frequently treated as a mysterious side effect of fine-tuning, but it is better understood as a structural failure of the standard Supervised Fine-Tuning (SFT) objective. When we fine-tune a large language model, we are not merely adding a new skill; we are fundamentally altering its probability distribution.</p>
+<section id="the-root-cause-distributional-mismatch" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="the-root-cause-distributional-mismatch"><span class="header-section-number">2.1</span> The Root Cause: Distributional Mismatch</h3>
+<p>Standard SFT minimizes the negative log-likelihood of a static, external dataset. Mathematically, this forces the model to match a “demonstration distribution” that is often alien to its internal priors. Because the objective function contains no term to preserve the original model’s behavior, the optimization process is free to overwrite general capabilities (like coding, history, or logic) in its pursuit of minimizing loss on the specific fine-tuning tasks. The model “forgets” not because it runs out of space, but because the SFT objective explicitly rewards it for drifting away from its original manifold to fit the narrow distribution of the training set.</p>
+</section>
+<section id="rls-razor-the-mechanics-of-forgetting" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="rls-razor-the-mechanics-of-forgetting"><span class="header-section-number">2.2</span> RL’s Razor: The Mechanics of Forgetting</h3>
+<p>Recent theoretical work has quantified the mechanics of this capability regression. The “RL’s Razor” paper [14] establishes a fundamental law of forgetting: the magnitude of capability loss is directly proportional to the KL divergence (distributional drift) between the fine-tuned model and its base version.</p>
+<p>This highlights the critical structural flaw of standard Supervised Fine-Tuning (SFT). Because SFT is unconstrained—lacking any intrinsic mechanism to penalize distributional shift—it blindly pushes the model beyond the “trust region” where general capabilities reside [14].</p>
+<p>The engine driving this drift is a capacity mismatch. As established by Allen-Zhu &amp; Li (2024) [12], SFT is a high-bandwidth process capable of encoding roughly 2 bits of information per parameter, creating immense pressure for the model to memorize surface statistics. In contrast, as demonstrated by the efficiency of RL, the underlying objective of alignment is information-sparse (often ≈ 1 bit per episode) [13]. By using a high-capacity tool (SFT) to force-feed this sparse signal as if it were dense data, we induce the overfitting that RL’s Razor [14] identifies as the primary driver of capability regression.</p>
+</section>
+</section>
+<section id="current-mitigations-and-their-limits" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="current-mitigations-and-their-limits"><span class="header-section-number">3</span> Current Mitigations and Their Limits</h2>
+<p>The industry currently relies on two primary strategies to combat this regression. While effective to a degree, they function as “band-aids” that address the symptoms of drift rather than the root cause of the objective mismatch.</p>
+<section id="data-replay-the-brute-force-approach" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="data-replay-the-brute-force-approach"><span class="header-section-number">3.1</span> Data Replay (The “Brute Force” Approach)</h3>
+<p>The most common solution, exemplified by models like Llama 3, is data replay (or “generative replay”). This involves mixing a significant portion of general data (e.g., Wikipedia, code, web text) into the fine-tuning dataset.</p>
+<ul>
+<li><strong>Why it works:</strong> Theoretically, replay works by constraining the optimization landscape. As formalized in Linear Mode Connectivity [15], it forces the gradient descent process to find a solution that lies in the intersection of the low-loss basins for both the new task and the general domain. Furthermore, approaches like GEM [16] demonstrate that by treating general capabilities as active constraints (ensuring gradient alignment) rather than passive priors, replay prevents the model from moving into regions where “general intelligence” loss is high.</li>
+<li><strong>The “Provenance Gap” Limitation:</strong> Beyond computational inefficiency, the fatal flaw for most practitioners is data provenance. Post-training engineers almost never have access to the original, proprietary pre-training corpus (e.g., the exact 15T tokens used to train Llama 3). Instead, they must rely on “proxy replay” (public datasets like SlimPajama or Wikipedia). Because this proxy distribution differs from the model’s true internal priors, “replay” can ironically induce new distributional drift, overwriting the model’s actual knowledge with the proxy dataset’s quirks.</li>
+</ul>
+</section>
+<section id="parameter-efficient-fine-tuning-the-constraint-approach" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="parameter-efficient-fine-tuning-the-constraint-approach"><span class="header-section-number">3.2</span> Parameter-Efficient Fine-Tuning (The “Constraint” Approach)</h3>
+<p>The second common strategy is to use Parameter-Efficient Fine-Tuning (PEFT) methods like LoRA (Low-Rank Adaptation), which freeze the majority of the model’s weights and only train a small subset of adapters.</p>
+<ul>
+<li><strong>The “Learn Less, Forget Less” Trade-off:</strong> As demonstrated in LoRA Learns Less and Forgets Less [17], PEFT does not magically solve forgetting; it merely shifts the model along the Pareto frontier. By restricting updates to a low-rank subspace, LoRA physically prevents the model from making the high-rank weight perturbations often required to overwrite existing knowledge. Consequently, it forgets less simply because it changes less.</li>
+<li><strong>Capacity Starvation:</strong> The cost of this stability is a “glass ceiling” on adaptation. While LoRA Without Regret [17] demonstrates that LoRA can match full fine-tuning for reasoning and RL tasks (which require low-rank policy updates), it explicitly notes that LoRA underperforms in knowledge-intensive settings (like continual pre-training). If a task requires memorizing vast amounts of new information, e.g.&nbsp;a high-rank update, LoRA’s limited parameter budget prevents it from absorbing the data, effectively preventing the model from fully learning the target distribution.</li>
+</ul>
+</section>
+</section>
+<section id="the-evolution-of-sft-deriving-contextual-on-policy-self-distillation" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="the-evolution-of-sft-deriving-contextual-on-policy-self-distillation"><span class="header-section-number">4</span> The Evolution of SFT: Deriving Contextual On-Policy Self-Distillation</h2>
+<p>To solve the Forgetting Problem without sacrificing capacity or efficiency, we must reconstruct the SFT objective by addressing the failures identified in Section 1. This derivation unfolds as a progression of necessary constraints: first anchoring the model to prevent drift, then aligning the data source to the model’s own distribution, and finally introducing context to drive improvement.</p>
+<section id="the-foundation-anchoring-via-trust-regions" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="the-foundation-anchoring-via-trust-regions"><span class="header-section-number">4.1</span> The Foundation: Anchoring via Trust Regions</h3>
+<p>Standard SFT is technically unconstrained; it allows the model to drift arbitrarily far from its base distribution to minimize loss. The first theoretical fix is to enforce a <strong>Trust Region</strong>, effectively treating SFT as a constrained optimization problem.</p>
+<ul>
+<li><strong>The Theoretical Bridge:</strong> Recent work on <strong>Anchored SFT (ASFT) [11]</strong> demonstrates that SFT with a KL-divergence penalty is mathematically equivalent to offline Reinforcement Learning.</li>
+<li><strong>Why it works:</strong> By explicitly adding the KL term to the objective, we force the model to balance “learning the new task” with “staying close to the prior.” However, because ASFT is typically applied to static, external datasets, it remains an <em>off-policy</em> method, leaving it vulnerable to distribution mismatch.</li>
+</ul>
+</section>
+<section id="the-mechanism-on-policy-distillation-and-reverse-kl" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="the-mechanism-on-policy-distillation-and-reverse-kl"><span class="header-section-number">4.2</span> The Mechanism: On-Policy Distillation and Reverse KL</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/figure1_reverse_kl.png" class="img-fluid figure-img"></p>
+<figcaption>Figure 1: The theoretical justification for Reverse KL (from MiniLLM [18]). Standard SFT (Forward KL) forces the model to cover the teacher’s entire distribution, leading to probability mass in “void regions” (hallucination). On-Policy Distillation (Reverse KL) is mode-seeking, forcing the model to focus only on high-confidence regions.</figcaption>
+</figure>
+</div>
+<p>To strictly avoid the “alien data” problem, we must train on the model’s own samples. This necessitates a fundamental shift in the training objective from standard Cross-Entropy (Forward KL) to <strong>Reverse KL</strong>, as established in <em>MiniLLM</em> [18].</p>
+<ul>
+<li><p><strong>Minimizing Exposure Bias:</strong> Standard SFT suffers from exposure bias because the model is trained on “gold” teacher trajectories (<span class="math inline">\(p_{data}\)</span>) but must generate its own trajectories during inference (<span class="math inline">\(p_{\theta}\)</span>). As errors accumulate, the model drifts into states it has never seen. By training on its own rollouts (<span class="math inline">\(x \sim p_{\theta}\)</span>), on-policy distillation forces the model to learn how to recover from its <em>own</em> specific deviations, ensuring the training distribution matches the inference reality.</p></li>
+<li><p><strong>The Shift to Reverse KL (Precision over Hedging):</strong> The move to on-policy data requires inverting the divergence measure, which fundamentally alters the model’s behavior:</p>
+<ul>
+<li><strong>Forward KL (SFT Standard):</strong> Minimizes <span class="math inline">\(D_{KL}(p_{data} || p_{\theta})\)</span>. This is <strong>mean-seeking</strong>, forcing the student to cover the teacher’s entire distribution. As argued in <em>MiniLLM</em> [18], if the student lacks the capacity to model the teacher’s full complexity (especially the “long tail”), it is forced to “hedge” its bets. It assigns probability mass to unlikely or noisy tokens (“void regions”) just to avoid zero-probability penalties, directly leading to hallucinations and generic responses.</li>
+<li><strong>Reverse KL (On-Policy Standard):</strong> Minimizes <span class="math inline">\(D_{KL}(p_{\theta} || p_{teacher})\)</span>. This is <strong>mode-seeking</strong> (or “zero-forcing”). It heavily penalizes the student for generating anything the teacher considers incorrect but <em>does not</em> penalize it for missing the teacher’s long tail. This encourages the student to collapse its probability mass solely onto the teacher’s highest-confidence modes, resulting in more precise and factually accurate generations.</li>
+</ul></li>
+<li><p><strong>Empirical Validation (Reversibility):</strong> The power of this mechanism is validated by the fact that “forgetting” is often reversible. A compelling example is Thinking Machines Lab’s <em>Training an Internal Assistant</em> study [1]. When a model was fine-tuned on internal docs, it lost its instruction-following ability. However, by using the <em>original</em> model as a teacher to distill behavior back into the fine-tuned version, the capability was restored. This confirms that capability regression arises from objective mismatch—which on-policy distillation effectively resolves—rather than a permanent loss of capacity.</p></li>
+<li><p><strong>Implementation Note:</strong> In practice, pure Reverse KL can lead to excessive mode collapse (lack of diversity). State-of-the-art approaches like <strong>Generalized Knowledge Distillation (GKD) [6]</strong> often utilize <strong>Jensen-Shannon Divergence (JSD)</strong>—a symmetric, bounded mixture of Forward and Reverse KL—to stabilize training while retaining the on-policy benefits of the reverse objective.</p></li>
+</ul>
+</section>
+<section id="the-synthesis-contextual-on-policy-self-distillation" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="the-synthesis-contextual-on-policy-self-distillation"><span class="header-section-number">4.3</span> The Synthesis: Contextual On-Policy Self-Distillation</h3>
+<p>This creates a paradox: if the model minimizes Reverse KL against its own unguided distribution, it collapses into a degenerate state. To enable <em>learning</em>, we need a target that is internal (to maintain the on-policy manifold) yet superior (to provide a learning signal).</p>
+<p>The solution is <strong>Contextual On-Policy Self-Distillation</strong>. We split the model into two states:</p>
+<ol type="1">
+<li><strong>The Student (<span class="math inline">\(p_{\theta}\)</span>):</strong> The standard model (unconditioned), generating the on-policy rollout.</li>
+<li><strong>The Teacher (<span class="math inline">\(p_{\theta}(\cdot|C)\)</span>):</strong> The <em>same</em> model, conditioned on <strong>Context <span class="math inline">\(C\)</span></strong> (e.g., retrieval, reasoning chains, or safety specs).</li>
+</ol>
+<p>The Student minimizes the divergence (Reverse KL or JSD) between its own unconditioned output and the Teacher’s context-enhanced output. This ensures the update is strictly <strong>On-Policy</strong> (solving exposure bias) and <strong>Anchored</strong> (minimizing drift), while the <strong>Context</strong> provides the necessary gradient for capability improvement.</p>
+</section>
+</section>
+<section id="a-taxonomy-of-contextual-self-distillation" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="a-taxonomy-of-contextual-self-distillation"><span class="header-section-number">5</span> A Taxonomy of Contextual Self-Distillation</h2>
+<p>We can now formally define the solution. Across various domains, state-of-the-art methods share the same underlying structure: they all minimize the <strong>Reverse KL divergence</strong> between the student’s unconditioned policy (<span class="math inline">\(p_\theta\)</span>) and a <strong>context-enhanced teacher</strong> (<span class="math inline">\(p_\theta(\cdot|C)\)</span>):</p>
+<p><span class="math display">\[\mathcal{L} = D_{KL}( p_\theta(y|x) \parallel p_\theta(y|x, C) )\]</span></p>
+<p>These approaches are not different algorithms; they are merely distinct choices of <strong>Context (<span class="math inline">\(C\)</span>)</strong> used to drive the self-distillation process. To avoid confusion, we categorize them by the <strong>Nature of the Context</strong> and the <strong>Learning Objective</strong>.</p>
+<section id="the-comparison-matrix" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="the-comparison-matrix"><span class="header-section-number">5.1</span> The Comparison Matrix</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Type</th>
+<th style="text-align: left;">Context (<span class="math inline">\(C\)</span>)</th>
+<th style="text-align: left;">Teacher’s Advantage</th>
+<th style="text-align: left;">Student’s Goal</th>
+<th style="text-align: left;">Primary Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Type A (SDFT)</strong></td>
+<td style="text-align: left;"><strong>Examples</strong> (Few-Shot)</td>
+<td style="text-align: left;">“I see <em>how</em> to do it.”</td>
+<td style="text-align: left;"><strong>Maintenance</strong> (Don’t forget)</td>
+<td style="text-align: left;">Continual Learning</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Type B (Deliberative)</strong></td>
+<td style="text-align: left;"><strong>Rules</strong> (Safety Specs)</td>
+<td style="text-align: left;">“I check the <em>rules</em>.”</td>
+<td style="text-align: left;"><strong>Alignment</strong> (Be safe instinctively)</td>
+<td style="text-align: left;">Safety / Constitutional AI</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Type C (OPCD)</strong></td>
+<td style="text-align: left;"><strong>Instructions</strong> (System Prompt)</td>
+<td style="text-align: left;">“I am <em>told</em> who to be.”</td>
+<td style="text-align: left;"><strong>Efficiency</strong> (Save tokens)</td>
+<td style="text-align: left;">Prompt Engineering Compilation</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Type D (PID)</strong></td>
+<td style="text-align: left;"><strong>Omniscience</strong> (Answer Key)</td>
+<td style="text-align: left;">“I know the <em>answer</em>.”</td>
+<td style="text-align: left;"><strong>Reasoning</strong> (Derive the path)</td>
+<td style="text-align: left;">Complex Reasoning (Math/Code)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="type-a-context-demonstrations-sdft" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="type-a-context-demonstrations-sdft"><span class="header-section-number">5.2</span> Type A: Context = Demonstrations (SDFT)</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/figure2_sdft.png" class="img-fluid figure-img"></p>
+<figcaption>Figure 2: Empirical validation of on-policy distillation for maintenance (from SDFT [5]). While standard SFT leads to catastrophic forgetting on previous tasks (bottom), Self-Distillation (top) allows the model to “compile” new demonstrations into weights without degrading existing capabilities.</figcaption>
+</figure>
+</div>
+<p>In <em>Self-Distillation Fine-Tuning (SDFT)</em> [5], the goal is to prevent capability regression during continual learning. Here, the context <span class="math inline">\(C\)</span> is a set of <strong>few-shot expert demonstrations</strong>. The model uses its latent capacity to perform the task <em>in-context</em> (the Teacher state). SDFT then “compiles” this transient, prompt-dependent ability into the permanent weights of the Student. Because the student mimics its own context-enhanced outputs, the gradient update remains strictly on-policy, minimizing drift while locking in the new skill.</p>
+</section>
+<section id="type-b-context-safety-specifications-deliberative-alignment" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="type-b-context-safety-specifications-deliberative-alignment"><span class="header-section-number">5.3</span> Type B: Context = Safety Specifications (Deliberative Alignment)</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/figure3_deliberative.png" class="img-fluid figure-img"></p>
+<figcaption>Figure 3: The mechanics of Deliberative Alignment (from Guan et al.&nbsp;[9]). The Teacher uses the external safety policy (Context) to generate a “deliberative” Chain-of-Thought. The Student distills this reasoning process, learning to align with safety rules instinctively.</figcaption>
+</figure>
+</div>
+<p>In approaches like <em>Deliberative Alignment</em> [9], the goal is to internalize complex safety rules. The context <span class="math inline">\(C\)</span> is the full <strong>Safety Policy or Specification</strong>. The Teacher generates synthetic data where it explicitly “deliberates” on these rules (System 2 thinking) before answering. The Student then distills this process, effectively internalizing the external policy document into its weights. The result is a model that adheres to the safety rules “intuitively” (System 1) without needing the policy document present at inference time.</p>
+</section>
+<section id="type-c-context-system-prompts-opcd" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="type-c-context-system-prompts-opcd"><span class="header-section-number">5.4</span> Type C: Context = System Prompts (OPCD)</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/figure4_opcd.png" class="img-fluid figure-img"></p>
+<figcaption>Figure 4: The unified architecture of Contextual On-Policy Self-Distillation (from OPCD [7]). The Student generates the trajectory (<span class="math inline">\(y \sim \pi_\theta\)</span>), ensuring the update is on-policy. The Teacher scores this trajectory conditioned on the context (<span class="math inline">\(C\)</span>), providing the learning signal.</figcaption>
+</figure>
+</div>
+<p>In <em>On-Policy Context Distillation (OPCD)</em> [7], the goal is to internalize instructions or past experiences. The context <span class="math inline">\(C\)</span> consists of <strong>System Prompts</strong> or <strong>Historical Solution Traces</strong>. Unlike standard instruction tuning (which is off-policy), OPCD trains the student to match the distribution of the <em>prompted</em> teacher using the student’s own rollouts. This allows the model to “absorb” the system prompt into its weights, behaving as if it were prompted without incurring the inference cost of processing the prompt tokens.</p>
+</section>
+<section id="type-d-context-privileged-information-pid-opsd" class="level3" data-number="5.5">
+<h3 data-number="5.5" class="anchored" data-anchor-id="type-d-context-privileged-information-pid-opsd"><span class="header-section-number">5.5</span> Type D: Context = Privileged Information (PID / OPSD)</h3>
+<p>In <em>Privileged Information Distillation</em> [8], the goal is to solve hard reasoning tasks. The context <span class="math inline">\(C\)</span> is <strong>Privileged Information (PI)</strong>—such as ground truth answers, future states, or hidden “thoughts”—that acts as a cheat sheet. The paper introduces <strong><span class="math inline">\(\pi\)</span>-Distill</strong> and <strong>OPSD (On-Policy Self-Distillation)</strong> to handle this. The Teacher sees the future/answer and guides the blind Student. The Student minimizes the divergence from this “omniscient” teacher, effectively learning to simulate the latent reasoning process required to reach the correct solution without actually seeing the cheat sheet.</p>
+</section>
+</section>
+<section id="conclusion-the-perfect-pre-rl-state" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="conclusion-the-perfect-pre-rl-state"><span class="header-section-number">6</span> Conclusion: The Perfect Pre-RL State</h2>
+<p>We started with a simple question: <em>How do we stop SFT from breaking the model?</em></p>
+<p>The answer, it turns out, is to stop treating SFT and RL as opposites. By applying <strong>RL’s Razor</strong> [14] (the “Trust Region” constraint), we found that the only safe way to fine-tune a model is to use its own distribution as the training data (On-Policy) and its own priors as the anchor (Reverse KL).</p>
+<p><strong>The Unified Picture</strong></p>
+<p>This framework gives us a new way to categorize the explosion of post-training papers. They aren’t inventing new physics; they are just choosing different <strong>Contexts</strong> to guide the self-distillation process:</p>
+<ul>
+<li>Want to maintain skills? Use <strong>Examples</strong> (Type A) [5].</li>
+<li>Want to align behavior? Use <strong>Safety Specs</strong> (Type B) [9].</li>
+<li>Want to save tokens? Use <strong>Instructions</strong> (Type C) [7].</li>
+<li>Want to improve reasoning? Use <strong>Privileged Info</strong> (Type D) [8].</li>
+</ul>
+<p><strong>The Takeaway</strong></p>
+<p>This suggests that the future of post-training isn’t about collecting massive external datasets, but about designing better <strong>Contexts</strong>. If we can prompt the model to be smart <em>once</em> (the Teacher), we can distill that intelligence forever (the Student). This approach yields the <strong>“Perfect Pre-RL State”</strong>: a model that is already aligned, robust, and mathematically anchored—ready to be further optimized by Reinforcement Learning without the risk of collapse.</p>
+</section>
+<section id="references" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="references"><span class="header-section-number">7</span> References</h2>
+<ol type="1">
+<li><strong>On-Policy Distillation.</strong> Thinking Machines Lab. 2025.</li>
+<li><strong>Retaining by Doing: The Role of On-Policy Data in Mitigating Forgetting.</strong> Howard Chen, Noam Razin, Karthik Narasimhan, Danqi Chen. 2025.</li>
+<li><strong>Agentic Continual Pre-Training.</strong> Tongyi Lab DeepResearch. 2025.</li>
+<li><strong>The LLaMA-3 Technical Report.</strong> Meta AI. 2024.</li>
+<li><strong>Self-Distillation Enables Continual Learning.</strong> Idan Shenfeld, Mehul Damani, Jonas Hübotter, Pulkit Agrawal. 2026.</li>
+<li><strong>On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.</strong> Rishabh Agarwal, Nino Vieillard, Yongchao Zhou, Piotr Stanczyk, Sabela Ramos, Matthieu Geist, Olivier Bachem. 2023.</li>
+<li><strong>On-Policy Context Distillation for Language Models.</strong> Tianzhu Ye, Li Dong, Xun Wu, Shaohan Huang, Furu Wei. 2026.</li>
+<li><strong>Privileged Information Distillation for Language Models.</strong> Emiliano Penaloza, Nicolas Gontier, Alexandre Lacoste, Laurent Charlin. 2026.</li>
+<li><strong>Deliberative Alignment: Reasoning Enables Safer Language Models.</strong> Melody Guan, Manas Joglekar, Eric Wallace, Saachi Jain, Boaz Barak, et al.&nbsp;2025.</li>
+<li><strong>On the Generalization of SFT: A Reinforcement Learning Perspective with Reward Rectification.</strong> Yongliang Wu, Yizhou Zhou, Ziheng Zhou, Yingzhe Peng, Xinyu Ye, et al.&nbsp;2025.</li>
+<li><strong>Anchored Supervised Fine-Tuning.</strong> He Zhu, Junyou Su, Peng Lai, Ren Ma, Wenjia Zhang, Linyi Yang, Guanhua Chen. 2026.</li>
+<li><strong>Physics of Language Models: Part 3.3, Knowledge Capacity Scaling Laws.</strong> Zeyuan Allen-Zhu, Yuanzhi Li. 2024.</li>
+<li><strong>LoRA Without Regret.</strong> Thinking Machines Lab (John Schulman). 2025.</li>
+<li><strong>RL’s Razor.</strong> Idan Shenfeld, Jyothish Pari, Pulkit Agrawal. 2025.</li>
+<li><strong>Linear Mode Connectivity in Multitask and Continual Learning.</strong> Seyed Iman Mirzadeh, Mehrdad Farajtabar, Razvan Pascanu, Hassan Ghasemzadeh. 2021.</li>
+<li><strong>Gradient Episodic Memory for Continual Learning.</strong> David Lopez-Paz, Marc’Aurelio Ranzato. 2017.</li>
+<li><strong>LoRA Learns Less and Forgets Less.</strong> Dan Biderman, Jacob Portes, Jose Javier Gonzalez Ortiz, Mansheej Paul, Philip Greengard, Connor Jennings, et al.&nbsp;2024.</li>
+<li><strong>MiniLLM: Knowledge Distillation of Large Language Models.</strong> Yuxian Gu, Li Dong, Furu Wei, Minlie Huang. 2023.</li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

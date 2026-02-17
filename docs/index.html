@@ -82,7 +82,7 @@ ul.task-list li input[type="checkbox"] {
     const options = {
       valueNames: ['listing-date','listing-title','listing-reading-time','listing-description','listing-image',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
       
-      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description"],
+      searchColumns: ["listing-date","listing-title","listing-author","listing-subtitle","listing-image","listing-description"],
     };
 
     window['quarto-listings'] = window['quarto-listings'] || {};
@@ -197,6 +197,12 @@ window.Quarto = {
  <span class="menu-text">The Rise of Static Memory in LLMs</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./posts/rethink_sft/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Rethinking Supervised Fine-Tuning: A First-Principles Derivation</span></a>
+  </div>
+</li>
       </ul>
   </li>
     </ul>
@@ -230,7 +236,30 @@ window.Quarto = {
 <h3 class="anchored" data-anchor-id="recent-posts">Recent Posts</h3>
 <div id="listing-research-log" class="quarto-listing quarto-listing-container-default">
 <div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="TExNJTJDQXJjaGl0ZWN0dXJlJTJDTWVtb3J5" data-listing-date-sort="1769932800000" data-listing-file-modified-sort="1769997039601" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2447">
+<div class="quarto-post image-right" data-index="0" data-categories="TExNcyUyQ0ZpbmUtdHVuaW5nJTJDRGlzdGlsbGF0aW9u" data-listing-date-sort="1771315200000" data-listing-file-modified-sort="1771318192056" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="15" data-listing-word-count-sort="2845">
+<div class="thumbnail"><a href="./posts/rethink_sft/index.html" class="no-external">
+
+<p class="card-img-top"><img src="posts/rethink_sft/images/figure1_reverse_kl.png"  class="thumbnail-image card-img"/></p>
+
+</a></div>
+<div class="body">
+<h3 class="no-anchor listing-title">
+<a href="./posts/rethink_sft/index.html" class="no-external">Rethinking Supervised Fine-Tuning: A First-Principles Derivation</a>
+</h3>
+<div class="delink listing-description"><a href="./posts/rethink_sft/index.html" class="no-external">
+We typically view Supervised Fine-Tuning (SFT) as a process of <em>addition</em>: we feed a model new data to add new capabilities. But for anyone who has trained LLMs at scale, the…<em></em>
+</a></div>
+</div>
+<div class="metadata">
+<a href="./posts/rethink_sft/index.html" class="no-external">
+<div class="listing-date">
+Feb 17, 2026
+</div>
+<div class="listing-reading-time">15 min</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="1" data-categories="TExNJTJDQXJjaGl0ZWN0dXJlJTJDTWVtb3J5" data-listing-date-sort="1769932800000" data-listing-file-modified-sort="1769997039601" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2447">
 <div class="thumbnail"><a href="./posts/static_llm_memory/index.html" class="no-external">
 
 <p class="card-img-top"><img src="posts/static_llm_memory/images/stem_schematic.png" alt="Schematics of (a) SwiGLU FFN, (b) MoE FFN, and (c) STEM with a single prefetched token embedding."  class="thumbnail-image card-img"/></p>

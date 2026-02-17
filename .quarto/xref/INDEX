@@ -16,5 +16,8 @@
   },
   "posts/static_llm_memory/index.qmd": {
     "index.html": "c0b1b536"
+  },
+  "posts/rethink_sft/index.qmd": {
+    "index.html": "4b4572b0"
   }
 }

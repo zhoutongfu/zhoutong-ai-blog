@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/rethink_sft/index.html",
       "/posts/static_llm_memory/index.html"
     ]
   }
