@@ -1,5 +1,6 @@
 ---
 title: "The Rise of Static Memory in LLMs"
+subtitle: "Separating Thinking from Remembering: A Survey of Memory-Augmented LLM Architectures"
 author: "Zhoutong"
 date: "2026-02-01"
 categories: [LLM, Architecture, Memory]

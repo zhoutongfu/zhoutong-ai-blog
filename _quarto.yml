@@ -3,7 +3,7 @@ project:
   output-dir: docs
 
 website:
-  title: "Zhoutong | AI Research Log"
+  title: "Zhoutong's Research Log"
   description: "Notes on LLMs, Post Training, and Recommender Systems."
   navbar:
     right:
@@ -11,9 +11,6 @@ website:
         href: https://www.linkedin.com/in/zhoutongfu/
       - icon: github
         href: https://github.com/zhoutongfu
-  sidebar:
-    style: "floating"
-    contents: auto
 
 format:
   html:

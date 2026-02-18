@@ -1,6 +1,7 @@
 ---
 title: "Rethinking Supervised Fine-Tuning: A First-Principles Derivation"
 subtitle: "Contextual On-Policy Self-Distillation as the Unified Solution to Forgetting"
+author: "Zhoutong"
 date: "2026-02-17"
 categories: [LLMs, Fine-tuning, Distillation]
 format:

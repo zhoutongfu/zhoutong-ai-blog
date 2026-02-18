@@ -1,20 +1,23 @@
 ---
 listing:
-  id: research-log
+  id: research-logs
   contents: posts
   sort: "date desc"
-  type: default # 'default' creates a clean, list-style table
-  categories: false # Keep it simple for a table-look
+  type: default
+  categories: false
   sort-ui: false
   filter-ui: false
   fields: [date, title, reading-time, description, image]
 ---
 
+
 # A Brief Intro
 
 I document hands-on explorations in LLM architecture and post-training. In an era of rapid research cycles, this log serves as a space to synthesize long-term trends and foundational modeling topics—specifically focusing on bridging deep research insights with the practical constraints of large-scale production systems.
 
----
-### Recent Posts
-:::{#research-log}
+
+
+# Research Logs
+:::{#research-logs}
 :::
+
