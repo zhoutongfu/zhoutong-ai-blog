@@ -101,6 +101,7 @@ window.Quarto = {
 };
 </script>
 
+<link rel="stylesheet" href="../../styles.css">
 </head>
 
 <body class="nav-fixed quarto-light">
@@ -393,7 +394,16 @@ window.Quarto = {
 <h2 data-number="6" class="anchored" data-anchor-id="conclusion-the-perfect-pre-rl-state"><span class="header-section-number">6</span> Conclusion: The Perfect Pre-RL State</h2>
 <p>We started with a simple question: <em>How do we stop SFT from breaking the model?</em></p>
 <p>The answer, it turns out, is to stop treating SFT and RL as opposites. By applying <strong>RL’s Razor</strong> [14] (the “Trust Region” constraint), we found that the only safe way to fine-tune a model is to use its own distribution as the training data (On-Policy) and its own priors as the anchor (Reverse KL).</p>
-<p><strong>The Unified Picture</strong></p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The Unified Picture
+</div>
+</div>
+<div class="callout-body-container callout-body">
 <p>This framework gives us a new way to categorize the explosion of post-training papers. They aren’t inventing new physics; they are just choosing different <strong>Contexts</strong> to guide the self-distillation process:</p>
 <ul>
 <li>Want to maintain skills? Use <strong>Examples</strong> (Type A) [5].</li>
@@ -401,31 +411,46 @@ window.Quarto = {
 <li>Want to save tokens? Use <strong>Instructions</strong> (Type C) [7].</li>
 <li>Want to improve reasoning? Use <strong>Privileged Info</strong> (Type D) [8].</li>
 </ul>
-<p><strong>The Takeaway</strong></p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>The Takeaway
+</div>
+</div>
+<div class="callout-body-container callout-body">
 <p>This suggests that the future of post-training isn’t about collecting massive external datasets, but about designing better <strong>Contexts</strong>. If we can prompt the model to be smart <em>once</em> (the Teacher), we can distill that intelligence forever (the Student). This approach yields the <strong>“Perfect Pre-RL State”</strong>: a model that is already aligned, robust, and mathematically anchored—ready to be further optimized by Reinforcement Learning without the risk of collapse.</p>
+</div>
+</div>
 </section>
 <section id="references" class="level2" data-number="7">
 <h2 data-number="7" class="anchored" data-anchor-id="references"><span class="header-section-number">7</span> References</h2>
+<div class="references-list">
 <ol type="1">
-<li><strong>On-Policy Distillation.</strong> Thinking Machines Lab. 2025.</li>
-<li><strong>Retaining by Doing: The Role of On-Policy Data in Mitigating Forgetting.</strong> Howard Chen, Noam Razin, Karthik Narasimhan, Danqi Chen. 2025.</li>
-<li><strong>Agentic Continual Pre-Training.</strong> Tongyi Lab DeepResearch. 2025.</li>
-<li><strong>The LLaMA-3 Technical Report.</strong> Meta AI. 2024.</li>
-<li><strong>Self-Distillation Enables Continual Learning.</strong> Idan Shenfeld, Mehul Damani, Jonas Hübotter, Pulkit Agrawal. 2026.</li>
-<li><strong>On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.</strong> Rishabh Agarwal, Nino Vieillard, Yongchao Zhou, Piotr Stanczyk, Sabela Ramos, Matthieu Geist, Olivier Bachem. 2023.</li>
-<li><strong>On-Policy Context Distillation for Language Models.</strong> Tianzhu Ye, Li Dong, Xun Wu, Shaohan Huang, Furu Wei. 2026.</li>
-<li><strong>Privileged Information Distillation for Language Models.</strong> Emiliano Penaloza, Nicolas Gontier, Alexandre Lacoste, Laurent Charlin. 2026.</li>
-<li><strong>Deliberative Alignment: Reasoning Enables Safer Language Models.</strong> Melody Guan, Manas Joglekar, Eric Wallace, Saachi Jain, Boaz Barak, et al.&nbsp;2025.</li>
-<li><strong>On the Generalization of SFT: A Reinforcement Learning Perspective with Reward Rectification.</strong> Yongliang Wu, Yizhou Zhou, Ziheng Zhou, Yingzhe Peng, Xinyu Ye, et al.&nbsp;2025.</li>
-<li><strong>Anchored Supervised Fine-Tuning.</strong> He Zhu, Junyou Su, Peng Lai, Ren Ma, Wenjia Zhang, Linyi Yang, Guanhua Chen. 2026.</li>
-<li><strong>Physics of Language Models: Part 3.3, Knowledge Capacity Scaling Laws.</strong> Zeyuan Allen-Zhu, Yuanzhi Li. 2024.</li>
-<li><strong>LoRA Without Regret.</strong> Thinking Machines Lab (John Schulman). 2025.</li>
-<li><strong>RL’s Razor.</strong> Idan Shenfeld, Jyothish Pari, Pulkit Agrawal. 2025.</li>
-<li><strong>Linear Mode Connectivity in Multitask and Continual Learning.</strong> Seyed Iman Mirzadeh, Mehrdad Farajtabar, Razvan Pascanu, Hassan Ghasemzadeh. 2021.</li>
-<li><strong>Gradient Episodic Memory for Continual Learning.</strong> David Lopez-Paz, Marc’Aurelio Ranzato. 2017.</li>
-<li><strong>LoRA Learns Less and Forgets Less.</strong> Dan Biderman, Jacob Portes, Jose Javier Gonzalez Ortiz, Mansheej Paul, Philip Greengard, Connor Jennings, et al.&nbsp;2024.</li>
-<li><strong>MiniLLM: Knowledge Distillation of Large Language Models.</strong> Yuxian Gu, Li Dong, Furu Wei, Minlie Huang. 2023.</li>
+<li>Thinking Machines Lab (2025). <em>On-Policy Distillation.</em></li>
+<li>Chen, H. et al.&nbsp;(2025). <em>Retaining by Doing: The Role of On-Policy Data in Mitigating Forgetting.</em></li>
+<li>Tongyi Lab DeepResearch (2025). <em>Agentic Continual Pre-Training.</em></li>
+<li>Meta AI (2024). <em>The LLaMA-3 Technical Report.</em></li>
+<li>Shenfeld, I. et al.&nbsp;(2026). <em>Self-Distillation Enables Continual Learning.</em></li>
+<li>Agarwal, R. et al.&nbsp;(2023). <em>On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.</em></li>
+<li>Ye, T. et al.&nbsp;(2026). <em>On-Policy Context Distillation for Language Models.</em></li>
+<li>Penaloza, E. et al.&nbsp;(2026). <em>Privileged Information Distillation for Language Models.</em></li>
+<li>Guan, M. et al.&nbsp;(2025). <em>Deliberative Alignment: Reasoning Enables Safer Language Models.</em></li>
+<li>Wu, Y. et al.&nbsp;(2025). <em>On the Generalization of SFT: A Reinforcement Learning Perspective with Reward Rectification.</em></li>
+<li>Zhu, H. et al.&nbsp;(2026). <em>Anchored Supervised Fine-Tuning.</em></li>
+<li>Allen-Zhu, Z. &amp; Li, Y. (2024). <em>Physics of Language Models: Part 3.3, Knowledge Capacity Scaling Laws.</em></li>
+<li>Thinking Machines Lab (2025). <em>LoRA Without Regret.</em></li>
+<li>Shenfeld, I. et al.&nbsp;(2025). <em>RL’s Razor.</em></li>
+<li>Mirzadeh, S.I. et al.&nbsp;(2021). <em>Linear Mode Connectivity in Multitask and Continual Learning.</em></li>
+<li>Lopez-Paz, D. &amp; Ranzato, M. (2017). <em>Gradient Episodic Memory for Continual Learning.</em></li>
+<li>Biderman, D. et al.&nbsp;(2024). <em>LoRA Learns Less and Forgets Less.</em></li>
+<li>Gu, Y. et al.&nbsp;(2023). <em>MiniLLM: Knowledge Distillation of Large Language Models.</em></li>
 </ol>
+</div>
 
 
 </section>

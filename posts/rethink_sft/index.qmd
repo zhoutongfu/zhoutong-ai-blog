@@ -135,7 +135,8 @@ We started with a simple question: *How do we stop SFT from breaking the model?*
 
 The answer, it turns out, is to stop treating SFT and RL as opposites. By applying **RL’s Razor** [14] (the "Trust Region" constraint), we found that the only safe way to fine-tune a model is to use its own distribution as the training data (On-Policy) and its own priors as the anchor (Reverse KL).
 
-**The Unified Picture**
+::: {.callout-tip}
+## The Unified Picture
 
 This framework gives us a new way to categorize the explosion of post-training papers. They aren't inventing new physics; they are just choosing different **Contexts** to guide the self-distillation process:
 
@@ -143,28 +144,33 @@ This framework gives us a new way to categorize the explosion of post-training p
 * Want to align behavior? Use **Safety Specs** (Type B) [9].
 * Want to save tokens? Use **Instructions** (Type C) [7].
 * Want to improve reasoning? Use **Privileged Info** (Type D) [8].
+:::
 
-**The Takeaway**
+::: {.callout-important}
+## The Takeaway
 
 This suggests that the future of post-training isn't about collecting massive external datasets, but about designing better **Contexts**. If we can prompt the model to be smart *once* (the Teacher), we can distill that intelligence forever (the Student). This approach yields the **"Perfect Pre-RL State"**: a model that is already aligned, robust, and mathematically anchored—ready to be further optimized by Reinforcement Learning without the risk of collapse.
+:::
 
 ## References
 
-1.  **On-Policy Distillation.** Thinking Machines Lab. 2025.
-2.  **Retaining by Doing: The Role of On-Policy Data in Mitigating Forgetting.** Howard Chen, Noam Razin, Karthik Narasimhan, Danqi Chen. 2025.
-3.  **Agentic Continual Pre-Training.** Tongyi Lab DeepResearch. 2025.
-4.  **The LLaMA-3 Technical Report.** Meta AI. 2024.
-5.  **Self-Distillation Enables Continual Learning.** Idan Shenfeld, Mehul Damani, Jonas Hübotter, Pulkit Agrawal. 2026.
-6.  **On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.** Rishabh Agarwal, Nino Vieillard, Yongchao Zhou, Piotr Stanczyk, Sabela Ramos, Matthieu Geist, Olivier Bachem. 2023.
-7.  **On-Policy Context Distillation for Language Models.** Tianzhu Ye, Li Dong, Xun Wu, Shaohan Huang, Furu Wei. 2026.
-8.  **Privileged Information Distillation for Language Models.** Emiliano Penaloza, Nicolas Gontier, Alexandre Lacoste, Laurent Charlin. 2026.
-9.  **Deliberative Alignment: Reasoning Enables Safer Language Models.** Melody Guan, Manas Joglekar, Eric Wallace, Saachi Jain, Boaz Barak, et al. 2025.
-10. **On the Generalization of SFT: A Reinforcement Learning Perspective with Reward Rectification.** Yongliang Wu, Yizhou Zhou, Ziheng Zhou, Yingzhe Peng, Xinyu Ye, et al. 2025.
-11. **Anchored Supervised Fine-Tuning.** He Zhu, Junyou Su, Peng Lai, Ren Ma, Wenjia Zhang, Linyi Yang, Guanhua Chen. 2026.
-12. **Physics of Language Models: Part 3.3, Knowledge Capacity Scaling Laws.** Zeyuan Allen-Zhu, Yuanzhi Li. 2024.
-13. **LoRA Without Regret.** Thinking Machines Lab (John Schulman). 2025.
-14. **RL's Razor.** Idan Shenfeld, Jyothish Pari, Pulkit Agrawal. 2025.
-15. **Linear Mode Connectivity in Multitask and Continual Learning.** Seyed Iman Mirzadeh, Mehrdad Farajtabar, Razvan Pascanu, Hassan Ghasemzadeh. 2021.
-16. **Gradient Episodic Memory for Continual Learning.** David Lopez-Paz, Marc'Aurelio Ranzato. 2017.
-17. **LoRA Learns Less and Forgets Less.** Dan Biderman, Jacob Portes, Jose Javier Gonzalez Ortiz, Mansheej Paul, Philip Greengard, Connor Jennings, et al. 2024.
-18. **MiniLLM: Knowledge Distillation of Large Language Models.** Yuxian Gu, Li Dong, Furu Wei, Minlie Huang. 2023.
+::: {.references-list}
+1.  Thinking Machines Lab (2025). *On-Policy Distillation.*
+2.  Chen, H. et al. (2025). *Retaining by Doing: The Role of On-Policy Data in Mitigating Forgetting.*
+3.  Tongyi Lab DeepResearch (2025). *Agentic Continual Pre-Training.*
+4.  Meta AI (2024). *The LLaMA-3 Technical Report.*
+5.  Shenfeld, I. et al. (2026). *Self-Distillation Enables Continual Learning.*
+6.  Agarwal, R. et al. (2023). *On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.*
+7.  Ye, T. et al. (2026). *On-Policy Context Distillation for Language Models.*
+8.  Penaloza, E. et al. (2026). *Privileged Information Distillation for Language Models.*
+9.  Guan, M. et al. (2025). *Deliberative Alignment: Reasoning Enables Safer Language Models.*
+10. Wu, Y. et al. (2025). *On the Generalization of SFT: A Reinforcement Learning Perspective with Reward Rectification.*
+11. Zhu, H. et al. (2026). *Anchored Supervised Fine-Tuning.*
+12. Allen-Zhu, Z. & Li, Y. (2024). *Physics of Language Models: Part 3.3, Knowledge Capacity Scaling Laws.*
+13. Thinking Machines Lab (2025). *LoRA Without Regret.*
+14. Shenfeld, I. et al. (2025). *RL's Razor.*
+15. Mirzadeh, S.I. et al. (2021). *Linear Mode Connectivity in Multitask and Continual Learning.*
+16. Lopez-Paz, D. & Ranzato, M. (2017). *Gradient Episodic Memory for Continual Learning.*
+17. Biderman, D. et al. (2024). *LoRA Learns Less and Forgets Less.*
+18. Gu, Y. et al. (2023). *MiniLLM: Knowledge Distillation of Large Language Models.*
+:::

@@ -51,7 +51,7 @@ Gemma 3n is engineered specifically for **mobile/edge deployment** [3]. Its goal
 ### Core Model Code
 The Per-Layer Embedding (PLE) mechanism works by retrieving a massive, token-specific embedding vector that is pre-sliced to provide a unique "knowledge" input for every decoder layer [9]. As the model processes a token, each layer accesses its specific slice and dynamically gates it using the current hidden state—essentially using the active context to determine how much of the static retrieved knowledge to admit.
 
-```python
+```{.python filename="gemma3n/modeling_gemma3n.py"}
 # The massive "Memory Bank" storing all layer-specific vectors for every token.
 # Total Size: Vocab_PLE x (Num_Layers * PLE_Dim)
 # Example Dimensions: 2M tokens x (40 layers * 256 dim)
@@ -115,7 +115,7 @@ STEM [6] identifies that the Up-Projection matrix in a Feed-Forward Network (FFN
 ### Core Model Code
 The snippet below reflects the core logic [10].
 
-```python
+```{.python filename="lingua/stem.py"}
 class STEMFFN(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -217,6 +217,7 @@ LongCat [5] challenges the dominant "Scaling Experts" (MoE) paradigm by proposin
 
 ## References
 
+::: {.references-list}
 1.  Ameisen, E. et al. (2025). *Circuit Tracing: Revealing Computational Graphs in Language Models.* Anthropic.
 2.  Cheng, X. et al. (2026). *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models.* arXiv:2601.07372.
 3.  Google DeepMind (2025). *Gemma 3 Technical Report.* arXiv:2503.19786. Model card: [Gemma 3n](https://deepmind.google/models/gemma/gemma-3n/).
@@ -227,3 +228,4 @@ LongCat [5] challenges the dominant "Scaling Experts" (MoE) paradigm by proposin
 8.  Zhang, J. et al. (2025). *On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models.* arXiv:2512.07783.
 9.  Google DeepMind. *Gemma 3n model code.* `gemma3n/modeling_gemma3n.py`.
 10. Lingua / STEM. *STEM model code.* `lingua/stem.py`.
+:::

@@ -11,9 +11,11 @@ listing:
 ---
 
 
-# A Brief Intro
+::: {.hero-section}
+# Zhoutong's Research Log
 
 I document hands-on explorations in LLM architecture and post-training. In an era of rapid research cycles, this log serves as a space to synthesize long-term trends and foundational modeling topics—specifically focusing on bridging deep research insights with the practical constraints of large-scale production systems.
+:::
 
 
 
