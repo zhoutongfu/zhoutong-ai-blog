@@ -3,16 +3,16 @@ title: "The Rise of Static Memory in LLMs"
 subtitle: "Separating Thinking from Remembering: A Survey of Memory-Augmented LLM Architectures"
 author: "Zhoutong"
 date: "2026-02-01"
-categories: [LLM, Architecture, Memory]
+categories: [LLMs, Architecture, Memory]
+description: "How PLE, STEM, Engram, and LongCat decouple knowledge storage from reasoning by moving static facts into embedding modules."
 format:
   html:
     toc: true
     code-fold: show
+    number-sections: true
 ---
 
-**Topics:** LLM Knowledge, Embedding Scaling, Sparse Architectures
-
-## 1. Background
+## Background
 
 ### The Need for Scale: Knowledge Primitives Limit Reasoning
 Improving reasoning remains a primary goal for modern AI, yet recent findings (Zhang et al., 2025 [8]) highlight a critical bottleneck: a model's reasoning potential is capped by the knowledge "primitives" absorbed during Pre-Training. While Post-Training can refine how a model thinks, it cannot fabricate knowledge from scratch; it merely optimizes the foundation laid earlier. Consequently, achieving substantial breakthroughs in reasoning requires massively scaling the pre-training stage to embed a far richer set of facts and primitives.
@@ -20,7 +20,7 @@ Improving reasoning remains a primary goal for modern AI, yet recent findings (Z
 ### The Representation Reality: Computing vs. Retrieving
 Standard Transformers face a major inefficiency when scaling knowledge. Interpretability research from Anthropic [7, 1] reveals that dense models do not store information in a static database; instead, they dynamically "compute" it. Retrieving a simple concept like "The Golden Gate Bridge" triggers a complex, expensive sequence of feature interactions across layers. This architecture conflates storage with processing, forcing the model to burn valuable computational resources (FLOPs) just to "remember" rather than to "think".
 
-## 2. Overview: PLE, STEM, Engram, LongCat
+## Overview: PLE, STEM, Engram, LongCat
 
 Modern LLMs traditionally conflate "reasoning" (dynamic computation) with "knowledge" (static fact retrieval). We use the same expensive matrix multiplications to calculate math problems as we do to recall that "Paris is the capital of France".
 
@@ -39,7 +39,7 @@ Four emerging architectures—STEM (Meta/CMU) [6], PLE (Google DeepMind) [3], En
 : Comparison of Static Memory Architectures
 :::
 
-## 3. Gemma 3n (Per Layer Embeddings)
+## Gemma 3n (Per Layer Embeddings)
 
 ### The Architecture
 Gemma 3n is engineered specifically for **mobile/edge deployment** [3]. Its goal is to fit a model with "8B parameter intelligence" onto a device that only has RAM for a 2B model.
@@ -100,7 +100,7 @@ corrected_predictions[1:] += first_prediction
 1.  **VRAM Breakthrough:** Allows running high-capacity models on phones with 3-4GB of RAM.
 2.  **Parameters vs. Compute:** It massively increases the *parameter count* (knowledge capacity) without increasing the *FLOPs* (compute cost) or the *active VRAM usage*.
 
-## 4. STEM (Scaling Transformers with Embedding Modules)
+## STEM (Scaling Transformers with Embedding Modules)
 
 ### The Architecture
 STEM [6] identifies that the Up-Projection matrix in a Feed-Forward Network (FFN) acts largely as a "Key" lookup in a Key-Value memory system.
@@ -174,7 +174,7 @@ The STEM embeddings are inherently linked to individual tokens. Viewing this thr
 2.  **Efficiency:** Removes ~1/3 of FFN parameters from the active compute path.
 3.  **Interpretability (The "Killer Feature"):** Because embeddings are tied to specific tokens (e.g., "Spain"), researchers can perform **Knowledge Editing**. By swapping the "Spain" embedding for "Germany" in specific layers, the model can be tricked into "hallucinating" consistent facts (e.g., saying the capital of Spain is Berlin) without changing the input text.
 
-## 5. Engram (DeepSeek)
+## Engram (DeepSeek)
 
 ### The Architecture
 **DeepSeek introduces "Conditional Memory"** [2] to address a fundamental inefficiency: while Transformers excel at *reasoning* (via Conditional Computation/MoE), they lack a native primitive for *remembering*, often wasting expensive compute to simulate knowledge retrieval.
@@ -197,7 +197,7 @@ The STEM embeddings are inherently linked to individual tokens. Viewing this thr
 
 Unlike previous works that simply demonstrate that external memory improves performance, this paper provides a rigorous ablation study. Through their "Sparsity Allocation" experiments, the authors reveal a fundamental U-shaped scaling law: purely scaling experts (MoE) or purely scaling memory (Engram) is suboptimal. Instead, they identify a precise "sweet spot"—allocating ~20-25% of sparse parameters to static memory minimizes validation loss.
 
-## 6. LongCat (Scaling Embeddings Outperforms Scaling Experts)
+## LongCat (Scaling Embeddings Outperforms Scaling Experts)
 
 ### The Architecture
 LongCat [5] challenges the dominant "Scaling Experts" (MoE) paradigm by proposing **Embedding Scaling**. Instead of adding more "brains" (experts) to the Feed-Forward Networks, it massively scales the **Input Embedding Layer** to capture rich local context.
@@ -215,7 +215,7 @@ LongCat [5] challenges the dominant "Scaling Experts" (MoE) paradigm by proposin
 *   **Wide vs. Deep:** This method works best in **wider** models. In very deep models, the signal from the input embeddings tends to fade ("wash out") as it propagates through many layers.
 *   **Performance:** The 68.5B model (with only ~3B active params) outperformed parameter-equivalent MoE baselines, showing particular strength in **coding and agentic tasks** where local context is critical.
 
-## References
+## References {.unnumbered}
 
 ::: {.references-list}
 1.  Ameisen, E. et al. (2025). *Circuit Tracing: Revealing Computational Graphs in Language Models.* Anthropic.

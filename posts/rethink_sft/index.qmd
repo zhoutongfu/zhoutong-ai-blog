@@ -4,6 +4,7 @@ subtitle: "Contextual On-Policy Self-Distillation as the Unified Solution to For
 author: "Zhoutong"
 date: "2026-02-17"
 categories: [LLMs, Fine-tuning, Distillation]
+description: "Why standard SFT causes catastrophic forgetting, and how contextual on-policy self-distillation fixes it from first principles."
 format:
   html:
     toc: true
@@ -152,7 +153,7 @@ This framework gives us a new way to categorize the explosion of post-training p
 This suggests that the future of post-training isn't about collecting massive external datasets, but about designing better **Contexts**. If we can prompt the model to be smart *once* (the Teacher), we can distill that intelligence forever (the Student). This approach yields the **"Perfect Pre-RL State"**: a model that is already aligned, robust, and mathematically anchored—ready to be further optimized by Reinforcement Learning without the risk of collapse.
 :::
 
-## References
+## References {.unnumbered}
 
 ::: {.references-list}
 1.  Thinking Machines Lab (2025). *On-Policy Distillation.*
