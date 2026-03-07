@@ -8,6 +8,7 @@
 
 <meta name="author" content="Zhoutong">
 <meta name="dcterms.date" content="2026-02-01">
+<meta name="description" content="How PLE, STEM, Engram, and LongCat decouple knowledge storage from reasoning by moving static facts into embedding modules.">
 
 <title>The Rise of Static Memory in LLMs – Zhoutong’s Research Log</title>
 <style>
@@ -182,34 +183,34 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#background" id="toc-background" class="nav-link active" data-scroll-target="#background">1. Background</a>
+  <li><a href="#background" id="toc-background" class="nav-link active" data-scroll-target="#background"><span class="header-section-number">1</span> Background</a>
   <ul class="collapse">
-  <li><a href="#the-need-for-scale-knowledge-primitives-limit-reasoning" id="toc-the-need-for-scale-knowledge-primitives-limit-reasoning" class="nav-link" data-scroll-target="#the-need-for-scale-knowledge-primitives-limit-reasoning">The Need for Scale: Knowledge Primitives Limit Reasoning</a></li>
-  <li><a href="#the-representation-reality-computing-vs.-retrieving" id="toc-the-representation-reality-computing-vs.-retrieving" class="nav-link" data-scroll-target="#the-representation-reality-computing-vs.-retrieving">The Representation Reality: Computing vs.&nbsp;Retrieving</a></li>
+  <li><a href="#the-need-for-scale-knowledge-primitives-limit-reasoning" id="toc-the-need-for-scale-knowledge-primitives-limit-reasoning" class="nav-link" data-scroll-target="#the-need-for-scale-knowledge-primitives-limit-reasoning"><span class="header-section-number">1.1</span> The Need for Scale: Knowledge Primitives Limit Reasoning</a></li>
+  <li><a href="#the-representation-reality-computing-vs.-retrieving" id="toc-the-representation-reality-computing-vs.-retrieving" class="nav-link" data-scroll-target="#the-representation-reality-computing-vs.-retrieving"><span class="header-section-number">1.2</span> The Representation Reality: Computing vs.&nbsp;Retrieving</a></li>
   </ul></li>
-  <li><a href="#overview-ple-stem-engram-longcat" id="toc-overview-ple-stem-engram-longcat" class="nav-link" data-scroll-target="#overview-ple-stem-engram-longcat">2. Overview: PLE, STEM, Engram, LongCat</a></li>
-  <li><a href="#gemma-3n-per-layer-embeddings" id="toc-gemma-3n-per-layer-embeddings" class="nav-link" data-scroll-target="#gemma-3n-per-layer-embeddings">3. Gemma 3n (Per Layer Embeddings)</a>
+  <li><a href="#overview-ple-stem-engram-longcat" id="toc-overview-ple-stem-engram-longcat" class="nav-link" data-scroll-target="#overview-ple-stem-engram-longcat"><span class="header-section-number">2</span> Overview: PLE, STEM, Engram, LongCat</a></li>
+  <li><a href="#gemma-3n-per-layer-embeddings" id="toc-gemma-3n-per-layer-embeddings" class="nav-link" data-scroll-target="#gemma-3n-per-layer-embeddings"><span class="header-section-number">3</span> Gemma 3n (Per Layer Embeddings)</a>
   <ul class="collapse">
-  <li><a href="#the-architecture" id="toc-the-architecture" class="nav-link" data-scroll-target="#the-architecture">The Architecture</a></li>
-  <li><a href="#core-model-code" id="toc-core-model-code" class="nav-link" data-scroll-target="#core-model-code">Core Model Code</a></li>
-  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings">Key Findings</a></li>
+  <li><a href="#the-architecture" id="toc-the-architecture" class="nav-link" data-scroll-target="#the-architecture"><span class="header-section-number">3.1</span> The Architecture</a></li>
+  <li><a href="#core-model-code" id="toc-core-model-code" class="nav-link" data-scroll-target="#core-model-code"><span class="header-section-number">3.2</span> Core Model Code</a></li>
+  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings"><span class="header-section-number">3.3</span> Key Findings</a></li>
   </ul></li>
-  <li><a href="#stem-scaling-transformers-with-embedding-modules" id="toc-stem-scaling-transformers-with-embedding-modules" class="nav-link" data-scroll-target="#stem-scaling-transformers-with-embedding-modules">4. STEM (Scaling Transformers with Embedding Modules)</a>
+  <li><a href="#stem-scaling-transformers-with-embedding-modules" id="toc-stem-scaling-transformers-with-embedding-modules" class="nav-link" data-scroll-target="#stem-scaling-transformers-with-embedding-modules"><span class="header-section-number">4</span> STEM (Scaling Transformers with Embedding Modules)</a>
   <ul class="collapse">
-  <li><a href="#the-architecture-1" id="toc-the-architecture-1" class="nav-link" data-scroll-target="#the-architecture-1">The Architecture</a></li>
-  <li><a href="#core-model-code-1" id="toc-core-model-code-1" class="nav-link" data-scroll-target="#core-model-code-1">Core Model Code</a></li>
-  <li><a href="#knowledge-specificity-interpretability" id="toc-knowledge-specificity-interpretability" class="nav-link" data-scroll-target="#knowledge-specificity-interpretability">Knowledge Specificity &amp; Interpretability</a></li>
-  <li><a href="#key-findings-1" id="toc-key-findings-1" class="nav-link" data-scroll-target="#key-findings-1">Key Findings</a></li>
+  <li><a href="#the-architecture-1" id="toc-the-architecture-1" class="nav-link" data-scroll-target="#the-architecture-1"><span class="header-section-number">4.1</span> The Architecture</a></li>
+  <li><a href="#core-model-code-1" id="toc-core-model-code-1" class="nav-link" data-scroll-target="#core-model-code-1"><span class="header-section-number">4.2</span> Core Model Code</a></li>
+  <li><a href="#knowledge-specificity-interpretability" id="toc-knowledge-specificity-interpretability" class="nav-link" data-scroll-target="#knowledge-specificity-interpretability"><span class="header-section-number">4.3</span> Knowledge Specificity &amp; Interpretability</a></li>
+  <li><a href="#key-findings-1" id="toc-key-findings-1" class="nav-link" data-scroll-target="#key-findings-1"><span class="header-section-number">4.4</span> Key Findings</a></li>
   </ul></li>
-  <li><a href="#engram-deepseek" id="toc-engram-deepseek" class="nav-link" data-scroll-target="#engram-deepseek">5. Engram (DeepSeek)</a>
+  <li><a href="#engram-deepseek" id="toc-engram-deepseek" class="nav-link" data-scroll-target="#engram-deepseek"><span class="header-section-number">5</span> Engram (DeepSeek)</a>
   <ul class="collapse">
-  <li><a href="#the-architecture-2" id="toc-the-architecture-2" class="nav-link" data-scroll-target="#the-architecture-2">The Architecture</a></li>
-  <li><a href="#key-findings-2" id="toc-key-findings-2" class="nav-link" data-scroll-target="#key-findings-2">Key Findings</a></li>
+  <li><a href="#the-architecture-2" id="toc-the-architecture-2" class="nav-link" data-scroll-target="#the-architecture-2"><span class="header-section-number">5.1</span> The Architecture</a></li>
+  <li><a href="#key-findings-2" id="toc-key-findings-2" class="nav-link" data-scroll-target="#key-findings-2"><span class="header-section-number">5.2</span> Key Findings</a></li>
   </ul></li>
-  <li><a href="#longcat-scaling-embeddings-outperforms-scaling-experts" id="toc-longcat-scaling-embeddings-outperforms-scaling-experts" class="nav-link" data-scroll-target="#longcat-scaling-embeddings-outperforms-scaling-experts">6. LongCat (Scaling Embeddings Outperforms Scaling Experts)</a>
+  <li><a href="#longcat-scaling-embeddings-outperforms-scaling-experts" id="toc-longcat-scaling-embeddings-outperforms-scaling-experts" class="nav-link" data-scroll-target="#longcat-scaling-embeddings-outperforms-scaling-experts"><span class="header-section-number">6</span> LongCat (Scaling Embeddings Outperforms Scaling Experts)</a>
   <ul class="collapse">
-  <li><a href="#the-architecture-3" id="toc-the-architecture-3" class="nav-link" data-scroll-target="#the-architecture-3">The Architecture</a></li>
-  <li><a href="#key-findings-3" id="toc-key-findings-3" class="nav-link" data-scroll-target="#key-findings-3">Key Findings</a></li>
+  <li><a href="#the-architecture-3" id="toc-the-architecture-3" class="nav-link" data-scroll-target="#the-architecture-3"><span class="header-section-number">6.1</span> The Architecture</a></li>
+  <li><a href="#key-findings-3" id="toc-key-findings-3" class="nav-link" data-scroll-target="#key-findings-3"><span class="header-section-number">6.2</span> Key Findings</a></li>
   </ul></li>
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul>
@@ -223,12 +224,17 @@ window.Quarto = {
 <h1 class="title">The Rise of Static Memory in LLMs</h1>
 <p class="subtitle lead">Separating Thinking from Remembering: A Survey of Memory-Augmented LLM Architectures</p>
   <div class="quarto-categories">
-    <div class="quarto-category">LLM</div>
+    <div class="quarto-category">LLMs</div>
     <div class="quarto-category">Architecture</div>
     <div class="quarto-category">Memory</div>
   </div>
   </div>
 
+<div>
+  <div class="description">
+    How PLE, STEM, Engram, and LongCat decouple knowledge storage from reasoning by moving static facts into embedding modules.
+  </div>
+</div>
 
 
 <div class="quarto-title-meta">
@@ -255,20 +261,19 @@ window.Quarto = {
 </header>
 
 
-<p><strong>Topics:</strong> LLM Knowledge, Embedding Scaling, Sparse Architectures</p>
-<section id="background" class="level2">
-<h2 class="anchored" data-anchor-id="background">1. Background</h2>
-<section id="the-need-for-scale-knowledge-primitives-limit-reasoning" class="level3">
-<h3 class="anchored" data-anchor-id="the-need-for-scale-knowledge-primitives-limit-reasoning">The Need for Scale: Knowledge Primitives Limit Reasoning</h3>
+<section id="background" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="background"><span class="header-section-number">1</span> Background</h2>
+<section id="the-need-for-scale-knowledge-primitives-limit-reasoning" class="level3" data-number="1.1">
+<h3 data-number="1.1" class="anchored" data-anchor-id="the-need-for-scale-knowledge-primitives-limit-reasoning"><span class="header-section-number">1.1</span> The Need for Scale: Knowledge Primitives Limit Reasoning</h3>
 <p>Improving reasoning remains a primary goal for modern AI, yet recent findings (Zhang et al., 2025 [8]) highlight a critical bottleneck: a model’s reasoning potential is capped by the knowledge “primitives” absorbed during Pre-Training. While Post-Training can refine how a model thinks, it cannot fabricate knowledge from scratch; it merely optimizes the foundation laid earlier. Consequently, achieving substantial breakthroughs in reasoning requires massively scaling the pre-training stage to embed a far richer set of facts and primitives.</p>
 </section>
-<section id="the-representation-reality-computing-vs.-retrieving" class="level3">
-<h3 class="anchored" data-anchor-id="the-representation-reality-computing-vs.-retrieving">The Representation Reality: Computing vs.&nbsp;Retrieving</h3>
+<section id="the-representation-reality-computing-vs.-retrieving" class="level3" data-number="1.2">
+<h3 data-number="1.2" class="anchored" data-anchor-id="the-representation-reality-computing-vs.-retrieving"><span class="header-section-number">1.2</span> The Representation Reality: Computing vs.&nbsp;Retrieving</h3>
 <p>Standard Transformers face a major inefficiency when scaling knowledge. Interpretability research from Anthropic [7, 1] reveals that dense models do not store information in a static database; instead, they dynamically “compute” it. Retrieving a simple concept like “The Golden Gate Bridge” triggers a complex, expensive sequence of feature interactions across layers. This architecture conflates storage with processing, forcing the model to burn valuable computational resources (FLOPs) just to “remember” rather than to “think”.</p>
 </section>
 </section>
-<section id="overview-ple-stem-engram-longcat" class="level2 page-columns page-full">
-<h2 class="anchored" data-anchor-id="overview-ple-stem-engram-longcat">2. Overview: PLE, STEM, Engram, LongCat</h2>
+<section id="overview-ple-stem-engram-longcat" class="level2 page-columns page-full" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="overview-ple-stem-engram-longcat"><span class="header-section-number">2</span> Overview: PLE, STEM, Engram, LongCat</h2>
 <p>Modern LLMs traditionally conflate “reasoning” (dynamic computation) with “knowledge” (static fact retrieval). We use the same expensive matrix multiplications to calculate math problems as we do to recall that “Paris is the capital of France”.</p>
 <p>Four emerging architectures—STEM (Meta/CMU) [6], PLE (Google DeepMind) [3], Engram (DeepSeek) [2], and LongCat (Meituan) [5]—address this by moving static information into Embedding Modules. Instead of computing facts, these models retrieve them. This shift decouples model capacity from inference cost, allowing for massive “memory” scaling without exploding GPU requirements.</p>
 <div class="column-page wide-comparison-table">
@@ -337,10 +342,10 @@ window.Quarto = {
 </table>
 </div>
 </section>
-<section id="gemma-3n-per-layer-embeddings" class="level2">
-<h2 class="anchored" data-anchor-id="gemma-3n-per-layer-embeddings">3. Gemma 3n (Per Layer Embeddings)</h2>
-<section id="the-architecture" class="level3">
-<h3 class="anchored" data-anchor-id="the-architecture">The Architecture</h3>
+<section id="gemma-3n-per-layer-embeddings" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="gemma-3n-per-layer-embeddings"><span class="header-section-number">3</span> Gemma 3n (Per Layer Embeddings)</h2>
+<section id="the-architecture" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="the-architecture"><span class="header-section-number">3.1</span> The Architecture</h3>
 <p>Gemma 3n is engineered specifically for <strong>mobile/edge deployment</strong> [3]. Its goal is to fit a model with “8B parameter intelligence” onto a device that only has RAM for a 2B model.</p>
 <ul>
 <li><strong>PLE (Per Layer Embeddings):</strong> Instead of storing all weights in the GPU/NPU memory (VRAM), it keeps massive embedding tables in the slower <strong>System RAM (CPU)</strong>.</li>
@@ -348,8 +353,8 @@ window.Quarto = {
 <li><strong>Mechanism:</strong> PLEs do not usually <em>replace</em> the FFN. Instead, they <strong>modulate</strong> the residual stream or the FFN output. The STEM paper notes that PLEs are often much lower dimension (e.g., 256 dim) compared to the model’s width.</li>
 </ul>
 </section>
-<section id="core-model-code" class="level3">
-<h3 class="anchored" data-anchor-id="core-model-code">Core Model Code</h3>
+<section id="core-model-code" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="core-model-code"><span class="header-section-number">3.2</span> Core Model Code</h3>
 <p>The Per-Layer Embedding (PLE) mechanism works by retrieving a massive, token-specific embedding vector that is pre-sliced to provide a unique “knowledge” input for every decoder layer [9]. As the model processes a token, each layer accesses its specific slice and dynamically gates it using the current hidden state—essentially using the active context to determine how much of the static retrieved knowledge to admit.</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
@@ -399,18 +404,18 @@ window.Quarto = {
 <span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>corrected_predictions[<span class="dv">1</span>:] <span class="op">+=</span> first_prediction</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="key-findings" class="level3">
-<h3 class="anchored" data-anchor-id="key-findings">Key Findings</h3>
+<section id="key-findings" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="key-findings"><span class="header-section-number">3.3</span> Key Findings</h3>
 <ol type="1">
 <li><strong>VRAM Breakthrough:</strong> Allows running high-capacity models on phones with 3-4GB of RAM.</li>
 <li><strong>Parameters vs.&nbsp;Compute:</strong> It massively increases the <em>parameter count</em> (knowledge capacity) without increasing the <em>FLOPs</em> (compute cost) or the <em>active VRAM usage</em>.</li>
 </ol>
 </section>
 </section>
-<section id="stem-scaling-transformers-with-embedding-modules" class="level2">
-<h2 class="anchored" data-anchor-id="stem-scaling-transformers-with-embedding-modules">4. STEM (Scaling Transformers with Embedding Modules)</h2>
-<section id="the-architecture-1" class="level3">
-<h3 class="anchored" data-anchor-id="the-architecture-1">The Architecture</h3>
+<section id="stem-scaling-transformers-with-embedding-modules" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="stem-scaling-transformers-with-embedding-modules"><span class="header-section-number">4</span> STEM (Scaling Transformers with Embedding Modules)</h2>
+<section id="the-architecture-1" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="the-architecture-1"><span class="header-section-number">4.1</span> The Architecture</h3>
 <p>STEM [6] identifies that the Up-Projection matrix in a Feed-Forward Network (FFN) acts largely as a “Key” lookup in a Key-Value memory system.</p>
 <ul>
 <li><strong>Change:</strong> It replaces the dense Up-Projection matrix (<span class="math inline">\(W^u\)</span>) with a static, token-indexed embedding table (<span class="math inline">\(U_{token_id}\)</span>).</li>
@@ -419,8 +424,8 @@ window.Quarto = {
 </ul>
 <p><img src="images/stem_schematic.png" class="img-fluid" alt="Schematics of (a) SwiGLU FFN, (b) MoE FFN, and (c) STEM with a single prefetched token embedding."> <em>Figure: Schematics of (a) SwiGLU FFN, (b) MoE FFN, and (c) STEM.</em></p>
 </section>
-<section id="core-model-code-1" class="level3">
-<h3 class="anchored" data-anchor-id="core-model-code-1">Core Model Code</h3>
+<section id="core-model-code-1" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="core-model-code-1"><span class="header-section-number">4.2</span> Core Model Code</h3>
 <p>The snippet below reflects the core logic [10].</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
@@ -473,13 +478,13 @@ window.Quarto = {
 <span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> output</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
-<section id="knowledge-specificity-interpretability" class="level3">
-<h3 class="anchored" data-anchor-id="knowledge-specificity-interpretability">Knowledge Specificity &amp; Interpretability</h3>
+<section id="knowledge-specificity-interpretability" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="knowledge-specificity-interpretability"><span class="header-section-number">4.3</span> Knowledge Specificity &amp; Interpretability</h3>
 <p>The STEM embeddings are inherently linked to individual tokens. Viewing this through a memory lens, this embedding is intended to consolidate the essential information tied to its corresponding token. Consequently, these embeddings can potentially serve as steering vectors.</p>
 <p><img src="images/stem_knowledge_edit.png" class="img-fluid" alt="Knowledge injection/edit demonstration. Swapping the PLE for “Spain” to “Germany” flips the generated capital from Madrid to Berlin."> <em>Figure: Knowledge injection/edit demonstration.</em></p>
 </section>
-<section id="key-findings-1" class="level3">
-<h3 class="anchored" data-anchor-id="key-findings-1">Key Findings</h3>
+<section id="key-findings-1" class="level3" data-number="4.4">
+<h3 data-number="4.4" class="anchored" data-anchor-id="key-findings-1"><span class="header-section-number">4.4</span> Key Findings</h3>
 <ol type="1">
 <li><strong>Training Stability:</strong> Unlike Mixture-of-Experts (MoE), which suffers from load-balancing issues and loss spikes, STEM trains as stably as dense models.</li>
 <li><strong>Efficiency:</strong> Removes ~1/3 of FFN parameters from the active compute path.</li>
@@ -487,10 +492,10 @@ window.Quarto = {
 </ol>
 </section>
 </section>
-<section id="engram-deepseek" class="level2">
-<h2 class="anchored" data-anchor-id="engram-deepseek">5. Engram (DeepSeek)</h2>
-<section id="the-architecture-2" class="level3">
-<h3 class="anchored" data-anchor-id="the-architecture-2">The Architecture</h3>
+<section id="engram-deepseek" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="engram-deepseek"><span class="header-section-number">5</span> Engram (DeepSeek)</h2>
+<section id="the-architecture-2" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="the-architecture-2"><span class="header-section-number">5.1</span> The Architecture</h3>
 <p><strong>DeepSeek introduces “Conditional Memory”</strong> [2] to address a fundamental inefficiency: while Transformers excel at <em>reasoning</em> (via Conditional Computation/MoE), they lack a native primitive for <em>remembering</em>, often wasting expensive compute to simulate knowledge retrieval.</p>
 <ul>
 <li><strong>Engram Module:</strong> A dedicated module that augments the neural backbone, structurally separating the storage of static patterns from dynamic logic processing.</li>
@@ -499,8 +504,8 @@ window.Quarto = {
 </ul>
 <p><img src="images/engram_architecture.png" class="img-fluid" alt="The Engram Architecture. The module augments the backbone by retrieving static N-gram memory."> <em>Figure: The Engram Architecture.</em></p>
 </section>
-<section id="key-findings-2" class="level3">
-<h3 class="anchored" data-anchor-id="key-findings-2">Key Findings</h3>
+<section id="key-findings-2" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="key-findings-2"><span class="header-section-number">5.2</span> Key Findings</h3>
 <ol type="1">
 <li><strong>The U-Shaped Scaling Law:</strong> DeepSeek found an optimal ratio between “Thinking Parameters” (MoE) and “Remembering Parameters” (Engram). Allocating ~20% of the parameter budget to Engram yields better results than a pure MoE model.</li>
 <li><strong>Reasoning Gains:</strong> Surprisingly, offloading static knowledge to Engram improves reasoning benchmarks significantly. <strong>Engram-27B</strong> outperforms a parameter-equivalent <strong>MoE-27B</strong> baseline (e.g., BBH +5.0, MMLU +3.0, MATH +2.4). <em>Why?</em> By relieving the attention layers from the burden of “memorizing” facts, the model’s depth is freed up to perform complex logic.</li>
@@ -511,10 +516,10 @@ window.Quarto = {
 <p>Unlike previous works that simply demonstrate that external memory improves performance, this paper provides a rigorous ablation study. Through their “Sparsity Allocation” experiments, the authors reveal a fundamental U-shaped scaling law: purely scaling experts (MoE) or purely scaling memory (Engram) is suboptimal. Instead, they identify a precise “sweet spot”—allocating ~20-25% of sparse parameters to static memory minimizes validation loss.</p>
 </section>
 </section>
-<section id="longcat-scaling-embeddings-outperforms-scaling-experts" class="level2">
-<h2 class="anchored" data-anchor-id="longcat-scaling-embeddings-outperforms-scaling-experts">6. LongCat (Scaling Embeddings Outperforms Scaling Experts)</h2>
-<section id="the-architecture-3" class="level3">
-<h3 class="anchored" data-anchor-id="the-architecture-3">The Architecture</h3>
+<section id="longcat-scaling-embeddings-outperforms-scaling-experts" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="longcat-scaling-embeddings-outperforms-scaling-experts"><span class="header-section-number">6</span> LongCat (Scaling Embeddings Outperforms Scaling Experts)</h2>
+<section id="the-architecture-3" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="the-architecture-3"><span class="header-section-number">6.1</span> The Architecture</h3>
 <p>LongCat [5] challenges the dominant “Scaling Experts” (MoE) paradigm by proposing <strong>Embedding Scaling</strong>. Instead of adding more “brains” (experts) to the Feed-Forward Networks, it massively scales the <strong>Input Embedding Layer</strong> to capture rich local context.</p>
 <ul>
 <li><strong>Input-Only Integration:</strong> Unlike STEM (which replaces FFNs) or Engram (which runs parallel to the backbone), LongCat adds N-gram embeddings <em>only</em> at the input level.</li>
@@ -523,8 +528,8 @@ window.Quarto = {
 </ul>
 <p><img src="images/longcat_ngram.png" class="img-fluid" alt="The architecture of a N-gram Embedding layer from LongCat."> <em>Figure: The architecture of a N-gram Embedding layer.</em></p>
 </section>
-<section id="key-findings-3" class="level3">
-<h3 class="anchored" data-anchor-id="key-findings-3">Key Findings</h3>
+<section id="key-findings-3" class="level3" data-number="6.2">
+<h3 data-number="6.2" class="anchored" data-anchor-id="key-findings-3"><span class="header-section-number">6.2</span> Key Findings</h3>
 <ul>
 <li><strong>The “Fat Embedding” Pareto Frontier:</strong> The authors found that once the number of experts reaches a certain point, adding <strong>more memory</strong> (embeddings) yields better returns than adding more experts.</li>
 <li><strong>The 50% Allocation Rule:</strong> The optimal design allocates roughly <strong>50% of the total parameter budget</strong> to these static embeddings. <em>Example:</em> <strong>LongCat-Flash-Lite</strong> is a 68.5B parameter model, but <strong>~31.4B</strong> parameters are just the embedding table.</li>
@@ -533,8 +538,8 @@ window.Quarto = {
 </ul>
 </section>
 </section>
-<section id="references" class="level2">
-<h2 class="anchored" data-anchor-id="references">References</h2>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
 <div class="references-list">
 <ol type="1">
 <li>Ameisen, E. et al.&nbsp;(2025). <em>Circuit Tracing: Revealing Computational Graphs in Language Models.</em> Anthropic.</li>
