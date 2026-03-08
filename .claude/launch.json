@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "quarto-preview",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "cd /Users/zhoutongfu/Documents/blogs/zhoutong-ai-blog && /Applications/quarto/bin/quarto preview --port 4321 --no-browser"],
+      "port": 4321
+    }
+  ]
+}

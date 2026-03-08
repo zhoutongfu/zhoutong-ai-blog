@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Zhoutong">
+<meta name="dcterms.date" content="2026-03-08">
+<meta name="description" content="Why on-policy self-distillation is a natural complement to standard RL, and how SDPO, OPSD, and GLM-5 implement it.">
+
+<title>On-Policy Self-Distillation for RL – Zhoutong’s Research Log</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Zhoutong’s Research Log</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/zhoutongfu/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/zhoutongfu"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-case-for-on-policy-self-distillation-in-rl" id="toc-the-case-for-on-policy-self-distillation-in-rl" class="nav-link active" data-scroll-target="#the-case-for-on-policy-self-distillation-in-rl"><span class="header-section-number">1</span> The Case for On-Policy Self-Distillation in RL</a></li>
+  <li><a href="#core-math-formulation-bridging-rl-and-distillation" id="toc-core-math-formulation-bridging-rl-and-distillation" class="nav-link" data-scroll-target="#core-math-formulation-bridging-rl-and-distillation"><span class="header-section-number">2</span> Core Math Formulation: Bridging RL and Distillation</a>
+  <ul class="collapse">
+  <li><a href="#the-basic-equivalence-rl-and-on-policy-distillation" id="toc-the-basic-equivalence-rl-and-on-policy-distillation" class="nav-link" data-scroll-target="#the-basic-equivalence-rl-and-on-policy-distillation"><span class="header-section-number">2.1</span> The Basic Equivalence: RL and On-Policy Distillation</a></li>
+  <li><a href="#the-contextual-leap-self-distillation-as-inverse-rl" id="toc-the-contextual-leap-self-distillation-as-inverse-rl" class="nav-link" data-scroll-target="#the-contextual-leap-self-distillation-as-inverse-rl"><span class="header-section-number">2.2</span> The Contextual Leap: Self-Distillation as Inverse RL</a></li>
+  </ul></li>
+  <li><a href="#how-to-distill-in-rl-algorithmic-implementations" id="toc-how-to-distill-in-rl-algorithmic-implementations" class="nav-link" data-scroll-target="#how-to-distill-in-rl-algorithmic-implementations"><span class="header-section-number">3</span> How to Distill in RL: Algorithmic Implementations</a>
+  <ul class="collapse">
+  <li><a href="#approach-1-hindsight-conditioned-advantage-replacement-sdpo" id="toc-approach-1-hindsight-conditioned-advantage-replacement-sdpo" class="nav-link" data-scroll-target="#approach-1-hindsight-conditioned-advantage-replacement-sdpo"><span class="header-section-number">3.1</span> Approach 1: Hindsight-Conditioned Advantage Replacement (SDPO)</a></li>
+  <li><a href="#approach-2-privileged-information-reward-augmentation-opsd" id="toc-approach-2-privileged-information-reward-augmentation-opsd" class="nav-link" data-scroll-target="#approach-2-privileged-information-reward-augmentation-opsd"><span class="header-section-number">3.2</span> Approach 2: Privileged-Information Reward Augmentation (OPSD)</a></li>
+  <li><a href="#approach-3-cross-stage-distillation-for-stability-glm-5" id="toc-approach-3-cross-stage-distillation-for-stability-glm-5" class="nav-link" data-scroll-target="#approach-3-cross-stage-distillation-for-stability-glm-5"><span class="header-section-number">3.3</span> Approach 3: Cross-Stage Distillation for Stability (GLM-5)</a></li>
+  </ul></li>
+  <li><a href="#what-to-distill-in-rl-the-two-recipes" id="toc-what-to-distill-in-rl-the-two-recipes" class="nav-link" data-scroll-target="#what-to-distill-in-rl-the-two-recipes"><span class="header-section-number">4</span> What to Distill in RL: The Two Recipes</a>
+  <ul class="collapse">
+  <li><a href="#recipe-a-multi-expert-distillation" id="toc-recipe-a-multi-expert-distillation" class="nav-link" data-scroll-target="#recipe-a-multi-expert-distillation"><span class="header-section-number">4.1</span> Recipe A: Multi-Expert Distillation</a></li>
+  <li><a href="#recipe-b-context-conditioned-distillation" id="toc-recipe-b-context-conditioned-distillation" class="nav-link" data-scroll-target="#recipe-b-context-conditioned-distillation"><span class="header-section-number">4.2</span> Recipe B: Context-Conditioned Distillation</a></li>
+  <li><a href="#summary-on-policy-self-distillation-recipes" id="toc-summary-on-policy-self-distillation-recipes" class="nav-link" data-scroll-target="#summary-on-policy-self-distillation-recipes"><span class="header-section-number">4.3</span> Summary: On-Policy Self-Distillation Recipes</a></li>
+  </ul></li>
+  <li><a href="#conclusion-expanding-the-post-training-toolkit-with-self-distillation" id="toc-conclusion-expanding-the-post-training-toolkit-with-self-distillation" class="nav-link" data-scroll-target="#conclusion-expanding-the-post-training-toolkit-with-self-distillation"><span class="header-section-number">5</span> Conclusion: Expanding the Post-Training Toolkit with Self-Distillation</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">On-Policy Self-Distillation for RL</h1>
+<p class="subtitle lead">How Self-Teachers Convert Sparse Rewards into Dense Token-Level Guidance</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Reinforcement Learning</div>
+    <div class="quarto-category">Distillation</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    Why on-policy self-distillation is a natural complement to standard RL, and how SDPO, OPSD, and GLM-5 implement it.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Zhoutong </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">March 8, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-case-for-on-policy-self-distillation-in-rl" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="the-case-for-on-policy-self-distillation-in-rl"><span class="header-section-number">1</span> The Case for On-Policy Self-Distillation in RL</h2>
+<p>Reinforcement Learning (RL) has become the primary engine driving complex reasoning and agentic behavior in modern language models. However, scaling RL to handle these sophisticated, long-horizon tasks introduces a unique set of mathematical and systemic challenges.</p>
+<p>While standard RL algorithms excel at encouraging exploration, they often encounter two notable hurdles as task complexity increases:</p>
+<ul>
+<li><strong>The Sparse Reward Credit Assignment Challenge:</strong> Standard RL frequently relies on episode-level, scalar outcome signals (e.g., a “1” if a script compiles, a “0” if it fails). For long-horizon reasoning tasks, assigning credit becomes difficult. A single scalar “0” at the end of a 1,000-token trajectory provides the model with limited information about <em>which</em> specific token or decision led to the failure [5].</li>
+<li><strong>Balancing Capabilities in Sequential RL:</strong> As models graduate from simple math problems to complex, multi-step agentic workflows, training pipelines frequently utilize cascaded or asynchronous RL. As noted in the GLM-5 technical report [4], this can introduce an “off-policy lag” that strains standard on-policy anchors. If not carefully managed, this can lead to entropy collapse or the catastrophic forgetting of foundational coding and reasoning capabilities while the model over-optimizes for the new sparse reward.</li>
+</ul>
+<p>To address these instabilities, one might instinctively look to standard distillation (training on external, fixed datasets). However, off-policy distillation can introduce exposure bias and distribution shift [2]. Finding a solution that remains on-policy—generated entirely within the student model’s own probability manifold—offers a much more robust path forward. This brings us to the value of <strong>On-Policy Self-Distillation</strong>, a paradigm that reimagines the role of the Reference Model in the RL pipeline.</p>
+<p>To maintain stability, modern RL frameworks like GRPO [7] apply a KL-divergence penalty against a <strong>static, historical checkpoint</strong>. This acts as a helpful <em>defensive</em> anchor. It penalizes the model for drifting too far from its past self, but it does not necessarily provide constructive guidance on <em>how</em> to navigate the reasoning space to achieve the reward.</p>
+<p>On-policy self-distillation, formalized in frameworks like Generalized Knowledge Distillation (GKD) [2], evolves this mechanism. Instead of a static historical anchor, it uses a <strong>dynamic, context-conditioned version of the model itself</strong> as an active teacher. This shift from a defensive anchor to a constructive self-teacher provides two key structural benefits:</p>
+<ol type="1">
+<li><strong>Converting Sparse Outcomes to Dense Signals:</strong> By mathematically minimizing the divergence (e.g., Generalized JSD or Reverse KL) between the student’s logits and the dynamic teacher’s logits at every single step, self-distillation helps translate delayed, episode-level outcomes into immediate, token-level dense rewards.</li>
+<li><strong>Seamless Integration of Hindsight Feedback:</strong> It provides a mathematically sound avenue to utilize environmental verifiers. By feeding hindsight feedback (like a compiler error) directly to the dynamic teacher, the teacher can generate an optimal, corrected reasoning path. The student then internalizes this complex reasoning token-by-token, effectively bridging the gap between exploration and exploitation.</li>
+</ol>
+</section>
+<section id="core-math-formulation-bridging-rl-and-distillation" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="core-math-formulation-bridging-rl-and-distillation"><span class="header-section-number">2</span> Core Math Formulation: Bridging RL and Distillation</h2>
+<p>To ground the conceptual benefits of on-policy self-distillation, it is helpful to examine the mathematical bridge between standard reinforcement learning and knowledge distillation. By aligning their underlying objective functions, we can see exactly how distillation naturally provides the dense signals that complex RL tasks require, and how in-context learning eliminates the need for an external reward model.</p>
+<section id="the-basic-equivalence-rl-and-on-policy-distillation" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="the-basic-equivalence-rl-and-on-policy-distillation"><span class="header-section-number">2.1</span> The Basic Equivalence: RL and On-Policy Distillation</h3>
+<p>Standard knowledge distillation relies on fixed, offline datasets, which often leads to a train-inference distribution mismatch (exposure bias). The GKD framework [2] addresses this by shifting from fixed datasets to student-generated trajectories.</p>
+<p>Instead of evaluating over a static dataset, the on-policy distillation objective samples output sequences <span class="math inline">\(y\)</span> directly from the student’s current policy <span class="math inline">\(p_S\)</span>:</p>
+<p><span id="eq-on-policy-distillation"><span class="math display">\[
+L_{OD}(\theta) = \mathbb{E}_{x \sim X} \big[ \mathbb{E}_{y \sim p_S(\cdot|x)} [\mathcal{D}_{KL}(p_T \| p_S^\theta)(y|x)] \big]
+\tag{1}\]</span></span></p>
+<p>The critical architectural detail here is the <strong>stop-gradient</strong>. Do not backpropagate through the student’s sampling distribution <span class="math inline">\(p_S(\cdot|x)\)</span>. By making this mathematical choice, the training structurally mirrors a standard RL policy gradient (like REINFORCE). The divergence <span class="math inline">\(\mathcal{D}_{KL}\)</span> no longer acts purely as a supervised loss; it acts as a dense, token-level <em>reward</em> evaluating the student’s explored trajectory against the teacher.</p>
+<p>Because of this structural equivalence, on-policy distillation can be seamlessly merged with explicit RL fine-tuning (like RLHF or RLAIF). The combined objective simply balances the explicit scalar environment reward <span class="math inline">\(r(y)\)</span> with the distillation divergence:</p>
+<p><span id="eq-combined-objective"><span class="math display">\[
+\mathbb{E}_{x \sim X} \big[ (1-\alpha) \mathbb{E}_{y \sim p_S^\theta}[r(y)] - \alpha \mathbb{E}_{y \sim p_S}[\mathcal{D}(p_T \| p_S^\theta)] \big]
+\tag{2}\]</span></span></p>
+<p>This demonstrates that distillation and RL are fundamentally compatible forces. Distillation simply provides the granular, token-level guidance that sparse RL lacks.</p>
+</section>
+<section id="the-contextual-leap-self-distillation-as-inverse-rl" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="the-contextual-leap-self-distillation-as-inverse-rl"><span class="header-section-number">2.2</span> The Contextual Leap: Self-Distillation as Inverse RL</h3>
+<p>The equivalence becomes even more powerful when we remove the need for an external reward <span class="math inline">\(r(y)\)</span> entirely. By conditioning the teacher on privileged context <span class="math inline">\(c\)</span> (such as a demonstration or hindsight feedback), we can mathematically prove that self-distillation <em>is</em> an Inverse RL algorithm.</p>
+<p>The analysis in Self-Distillation Enables Continual Learning [1] provides the formal derivation for this. First, we define the core objective: minimizing the reverse KL divergence between the student <span class="math inline">\(\pi_{\theta}\)</span> and the context-conditioned teacher <span class="math inline">\(\pi(\cdot|x, c)\)</span> over trajectories sampled from the student itself:</p>
+<p><span id="eq-reverse-kl"><span class="math display">\[
+\mathcal{L}(\theta) = \mathbb{E}_{y \sim \pi_{\theta}(\cdot|x)} \left[ \log \frac{\pi_{\theta}(y|x)}{\pi(y|x,c)} \right]
+\tag{3}\]</span></span></p>
+<p>Because LLMs are autoregressive, we can decompose this sequence-level divergence into a token-level loss. Taking the gradient with respect to the student’s parameters (while treating the teacher’s distribution as fixed) yields the following estimator:</p>
+<p><span id="eq-distillation-gradient"><span class="math display">\[
+\nabla_\theta \mathcal{L}(\theta) = \mathbb{E}_{y \sim \pi_\theta} \bigg[ \sum_t \sum_{y_t} \log \frac{\pi_\theta(y_t|y_{&lt;t},x)}{\pi(y_t|y_{&lt;t},x,c)} \nabla_\theta \log \pi_\theta(y_t|y_{&lt;t},x) \bigg]
+\tag{4}\]</span></span></p>
+<p>To map this to RL, we introduce the “In-Context Assumption.” In standard trust-region RL, the optimal policy <span class="math inline">\(\pi^*\)</span> is unknown. However, we can assume that the model, when conditioned on an expert demonstration, approximates this optimal policy: <span class="math inline">\(\pi^*(y|x) \approx \pi(y|x,c)\)</span>.</p>
+<p>Using this assumption, we can define an intrinsic reward function representing the gap between the optimal policy and the current policy <span class="math inline">\(\pi_k\)</span>:</p>
+<p><span id="eq-intrinsic-reward"><span class="math display">\[
+r(y,x,c) = \log \pi(y|x,c) - \log \pi_k(y|x)
+\tag{5}\]</span></span></p>
+<p>If we plug this intrinsic reward into the standard RL policy gradient (<span class="math inline">\(\nabla_\theta J(\pi_k)\)</span>) to maximize the expected reward, we get:</p>
+<p><span id="eq-rl-gradient"><span class="math display">\[
+\nabla_\theta J(\pi_k) = \mathbb{E}_{y \sim \pi_k} \bigg[ \log \frac{\pi(y|x,c)}{\pi_k(y|x)} \nabla_\theta \log \pi_k(y|x) \bigg]
+\tag{6}\]</span></span></p>
+<p>Comparing the two gradients reveals the synthesis: the distillation gradient and the RL policy gradient are mathematically equivalent in expectation.</p>
+<p>This derivation proves that applying a distillation loss against a context-conditioned teacher is identical to applying an RL policy gradient that maximizes an intrinsic reward. Self-distillation is, quite literally, an on-policy RL algorithm driven by the model’s own in-context reasoning.</p>
+</section>
+</section>
+<section id="how-to-distill-in-rl-algorithmic-implementations" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="how-to-distill-in-rl-algorithmic-implementations"><span class="header-section-number">3</span> How to Distill in RL: Algorithmic Implementations</h2>
+<p>We have established the mathematical equivalence between RL and on-policy self-distillation. However, standard RL algorithms (like PPO or GRPO) rely on a delayed, sequence-level scalar (the environment reward) to calculate an Advantage, whereas self-distillation intrinsically provides a dense, token-level signal.</p>
+<p>The practical engineering challenge is determining exactly <em>how</em> to condition the teacher and <em>where</em> to inject this dense signal into the RL pipeline. Modern post-training frameworks generally adopt one of three distinct approaches.</p>
+<section id="approach-1-hindsight-conditioned-advantage-replacement-sdpo" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="approach-1-hindsight-conditioned-advantage-replacement-sdpo"><span class="header-section-number">3.1</span> Approach 1: Hindsight-Conditioned Advantage Replacement (SDPO)</h3>
+<p>The most direct application is to completely discard the sparse environment reward. Frameworks like <strong>Self-Distillation Policy Optimization (SDPO) [5]</strong> are built as a direct, drop-in upgrade for GRPO. Instead of calculating a standard group-relative scalar advantage (e.g., <span class="math inline">\(A_i = R_i - \text{mean}(R)\)</span>) that applies uniformly to every token in a sequence, SDPO replaces the GRPO advantage with the token-level logit gap.</p>
+<p><em>The Context/Teacher:</em> The self-teacher is dynamically conditioned on <strong>hindsight feedback</strong> (such as compiler errors, unit test failures, or environment output).</p>
+<p><em>The Math:</em> By looking at the feedback, the teacher generates an optimal corrected distribution. The advantage for a specific token <span class="math inline">\(y_t\)</span> becomes:</p>
+<p><span id="eq-sdpo-advantage"><span class="math display">\[
+A_{\text{SDPO}}(y_t) = \log \pi_{\text{teacher}}(y_t | x, \text{feedback}) - \log \pi_{\text{student}}(y_t | x_{&lt;t})
+\tag{7}\]</span></span></p>
+<p>This fundamentally solves the GRPO credit assignment bottleneck. If a student correctly generated a standard for-loop before making a logic error later, the for-loop tokens still receive a positive advantage because the teacher (seeing the error) also generated them.</p>
+<p><img src="images/figure1_sdpo_credit.png" class="img-fluid"></p>
+<p><em>Figure 1: Dense credit assignment in SDPO. By comparing the student’s next-token distribution to the self-teacher’s feedback-conditioned distribution, SDPO assigns positive or negative (red) advantages token-by-token. This allows the model to correctly attribute credit to successful early steps while penalizing the specific tokens that led to the runtime error. (Source: Hübotter et al., 2026)</em></p>
+</section>
+<section id="approach-2-privileged-information-reward-augmentation-opsd" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="approach-2-privileged-information-reward-augmentation-opsd"><span class="header-section-number">3.2</span> Approach 2: Privileged-Information Reward Augmentation (OPSD)</h3>
+<p>Unlike the total replacement in Approach 1, <strong>On-Policy Self-Distillation (OPSD)</strong> [3] keeps the standard RL advantage calculation fully intact but shapes the underlying environment reward itself. This is a direct implementation of the hybrid RL-Distillation objective theorized in GKD.</p>
+<p><em>The Context/Teacher:</em> The teacher is conditioned on <strong>Privileged Information (PI)</strong>—such as ground-truth tool calls, expert reasoning traces, or hints—that are explicitly hidden from the student during its rollout.</p>
+<p><em>The Math:</em> The objective seamlessly merges the explicit external reward with the implicit teacher reward using a dense shaping penalty:</p>
+<p><span id="eq-opsd-reward"><span class="math display">\[
+R_{\text{total}} = R_{\text{env}} - \beta \cdot D_{KL}[\pi_{\text{student}} \| \pi_{\text{teacher}}]
+\tag{8}\]</span></span></p>
+<p>In a complex task, the sparse environment reward <span class="math inline">\(R_{\text{env}}\)</span> is only non-zero at the final step. However, the reverse KL term provides a non-zero shaping reward at <em>every single step</em>, guiding the standard RL algorithm toward the correct reasoning path step-by-step.</p>
+<p><img src="images/figure2_opsd_asymmetry.png" class="img-fluid"></p>
+<p><em>Figure 2: Information asymmetry in On-Policy Self-Distillation (OPSD). The teacher model is conditioned on privileged context (such as ground-truth tool calls) that is hidden from the student. This allows the teacher to generate a dense shaping reward that guides the student’s exploration step-by-step. (Source: Penaloza et al., 2026)</em></p>
+</section>
+<section id="approach-3-cross-stage-distillation-for-stability-glm-5" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="approach-3-cross-stage-distillation-for-stability-glm-5"><span class="header-section-number">3.3</span> Approach 3: Cross-Stage Distillation for Stability (GLM-5)</h3>
+<p>As models scale to long-horizon agentic workflows, training pipelines must rely on sequential or cascaded RL stages. In these environments, self-distillation is utilized not to teach a new task, but as a defensive anchor to prevent catastrophic forgetting.</p>
+<p><em>The Context/Teacher:</em> Unlike SDPO or OPSD, the teacher here is <strong>not</strong> conditioned on extra textual context. Instead, <strong>GLM-5 [4]</strong> performs “Cross-Stage Distillation,” where the teacher is strictly defined as the final, optimized model checkpoint from the previous RL stage (e.g., using the Reasoning RL expert to teach the Agentic RL student).</p>
+<p><em>The Math:</em> GLM-5 uses the exact same mathematical mechanism as SDPO, replacing the standard GRPO advantage with the stop-gradient logit gap:</p>
+<p><span id="eq-glm5-advantage"><span class="math display">\[
+\hat{A}_{i,t} = \text{sg}\left[\log \frac{\pi_{\text{teacher}}(y_{i,t} | x, y_{i,&lt;t})}{\pi_{\text{student}}(y_{i,t} | x, y_{i,&lt;t})}\right]
+\tag{9}\]</span></span></p>
+<p>Because the teacher is the expert from the previous stage, this advantage mathematically anchors the model. It forces the student to simultaneously match the token distribution of its past, highly capable self, guaranteeing that the model does not “unlearn” its core coding or mathematical reasoning abilities while aggressively exploring new agentic strategies.</p>
+<p><img src="images/figure3_glm5_pipeline.png" class="img-fluid"></p>
+<p><em>Figure 3: Cross-Stage Distillation in the GLM-5 pipeline. The optimized reasoning model serves as a defensive anchor while the student explores agentic environments, preventing catastrophic forgetting. (Source: GLM-5 Technical Report)</em></p>
+</section>
+</section>
+<section id="what-to-distill-in-rl-the-two-recipes" class="level2 page-columns page-full" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="what-to-distill-in-rl-the-two-recipes"><span class="header-section-number">4</span> What to Distill in RL: The Two Recipes</h2>
+<p>The algorithmic mechanics described in the previous section reveal that self-distillation can easily be injected into an RL pipeline. However, the true power of this framework lies in application: <em>who</em> you select as the Teacher dictates <em>what</em> problem you are solving.</p>
+<p>In modern post-training pipelines, engineers generally deploy self-distillation to solve one of two distinct challenges: combining the strengths of specialized models (Multi-Expert Distillation), or bootstrapping the model to learn entirely new reasoning paths using information asymmetries (Context-Conditioned Distillation).</p>
+<section id="recipe-a-multi-expert-distillation" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="recipe-a-multi-expert-distillation"><span class="header-section-number">4.1</span> Recipe A: Multi-Expert Distillation</h3>
+<ul>
+<li><strong>The Problem:</strong> Training a single model to master distinct, complex domains (like math and long-horizon agentic workflows) simultaneously in a single RL run is highly unstable.</li>
+<li><strong>The Solution:</strong> Technically, engineers can train multiple teachers with RL in parallel—each becoming the absolute best at a specific task—and then distill their specialized distributions into a final, unified model.</li>
+<li><strong>The Application (GLM-5):</strong> To survive the transition to agentic engineering, the <strong>GLM-5 [4]</strong> pipeline utilizes <em>Cross-Stage Distillation</em>. When training the Agentic RL stage, the engineers set the “Teacher” as the final, optimized checkpoint from the prior Reasoning RL stage. This consolidates the capabilities of both experts into the final model, allowing the agent to explore new environments without experiencing catastrophic forgetting of its foundational math and coding skills.</li>
+</ul>
+</section>
+<section id="recipe-b-context-conditioned-distillation" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="recipe-b-context-conditioned-distillation"><span class="header-section-number">4.2</span> Recipe B: Context-Conditioned Distillation</h3>
+<ul>
+<li><strong>The Problem:</strong> Standard sparse rewards (e.g., a “0” for failing a task) do not provide the model with any constructive information on <em>how</em> to solve a complex task it currently fails at. Without massive, expensive datasets of human-written Chain-of-Thought (CoT) to demonstrate the correct path, the model’s exploration is severely bottlenecked.</li>
+<li><strong>The Solution:</strong> The teacher is defined as the current model itself, but dynamically conditioned on rich <em>context</em> that provides useful information the student is not allowed to see.</li>
+<li><strong>The Application (SDPO &amp; OPSD):</strong> This recipe relies on information asymmetry to create a “Self-Teacher.”
+<ul>
+<li><strong>Hindsight Feedback:</strong> In <strong>SDPO [5]</strong>, when a student model attempts a coding task and fails, the environment returns a compiler error. This textual error is fed directly into the prompt of the Self-Teacher. Conditioned on this hindsight feedback, the Teacher naturally recognizes the mistake and generates a corrected CoT trajectory. The student then distills this dynamically generated correction.</li>
+<li><strong>Privileged Information:</strong> In <strong>OPSD [3]</strong>, the task might be a complex multi-step agentic workflow. The Teacher is provided with “Privileged Information” (such as ground-truth tool calls or expert hints) that are hidden from the student. The Teacher executes the optimal path, and the reverse-KL penalty densely guides the student’s exploration toward that successful behavior.</li>
+<li><strong>User Interactions:</strong> This recipe extends beyond coding and agents. As demonstrated in <em>Aligning Language Models from User Interactions</em> <strong>[6]</strong>, the context can simply be human conversational corrections (e.g., “Make this more polite” or “You forgot to mention X”). By feeding these critiques to the Teacher, the model generates its own dense alignment signals, effectively replacing standard, fragile RLHF reward models.</li>
+</ul></li>
+</ul>
+<p><img src="images/figure4_user_interactions.png" class="img-fluid"></p>
+<p><em>Figure 4: Aligning language models directly from user interactions. By treating natural human conversational corrections (e.g., “Make this more polite”) as privileged context for the self-teacher, the model generates its own dense alignment signals on the fly, entirely bypassing the need for fragile external Reward Models or offline human labeling. (Source: ETH Zurich LAS Group, 2026)</em></p>
+</section>
+<section id="summary-on-policy-self-distillation-recipes" class="level3 page-columns page-full" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="summary-on-policy-self-distillation-recipes"><span class="header-section-number">4.3</span> Summary: On-Policy Self-Distillation Recipes</h3>
+<div class="column-page wide-comparison-table">
+
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th" style="width: 14%">Strategy</th>
+<th data-quarto-table-cell-role="th" style="width: 24%">The Core Concept</th>
+<th data-quarto-table-cell-role="th" style="width: 20%">Who is the Teacher?</th>
+<th data-quarto-table-cell-role="th" style="width: 12%">Mechanism</th>
+<th data-quarto-table-cell-role="th" style="width: 30%">Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>A: Multi-Expert Distillation</strong></td>
+<td><strong>Skill Consolidation:</strong> Instead of forcing a single RL pipeline to learn everything at once, train multiple specialized models and distill them into a final unified policy.</td>
+<td><strong>Multiple Specialized Checkpoints:</strong> Each model is the best at a specific task (math expert, coding expert, agentic expert).</td>
+<td>Cross-Stage / Expert Distillation</td>
+<td><strong>GLM-5 [4]:</strong> The Agentic RL stage uses the optimized checkpoint from the prior <em>Reasoning</em> stage as teacher, consolidating both experts without catastrophic forgetting.</td>
+</tr>
+<tr class="even">
+<td><strong>B: Context-Conditioned Distillation</strong></td>
+<td><strong>The Exploration Bottleneck:</strong> Sparse rewards (pass/fail) don't teach a model <em>how</em> to correct its mistakes. The solution: provide the right context to generate dense signals.</td>
+<td><strong>The Current Model (Contextualized):</strong> The model itself, conditioned on rich <em>context</em> hidden from the student.</td>
+<td>Information Asymmetry</td>
+<td><strong>SDPO [5]:</strong> <em>Hindsight feedback</em> (compiler errors) to correct code.<br>
+<br>
+<strong>OPSD [3]:</strong> <em>Privileged information</em> (ground-truth tool calls) to guide agentic exploration.<br>
+<br>
+<strong>User Int. [6]:</strong> <em>Human conversational critiques</em> to self-align behavior.</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>Table 1: A comparison of the two primary on-policy self-distillation recipes for RL post-training.</em></p>
+</div>
+</section>
+</section>
+<section id="conclusion-expanding-the-post-training-toolkit-with-self-distillation" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="conclusion-expanding-the-post-training-toolkit-with-self-distillation"><span class="header-section-number">5</span> Conclusion: Expanding the Post-Training Toolkit with Self-Distillation</h2>
+<p>As the post-training stack continues to evolve, on-policy self-distillation has emerged as a highly promising mechanism for addressing some of the most persistent challenges in reinforcement learning. Rather than representing a complete departure from existing methods, it offers a powerful, complementary tool for modern AI engineering.</p>
+<p><strong>Addressing the Agentic Bottleneck</strong></p>
+<p>As models increasingly tackle complex, long-horizon agentic workflows—such as multi-step tool use, web browsing, or software engineering—relying solely on sparse scalar rewards (e.g., a simple pass/fail at the end of a long task) creates a significant credit-assignment hurdle. To optimize effectively in these dynamic environments, models benefit greatly from dense, token-level feedback to understand exactly which specific decisions or logic steps led to a failure.</p>
+<p><strong>The Potential of the “Self-Teacher”</strong></p>
+<p>Historically, obtaining these dense learning signals required maintaining separate, complex Reward Models (RMs) or distilling from a much stronger, larger model. Both approaches can be expensive, fragile, or impractical—especially when training frontier models where a “stronger” teacher does not yet exist. Self-distillation offers a compelling alternative. It leverages the model’s own innate in-context learning capabilities to translate rich environment feedback (like compiler errors, execution traces, or human critiques) into a structured, dense gradient signal, effectively allowing the model to act as its own teacher.</p>
+<p><strong>A Complementary Enhancement</strong></p>
+<p>Ultimately, on-policy self-distillation is not meant to replace the existing RL stack. Instead, as demonstrated by algorithmic implementations like SDPO and OPSD, it serves as a highly practical enhancement for standard policy optimization algorithms like GRPO. By converting rich hindsight or privileged context into token-level advantages, self-distillation helps mitigate the credit assignment challenge while preserving the vital exploratory benefits of reinforcement learning. As models push further into the agentic era, frameworks that seamlessly blend the exploration of RL with the dense guidance of distillation are likely to become an increasingly standard part of the training toolkit.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div class="references-list">
+<ol type="1">
+<li><p>Shenfeld, I., Damani, M., Hübotter, J. &amp; Agrawal, P. (2026). <em>Self-Distillation Enables Continual Learning.</em> <a href="https://arxiv.org/abs/2601.19897">arXiv:2601.19897</a></p></li>
+<li><p>Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Ramos, S., Geist, M. &amp; Bachem, O. (2023). <em>On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.</em> <a href="https://arxiv.org/pdf/2306.13649">arXiv:2306.13649</a></p></li>
+<li><p>Penaloza, E., Gontier, N., Lacoste, A. &amp; Charlin, L. (2026). <em>Privileged Information Distillation for Language Models.</em> <a href="https://arxiv.org/pdf/2602.04942">arXiv:2602.04942</a></p></li>
+<li><p>GLM Team (2026). <em>GLM-5: from Vibe Coding to Agentic Engineering.</em> <a href="https://arxiv.org/abs/2602.15763">arXiv:2602.15763</a></p></li>
+<li><p>Hübotter, J. et al.&nbsp;(2026). <em>Reinforcement Learning via Self-Distillation.</em> <a href="https://arxiv.org/pdf/2601.20802">arXiv:2601.20802</a></p></li>
+<li><p>ETH Zurich LAS Group (2026). <em>Aligning Language Models from User Interactions.</em> <a href="https://self-distillation.github.io/user_interactions.pdf">self-distillation.github.io</a></p></li>
+<li><p>Ye, T. et al.&nbsp;(2024). <em>DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models.</em> <a href="https://arxiv.org/pdf/2402.03300">arXiv:2402.03300</a></p></li>
+</ol>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
