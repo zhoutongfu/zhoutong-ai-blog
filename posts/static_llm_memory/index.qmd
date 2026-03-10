@@ -219,13 +219,13 @@ LongCat [5] challenges the dominant "Scaling Experts" (MoE) paradigm by proposin
 
 ::: {.references-list}
 1.  Ameisen, E. et al. (2025). *Circuit Tracing: Revealing Computational Graphs in Language Models.* Anthropic.
-2.  Cheng, X. et al. (2026). *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models.* arXiv:2601.07372.
-3.  Google DeepMind (2025). *Gemma 3 Technical Report.* arXiv:2503.19786. Model card: [Gemma 3n](https://deepmind.google/models/gemma/gemma-3n/).
+2.  Cheng, X. et al. (2026). *Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models.* [arXiv:2601.07372](https://arxiv.org/abs/2601.07372)
+3.  Google DeepMind (2025). *Gemma 3 Technical Report.* [arXiv:2503.19786](https://arxiv.org/abs/2503.19786). Model card: [Gemma 3n](https://deepmind.google/models/gemma/gemma-3n/).
 4.  Lindsey, J. et al. (2025). *On the Biology of a Large Language Model.* Anthropic.
-5.  LongCat (2026). *Scaling Embeddings Outperforms Scaling Experts in Language Models.* arXiv:2601.21204.
-6.  Sadhukhan, R. et al. (2026). *STEM: Scaling Transformers with Embedding Modules.* arXiv:2601.10639.
+5.  LongCat (2026). *Scaling Embeddings Outperforms Scaling Experts in Language Models.* [arXiv:2601.21204](https://arxiv.org/abs/2601.21204)
+6.  Sadhukhan, R. et al. (2026). *STEM: Scaling Transformers with Embedding Modules.* [arXiv:2601.10639](https://arxiv.org/abs/2601.10639)
 7.  Templeton, A. et al. (2024). *Scaling Monosemanticity: Extracting Interpretable Features from Claude 3 Sonnet.* Anthropic.
-8.  Zhang, J. et al. (2025). *On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models.* arXiv:2512.07783.
+8.  Zhang, J. et al. (2025). *On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models.* [arXiv:2512.07783](https://arxiv.org/abs/2512.07783)
 9.  Google DeepMind. *Gemma 3n model code.* `gemma3n/modeling_gemma3n.py`.
 10. Lingua / STEM. *STEM model code.* `lingua/stem.py`.
 :::

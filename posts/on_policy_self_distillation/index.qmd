@@ -115,7 +115,7 @@ This fundamentally solves the GRPO credit assignment bottleneck. If a student co
 
 ### Approach 2: Privileged-Information Reward Augmentation (OPSD)
 
-Unlike the total replacement in Approach 1, **On-Policy Self-Distillation (OPSD)** [3] keeps the standard RL advantage calculation fully intact but shapes the underlying environment reward itself. This is a direct implementation of the hybrid RL-Distillation objective theorized in GKD.
+Unlike the total replacement in Approach 1, **On-Policy Self-Distillation (OPSD)**---a term coined concurrently by Zhao et al. [8] for mathematical reasoning and by Penaloza et al. [3] for agentic workflows---keeps the standard RL advantage calculation fully intact but shapes the underlying environment reward itself. This section focuses on the Penaloza et al. formulation, which is a direct implementation of the hybrid RL-Distillation objective theorized in GKD.
 
 *The Context/Teacher:* The teacher is conditioned on **Privileged Information (PI)**---such as ground-truth tool calls, expert reasoning traces, or hints---that are explicitly hidden from the student during its rollout.
 
@@ -232,19 +232,12 @@ Ultimately, on-policy self-distillation is not meant to replace the existing RL 
 ## References {.unnumbered}
 
 ::: {.references-list}
-
-1. Shenfeld, I., Damani, M., Hübotter, J. & Agrawal, P. (2026). *Self-Distillation Enables Continual Learning.* [arXiv:2601.19897](https://arxiv.org/abs/2601.19897)
-
-2. Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Ramos, S., Geist, M. & Bachem, O. (2023). *On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.* [arXiv:2306.13649](https://arxiv.org/pdf/2306.13649)
-
-3. Penaloza, E., Gontier, N., Lacoste, A. & Charlin, L. (2026). *Privileged Information Distillation for Language Models.* [arXiv:2602.04942](https://arxiv.org/pdf/2602.04942)
-
-4. GLM Team (2026). *GLM-5: from Vibe Coding to Agentic Engineering.* [arXiv:2602.15763](https://arxiv.org/abs/2602.15763)
-
-5. Hübotter, J. et al. (2026). *Reinforcement Learning via Self-Distillation.* [arXiv:2601.20802](https://arxiv.org/pdf/2601.20802)
-
-6. ETH Zurich LAS Group (2026). *Aligning Language Models from User Interactions.* [self-distillation.github.io](https://self-distillation.github.io/user_interactions.pdf)
-
-7. Ye, T. et al. (2024). *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models.* [arXiv:2402.03300](https://arxiv.org/pdf/2402.03300)
-
+1.  Shenfeld, I. et al. (2026). *Self-Distillation Enables Continual Learning.* [arXiv:2601.19897](https://arxiv.org/abs/2601.19897)
+2.  Agarwal, R. et al. (2023). *On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes.* [arXiv:2306.13649](https://arxiv.org/abs/2306.13649)
+3.  Penaloza, E. et al. (2026). *Privileged Information Distillation for Language Models.* [arXiv:2602.04942](https://arxiv.org/abs/2602.04942)
+4.  GLM Team (2026). *GLM-5: from Vibe Coding to Agentic Engineering.* [arXiv:2602.15763](https://arxiv.org/abs/2602.15763)
+5.  Hübotter, J. et al. (2026). *Reinforcement Learning via Self-Distillation.* [arXiv:2601.20802](https://arxiv.org/abs/2601.20802)
+6.  ETH Zurich LAS Group (2026). *Aligning Language Models from User Interactions.* [self-distillation.github.io](https://self-distillation.github.io/user_interactions.pdf)
+7.  Ye, T. et al. (2024). *DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models.* [arXiv:2402.03300](https://arxiv.org/abs/2402.03300)
+8.  Zhao, Y. et al. (2026). *Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models.* [arXiv:2601.18734](https://arxiv.org/abs/2601.18734)
 :::
