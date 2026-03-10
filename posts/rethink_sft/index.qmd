@@ -106,7 +106,7 @@ These approaches are not different algorithms; they are merely distinct choices 
 | **Type A (SDFT)** | **Examples** (Few-Shot) | "I see *how* to do it." | **Maintenance** (Don't forget) | Continual Learning |
 | **Type B (Deliberative)** | **Rules** (Safety Specs) | "I check the *rules*." | **Alignment** (Be safe instinctively) | Safety / Constitutional AI |
 | **Type C (OPCD)** | **Instructions** (System Prompt) | "I am *told* who to be." | **Efficiency** (Save tokens) | Prompt Engineering Compilation |
-| **Type D (PID)** | **Omniscience** (Answer Key) | "I know the *answer*." | **Reasoning** (Derive the path) | Complex Reasoning (Math/Code) |
+| **Type D (PID / OPSD)** | **Omniscience** (Answer Key / Hidden Actions) | "I know the *answer / future*." | **Reasoning** (Derive the path) | Complex Reasoning [19] & Agentic Workflows [8] |
 
 ### Type A: Context = Demonstrations (SDFT)
 
@@ -128,7 +128,7 @@ In *On-Policy Context Distillation (OPCD)* [7], the goal is to internalize instr
 
 ### Type D: Context = Privileged Information (PID / OPSD)
 
-In *Privileged Information Distillation* [8], the goal is to solve hard reasoning tasks. The context $C$ is **Privileged Information (PI)**—such as ground truth answers, future states, or hidden "thoughts"—that acts as a cheat sheet. The paper introduces **$\pi$-Distill** and **OPSD (On-Policy Self-Distillation)** to handle this. The Teacher sees the future/answer and guides the blind Student. The Student minimizes the divergence from this "omniscient" teacher, effectively learning to simulate the latent reasoning process required to reach the correct solution without actually seeing the cheat sheet.
+In Privileged Information Distillation [8], the goal is to distill complex agentic workflows from frontier models. The context $C$ is Privileged Information (PI)—such as future states or hidden 'thoughts'—that acts as a cheat sheet. The paper introduces $\pi$-Distill and OPSD (On-Policy Self-Distillation) to handle this. Concurrently, Zhao et al. [19] independently proposed the exact same OPSD mechanism to solve hard mathematical reasoning tasks, using verified reference solutions (reasoning traces) as the privileged context. In both cases, the Teacher sees the future/answer and guides the blind Student. The Student minimizes the divergence from this 'omniscient' teacher, effectively learning to simulate the latent reasoning process required to reach the correct solution without actually seeing the cheat sheet.
 
 ## Conclusion: The Perfect Pre-RL State
 
@@ -174,4 +174,5 @@ This suggests that the future of post-training isn't about collecting massive ex
 16. Lopez-Paz, D. & Ranzato, M. (2017). *Gradient Episodic Memory for Continual Learning.*
 17. Biderman, D. et al. (2024). *LoRA Learns Less and Forgets Less.*
 18. Gu, Y. et al. (2023). *MiniLLM: Knowledge Distillation of Large Language Models.*
+19. Zhao, S. et al. (2026). *Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models.*
 :::

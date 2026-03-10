@@ -115,7 +115,7 @@ This fundamentally solves the GRPO credit assignment bottleneck. If a student co
 
 ### Approach 2: Privileged-Information Reward Augmentation (OPSD)
 
-Unlike the total replacement in Approach 1, **On-Policy Self-Distillation (OPSD)**---a term coined concurrently by Zhao et al. [8] for mathematical reasoning and by Penaloza et al. [3] for agentic workflows---keeps the standard RL advantage calculation fully intact but shapes the underlying environment reward itself. This section focuses on the Penaloza et al. formulation, which is a direct implementation of the hybrid RL-Distillation objective theorized in GKD.
+Unlike the total replacement in Approach 1, **On-Policy Self-Distillation (OPSD)**---a term coined concurrently by Zhao et al. [8] for self-rationalization in math and by Penaloza et al. [3] for distilling agentic behaviors from frontier models---keeps the standard RL advantage calculation fully intact but shapes the underlying environment reward itself. This section focuses on the Penaloza et al. formulation, which is a direct implementation of the hybrid RL-Distillation objective theorized in GKD.
 
 *The Context/Teacher:* The teacher is conditioned on **Privileged Information (PI)**---such as ground-truth tool calls, expert reasoning traces, or hints---that are explicitly hidden from the student during its rollout.
 

@@ -352,11 +352,11 @@ window.Quarto = {
 <td style="text-align: left;">Prompt Engineering Compilation</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><strong>Type D (PID)</strong></td>
-<td style="text-align: left;"><strong>Omniscience</strong> (Answer Key)</td>
-<td style="text-align: left;">“I know the <em>answer</em>.”</td>
+<td style="text-align: left;"><strong>Type D (PID / OPSD)</strong></td>
+<td style="text-align: left;"><strong>Omniscience</strong> (Answer Key / Hidden Actions)</td>
+<td style="text-align: left;">“I know the <em>answer / future</em>.”</td>
 <td style="text-align: left;"><strong>Reasoning</strong> (Derive the path)</td>
-<td style="text-align: left;">Complex Reasoning (Math/Code)</td>
+<td style="text-align: left;">Complex Reasoning [19] &amp; Agentic Workflows [8]</td>
 </tr>
 </tbody>
 </table>
@@ -393,7 +393,7 @@ window.Quarto = {
 </section>
 <section id="type-d-context-privileged-information-pid-opsd" class="level3" data-number="5.5">
 <h3 data-number="5.5" class="anchored" data-anchor-id="type-d-context-privileged-information-pid-opsd"><span class="header-section-number">5.5</span> Type D: Context = Privileged Information (PID / OPSD)</h3>
-<p>In <em>Privileged Information Distillation</em> [8], the goal is to solve hard reasoning tasks. The context <span class="math inline">\(C\)</span> is <strong>Privileged Information (PI)</strong>—such as ground truth answers, future states, or hidden “thoughts”—that acts as a cheat sheet. The paper introduces <strong><span class="math inline">\(\pi\)</span>-Distill</strong> and <strong>OPSD (On-Policy Self-Distillation)</strong> to handle this. The Teacher sees the future/answer and guides the blind Student. The Student minimizes the divergence from this “omniscient” teacher, effectively learning to simulate the latent reasoning process required to reach the correct solution without actually seeing the cheat sheet.</p>
+<p>In Privileged Information Distillation [8], the goal is to distill complex agentic workflows from frontier models. The context <span class="math inline">\(C\)</span> is Privileged Information (PI)—such as future states or hidden ‘thoughts’—that acts as a cheat sheet. The paper introduces <span class="math inline">\(\pi\)</span>-Distill and OPSD (On-Policy Self-Distillation) to handle this. Concurrently, Zhao et al.&nbsp;[19] independently proposed the exact same OPSD mechanism to solve hard mathematical reasoning tasks, using verified reference solutions (reasoning traces) as the privileged context. In both cases, the Teacher sees the future/answer and guides the blind Student. The Student minimizes the divergence from this ‘omniscient’ teacher, effectively learning to simulate the latent reasoning process required to reach the correct solution without actually seeing the cheat sheet.</p>
 </section>
 </section>
 <section id="conclusion-the-perfect-pre-rl-state" class="level2" data-number="6">
@@ -455,6 +455,7 @@ window.Quarto = {
 <li>Lopez-Paz, D. &amp; Ranzato, M. (2017). <em>Gradient Episodic Memory for Continual Learning.</em></li>
 <li>Biderman, D. et al.&nbsp;(2024). <em>LoRA Learns Less and Forgets Less.</em></li>
 <li>Gu, Y. et al.&nbsp;(2023). <em>MiniLLM: Knowledge Distillation of Large Language Models.</em></li>
+<li>Zhao, S. et al.&nbsp;(2026). <em>Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models.</em></li>
 </ol>
 </div>
 
