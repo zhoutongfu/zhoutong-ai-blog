@@ -1,0 +1,19 @@
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const article = document.querySelector("main.content");
+  const titleBlock = document.querySelector(".quarto-title-meta");
+  if (!article || !titleBlock) return;
+
+  const words = article.innerText.trim().split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.round(words / 220));
+
+  const block = document.createElement("div");
+  block.innerHTML = `
+    <div class="quarto-title-meta-heading">Reading Time</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">${minutes} min</p>
+    </div>
+  `;
+  titleBlock.appendChild(block);
+});
+</script>

@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Zhoutong">
+<meta name="dcterms.date" content="2026-06-14">
+<meta name="description" content="A token-weighting view of PPO, GRPO, DAPO, CISPO, SDPO, SRPO, RLSD, and the newer conditional-trust direction in on-policy distillation.">
+
+<title>Every Token Gets a Weight – Zhoutong’s Research Log</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Zhoutong’s Research Log</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/zhoutongfu/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/zhoutongfu"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction-the-small-object-that-moves-the-model" id="toc-introduction-the-small-object-that-moves-the-model" class="nav-link active" data-scroll-target="#introduction-the-small-object-that-moves-the-model"><span class="header-section-number">1</span> Introduction: The Small Object That Moves The Model</a></li>
+  <li><a href="#every-token-gets-a-weight" id="toc-every-token-gets-a-weight" class="nav-link" data-scroll-target="#every-token-gets-a-weight"><span class="header-section-number">2</span> Every Token Gets A Weight</a></li>
+  <li><a href="#how-the-rl-update-works" id="toc-how-the-rl-update-works" class="nav-link" data-scroll-target="#how-the-rl-update-works"><span class="header-section-number">3</span> How The RL Update Works</a>
+  <ul class="collapse">
+  <li><a href="#from-reward-to-loss" id="toc-from-reward-to-loss" class="nav-link" data-scroll-target="#from-reward-to-loss"><span class="header-section-number">3.1</span> From Reward To Loss</a></li>
+  <li><a href="#what-ppo-adds" id="toc-what-ppo-adds" class="nav-link" data-scroll-target="#what-ppo-adds"><span class="header-section-number">3.2</span> What PPO Adds</a></li>
+  </ul></li>
+  <li><a href="#policy-gradient-weights-from-ppo-to-cispo" id="toc-policy-gradient-weights-from-ppo-to-cispo" class="nav-link" data-scroll-target="#policy-gradient-weights-from-ppo-to-cispo"><span class="header-section-number">4</span> Policy-Gradient Weights: From PPO To CISPO</a>
+  <ul class="collapse">
+  <li><a href="#ppo-ratio-times-advantage" id="toc-ppo-ratio-times-advantage" class="nav-link" data-scroll-target="#ppo-ratio-times-advantage"><span class="header-section-number">4.1</span> PPO: Ratio Times Advantage</a></li>
+  <li><a href="#grpo-same-ratio-critic-free-advantage" id="toc-grpo-same-ratio-critic-free-advantage" class="nav-link" data-scroll-target="#grpo-same-ratio-critic-free-advantage"><span class="header-section-number">4.2</span> GRPO: Same Ratio, Critic-Free Advantage</a></li>
+  <li><a href="#rloo-dr.-grpo-and-reinforce-baselines-are-weights-too" id="toc-rloo-dr.-grpo-and-reinforce-baselines-are-weights-too" class="nav-link" data-scroll-target="#rloo-dr.-grpo-and-reinforce-baselines-are-weights-too"><span class="header-section-number">4.3</span> RLOO, Dr.&nbsp;GRPO, and REINFORCE++: Baselines Are Weights Too</a></li>
+  <li><a href="#dapo-token-aggregation-and-asymmetric-clipping" id="toc-dapo-token-aggregation-and-asymmetric-clipping" class="nav-link" data-scroll-target="#dapo-token-aggregation-and-asymmetric-clipping"><span class="header-section-number">4.4</span> DAPO: Token Aggregation and Asymmetric Clipping</a></li>
+  <li><a href="#cispo-clip-the-weight-keep-the-gradient-path" id="toc-cispo-clip-the-weight-keep-the-gradient-path" class="nav-link" data-scroll-target="#cispo-clip-the-weight-keep-the-gradient-path"><span class="header-section-number">4.5</span> CISPO: Clip The Weight, Keep The Gradient Path</a></li>
+  </ul></li>
+  <li><a href="#teacher-augmented-weights-sdpo-srpo-and-rlsd" id="toc-teacher-augmented-weights-sdpo-srpo-and-rlsd" class="nav-link" data-scroll-target="#teacher-augmented-weights-sdpo-srpo-and-rlsd"><span class="header-section-number">5</span> Teacher-Augmented Weights: SDPO, SRPO, and RLSD</a>
+  <ul class="collapse">
+  <li><a href="#loss-form-vs.-advantage-view" id="toc-loss-form-vs.-advantage-view" class="nav-link" data-scroll-target="#loss-form-vs.-advantage-view"><span class="header-section-number">5.1</span> Loss Form vs.&nbsp;Advantage View</a></li>
+  <li><a href="#sdpo-distillation-loss-and-advantage-view" id="toc-sdpo-distillation-loss-and-advantage-view" class="nav-link" data-scroll-target="#sdpo-distillation-loss-and-advantage-view"><span class="header-section-number">5.2</span> SDPO: Distillation Loss And Advantage View</a></li>
+  <li><a href="#srpo-route-before-trusting-the-teacher" id="toc-srpo-route-before-trusting-the-teacher" class="nav-link" data-scroll-target="#srpo-route-before-trusting-the-teacher"><span class="header-section-number">5.3</span> SRPO: Route Before Trusting The Teacher</a></li>
+  <li><a href="#rlsd-reward-direction-teacher-magnitude" id="toc-rlsd-reward-direction-teacher-magnitude" class="nav-link" data-scroll-target="#rlsd-reward-direction-teacher-magnitude"><span class="header-section-number">5.4</span> RLSD: Reward Direction, Teacher Magnitude</a></li>
+  </ul></li>
+  <li><a href="#when-should-we-trust-the-teacher" id="toc-when-should-we-trust-the-teacher" class="nav-link" data-scroll-target="#when-should-we-trust-the-teacher"><span class="header-section-number">6</span> When Should We Trust The Teacher?</a></li>
+  <li><a href="#conclusion-the-weight-is-the-interface" id="toc-conclusion-the-weight-is-the-interface" class="nav-link" data-scroll-target="#conclusion-the-weight-is-the-interface"><span class="header-section-number">7</span> Conclusion: The Weight Is The Interface</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  <li><a href="#appendix-a-policy-gradient-loss-as-a-gradient-surrogate" id="toc-appendix-a-policy-gradient-loss-as-a-gradient-surrogate" class="nav-link" data-scroll-target="#appendix-a-policy-gradient-loss-as-a-gradient-surrogate">Appendix A: Policy-Gradient Loss As A Gradient Surrogate</a></li>
+  <li><a href="#appendix-b-ppo-data-reuse-minibatches-and-clipping" id="toc-appendix-b-ppo-data-reuse-minibatches-and-clipping" class="nav-link" data-scroll-target="#appendix-b-ppo-data-reuse-minibatches-and-clipping">Appendix B: PPO Data Reuse, Minibatches, And Clipping</a></li>
+  <li><a href="#appendix-c-rollout-mismatch-is-a-different-ratio" id="toc-appendix-c-rollout-mismatch-is-a-different-ratio" class="nav-link" data-scroll-target="#appendix-c-rollout-mismatch-is-a-different-ratio">Appendix C: Rollout Mismatch Is A Different Ratio</a></li>
+  <li><a href="#appendix-d-teacher-trust-details" id="toc-appendix-d-teacher-trust-details" class="nav-link" data-scroll-target="#appendix-d-teacher-trust-details">Appendix D: Teacher Trust Details</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Every Token Gets a Weight</h1>
+<p class="subtitle lead">From PPO to OPSD in LLM Reinforcement Learning</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Reinforcement Learning</div>
+    <div class="quarto-category">Post-training</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    A token-weighting view of PPO, GRPO, DAPO, CISPO, SDPO, SRPO, RLSD, and the newer conditional-trust direction in on-policy distillation.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Zhoutong </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 14, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-the-small-object-that-moves-the-model" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="introduction-the-small-object-that-moves-the-model"><span class="header-section-number">1</span> Introduction: The Small Object That Moves The Model</h2>
+<p>When people describe reinforcement learning for language models, they usually talk about rewards: did the answer pass the tests, solve the math problem, follow the instruction, or satisfy the verifier?</p>
+<p>But inside the actor update, the thing that actually touches the model is smaller and more mechanical. It is usually a token log-probability multiplied by some weight.</p>
+<p>For a sampled response <span class="math inline">\(y_i=(y_{i,1},\ldots,y_{i,T})\)</span>, the trainable handle is:</p>
+<p><span id="eq-token-logprob-handle"><span class="math display">\[
+\log \pi_\theta(y_{i,t}\mid x_i,y_{i,&lt;t}).
+\tag{1}\]</span></span></p>
+<p>This should feel familiar from supervised fine-tuning. In SFT, we take a human or synthetic demonstration <span class="math inline">\(y_i^\star\)</span> and minimize:</p>
+<p><span id="eq-sft-loss"><span class="math display">\[
+\mathcal L_{\text{SFT}}
+=
+-\sum_{i,t}
+m_{i,t}
+\log \pi_\theta(y_{i,t}^\star\mid x_i,y_{i,&lt;t}^\star).
+\tag{2}\]</span></span></p>
+<p>Every supervised token is treated as a positive target. The response mask <span class="math inline">\(m_{i,t}\)</span> decides which positions participate, and the implicit weight on participating tokens is just <span class="math inline">\(1\)</span>.</p>
+<p>RL-style actor training keeps the same trainable handle, but changes where the tokens come from and how strongly each token counts. The response is sampled from the current or recent policy, and the token log-prob is multiplied by a reward-, ratio-, or teacher-derived coefficient:</p>
+<p><span id="eq-generic-actor-loss"><span class="math display">\[
+\mathcal L_{\text{actor}}
+=
+-\sum_{i,t}
+m_{i,t}
+w_{i,t}
+\log \pi_\theta(y_{i,t}\mid x_i,y_{i,&lt;t}).
+\tag{3}\]</span></span></p>
+<p>Here <span class="math inline">\(m_{i,t}\)</span> says whether the token participates at all, and <span class="math inline">\(w_{i,t}\)</span> says how much the token counts. This post is about the construction of that weight.</p>
+<p>PPO [2], GRPO [4,6], DAPO [8], CISPO [9,26], SDPO [11], SRPO [12], and RLSD [13] can all be read as different answers to the same question:</p>
+<blockquote class="blockquote">
+<p>For this sampled token, how much should the gradient count?</p>
+</blockquote>
+<p>That does not mean these methods are mathematically identical. In particular, distillation losses and advantage-weighted policy-gradient losses can expose similar-looking terms while having different fixed points and stability behavior. The point of the token-weighting view is not to collapse every objective into one formula. It is to track what multiplies the model’s token-level update, and why.</p>
+</section>
+<section id="every-token-gets-a-weight" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="every-token-gets-a-weight"><span class="header-section-number">2</span> Every Token Gets A Weight</h2>
+<p>The main thesis of this post is simple:</p>
+<blockquote class="blockquote">
+<p>Modern LLM RL is increasingly about deciding which sampled tokens deserve gradient, in which direction, and under which correction or trust weight.</p>
+</blockquote>
+<p>The subtle part is that the final gradient is token-level even when the signal that created it is not.</p>
+<p>Suppose a model samples one response for a math problem. The verifier gives one sequence-level reward: correct or incorrect. GRPO may turn that into one group-relative advantage for the whole response. PPO may add a different probability ratio for each token. A mask may remove the prompt tokens or invalid positions. A normalization rule may decide whether long answers get more total weight than short ones. A teacher method may add dense information at some positions but not others.</p>
+<p>By the time the actor update reaches the model, all of those decisions have to meet at the same place:</p>
+<p><span class="math display">\[
+\log \pi_\theta(y_{i,t}\mid x_i,y_{i,&lt;t}).
+\]</span></p>
+<p>That is the reason I like the token-weighting lens. It lets us ask how a sequence-level judgment becomes a token-level push.</p>
+<p>A useful schematic is:</p>
+<p><span id="eq-weight-stack"><span class="math display">\[
+w_{i,t}
+\approx
+\text{policy-ratio control}
+\times
+\text{reward advantage}
+\times
+\text{normalization}
+\times
+\text{teacher or trust gate}.
+\tag{4}\]</span></span></p>
+<p>This is not meant to be a universal formula. It is a way to keep track of where the pressure on a token comes from.</p>
+<p>Some factors are genuinely token-level. The PPO ratio <span class="math inline">\(\rho_{i,t}\)</span> compares the current and old policy on the particular token <span class="math inline">\(y_{i,t}\)</span> under the particular prefix <span class="math inline">\(y_{i,&lt;t}\)</span>. A token mask <span class="math inline">\(m_{i,t}\)</span> may include one position and remove the next. A teacher gap can say that the privileged teacher liked one local token choice but disliked another.</p>
+<p>Other factors begin at the sequence level and then get broadcast across tokens. A binary verifier reward says something about the whole answer, not the exact step where the reasoning went right or wrong. GRPO’s group-relative advantage <span class="math inline">\(\hat A_i\)</span> is also response-level. In the simplest implementation, every token in response <span class="math inline">\(i\)</span> inherits the same direction:</p>
+<p><span id="eq-sequence-advantage-broadcast"><span class="math display">\[
+\hat A_{i,t}=\hat A_i.
+\tag{5}\]</span></span></p>
+<p>That broadcast is powerful but blunt. It is why long reasoning RL can work at all with sparse rewards, and also why local credit assignment is hard: the update treats the correct algebra step and the accidental detour as having the same sequence-level sign unless another mechanism intervenes.</p>
+<p>The later components refine that blunt signal. Normalization changes how much total weight a response contributes. Clipping decides when a reused token has already moved far enough. Filtering removes samples or tokens that would make the update noisy. Teacher signals try to add local information, but then need trust gates because dense does not automatically mean correct.</p>
+<p>The figure below shows this compilation for one sampled response <span class="math inline">\(i\)</span>. A real training batch repeats the same construction over many responses, adding the outer sum over <span class="math inline">\(i\)</span>.</p>
+<div id="fig-token-weight-stack" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-token-weight-stack-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/figure1.png" class="img-fluid figure-img" style="width:100.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-token-weight-stack-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: How training signals become token-level gradient for one response <span class="math inline">\(i\)</span>. A sequence-level reward or advantage is broadcast to token positions; token-local factors assemble <span class="math inline">\(w_{i,t}\)</span>; the mask <span class="math inline">\(m_{i,t}\)</span> gates the final actor update. In batch training, the loss also sums over responses.
+</figcaption>
+</figure>
+</div>
+<p>So the story is not that every method literally multiplies four scalars. The story is that every method must eventually answer the same engineering question for each token position:</p>
+<blockquote class="blockquote">
+<p>How much should this token’s log-probability update count, and why?</p>
+</blockquote>
+<p>SFT is the clean base case: target tokens participate with weight <span class="math inline">\(1\)</span>. REINFORCE adds a reward or advantage weight to sampled tokens [1,3]. PPO keeps the advantage but adds a data-reuse ratio [2]. GRPO changes where the advantage comes from [4,6]. DAPO and CISPO change token accounting, filtering, clipping, and the gradient path [8,9,26]. SDPO, SRPO, and RLSD add teacher-derived information, sometimes as a scalar weight and sometimes as a full distributional loss [11,12,13].</p>
+</section>
+<section id="how-the-rl-update-works" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="how-the-rl-update-works"><span class="header-section-number">3</span> How The RL Update Works</h2>
+<p>Before comparing PPO, GRPO, DAPO, and teacher-weighted variants, it is worth slowing down on the basic policy-gradient move. This is the part that is easy to forget because the implementation looks like “just another loss,” but the logic is different from SFT.</p>
+<section id="from-reward-to-loss" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="from-reward-to-loss"><span class="header-section-number">3.1</span> From Reward To Loss</h3>
+<p>In SFT, the data tells us the target token. In RL, the model first samples an answer, and the environment or verifier tells us whether that answer was useful. So the original objective is not “match this label.” It is:</p>
+<p><span id="eq-expected-reward"><span class="math display">\[
+J(\theta)
+=
+\mathbb E_{y\sim \pi_\theta}
+\left[
+R(y)
+\right].
+\tag{6}\]</span></span></p>
+<p>In words: if we sample from the current policy, we want the average reward of those samples to go up.</p>
+<p>The awkward part is that the sample itself comes from the model. When <span class="math inline">\(\theta\)</span> changes, both the probability of the sampled answer and the distribution of future samples change. The policy-gradient trick gives us a usable direction [1]:</p>
+<p><span id="eq-policy-gradient"><span class="math display">\[
+\nabla_\theta J(\theta)
+=
+\mathbb E_{y\sim \pi_\theta}
+\left[
+R(y)\nabla_\theta \log \pi_\theta(y)
+\right].
+\tag{7}\]</span></span></p>
+<p>This says something very practical. If a sampled response has high reward, increase the log-probability of that response. If it has low reward relative to a baseline, decrease it.</p>
+<p>For a language model, a response probability is a product of token probabilities, so the log-probability is a sum:</p>
+<p><span id="eq-autoregressive-logprob"><span class="math display">\[
+\log \pi_\theta(y)
+=
+\sum_t
+\log \pi_\theta(y_t\mid x,y_{&lt;t}).
+\tag{8}\]</span></span></p>
+<p>That is why the sequence-level reward becomes a token-level update:</p>
+<p><span id="eq-token-policy-gradient"><span class="math display">\[
+\nabla_\theta J(\theta)
+=
+\mathbb E
+\left[
+\sum_t
+R(y)
+\nabla_\theta \log \pi_\theta(y_t\mid x,y_{&lt;t})
+\right].
+\tag{9}\]</span></span></p>
+<p>This equation is the seed of the whole post. Reinforcement learning for LLMs starts as reward-weighted learning on the model’s own sampled tokens. The reward is usually sequence-level, but the trainable handle is still token-level.</p>
+<p>In practice, we usually replace raw reward with an advantage estimate <span class="math inline">\(\hat A\)</span>. The advantage means “better or worse than expected,” not just “good or bad in absolute terms.” The common REINFORCE-style loss is:</p>
+<p><span id="eq-reinforce-loss"><span class="math display">\[
+\mathcal L_{\text{RF}}
+=
+-\hat A
+\sum_t
+\log \pi_\theta(y_t\mid x,y_{&lt;t}).
+\tag{10}\]</span></span></p>
+<p>Here <span class="math inline">\(\hat A\)</span> should be read as a fixed coefficient for the actor update. In autodiff code, that usually means detaching the advantage before multiplying it by the log-prob. Gradients should flow through the token log-probs, not back through the reward or advantage computation. If <span class="math inline">\(\hat A&gt;0\)</span>, gradient descent increases the sampled token log-probs. If <span class="math inline">\(\hat A&lt;0\)</span>, gradient descent decreases them.</p>
+<p>This is also why actor loss values can feel strange in real training. The loss is a surrogate used to produce the right gradient direction. Its numeric value is often less meaningful than the reward curve, KL, entropy, ratio statistics, clip fraction, and evaluation metrics.</p>
+</section>
+<section id="what-ppo-adds" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="what-ppo-adds"><span class="header-section-number">3.2</span> What PPO Adds</h3>
+<p>The REINFORCE-style loss in <a href="#eq-reinforce-loss" class="quarto-xref">Equation&nbsp;10</a> is the clean base case: sample from the current policy, compute a reward or advantage, and push the sampled token log-probs up or down [3].</p>
+<p>If we generated fresh samples after every optimizer step, this would stay conceptually simple. The data would always come from the same policy we are updating. But for LLMs, generating and scoring long rollouts is expensive. PPO is the practical compromise: collect a rollout batch once, then reuse that batch for several actor updates [2,10].</p>
+<p>A PPO rollout batch is a temporary dataset produced by a frozen snapshot of the actor, usually called <span class="math inline">\(\pi_{\text{old}}\)</span>. For each prompt, the rollout engine stores something like:</p>
+<ul>
+<li>the prompt <span class="math inline">\(x\)</span>;</li>
+<li>the sampled token sequence <span class="math inline">\(y=(y_1,\ldots,y_T)\)</span>;</li>
+<li>the reward or advantage estimate;</li>
+<li>the mask saying which tokens count;</li>
+<li>the old log-prob <span class="math inline">\(\log \pi_{\text{old}}(y_t\mid x,y_{&lt;t})\)</span> for each sampled token.</li>
+</ul>
+<p>Reusing the rollout does not mean asking the model to generate the same answer again. It means feeding the same prompt and sampled token IDs back through the current training model, usually with teacher forcing, and recomputing the current log-probs:</p>
+<p><span id="eq-current-logprob-on-reused-token"><span class="math display">\[
+\log \pi_\theta(y_t\mid x,y_{&lt;t}).
+\tag{11}\]</span></span></p>
+<p>So during the reuse window, the text is fixed, but the model scoring that text is changing.</p>
+<p>During this inner optimization loop, three things stay fixed: the sampled text, the reward or advantage, and the old log-prob. What changes is the current model’s probability for those already-sampled tokens.</p>
+<p>After the first optimizer step, the trainable policy is no longer exactly the policy that generated the tokens:</p>
+<p><span id="eq-ppo-policy-mismatch"><span class="math display">\[
+\pi_\theta
+\ne
+\pi_{\text{old}}.
+\tag{12}\]</span></span></p>
+<p>This is the “slightly off-policy” part [10]. The data was sampled by <span class="math inline">\(\pi_{\text{old}}\)</span>, but the update is being applied to <span class="math inline">\(\pi_\theta\)</span>. PPO’s first addition to REINFORCE is a token-level importance ratio:</p>
+<p><span id="eq-ppo-ratio"><span class="math display">\[
+\rho_t(\theta)
+=
+\frac{
+\pi_\theta(y_t\mid x,y_{&lt;t})
+}{
+\pi_{\text{old}}(y_t\mid x,y_{&lt;t})
+}.
+\tag{13}\]</span></span></p>
+<p>This ratio asks: for this exact token in this exact sampled prefix, how much more or less likely is the current actor to produce it than the actor that produced the data?</p>
+<p>PPO’s second addition is clipping. Instead of the plain REINFORCE-style log-prob loss, PPO maximizes a clipped surrogate [2]:</p>
+<p><span id="eq-ppo-objective"><span class="math display">\[
+J^{\text{PPO}}(\theta)
+=
+\mathbb E_t
+\left[
+\min
+\left(
+\rho_t(\theta)\hat A_t,
+\operatorname{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\hat A_t
+\right)
+\right].
+\tag{14}\]</span></span></p>
+<p>The actor loss is the negative:</p>
+<p><span id="eq-ppo-loss"><span class="math display">\[
+\mathcal L^{\text{PPO}}
+=
+-J^{\text{PPO}}.
+\tag{15}\]</span></span></p>
+<p>The first term, <span class="math inline">\(\rho_t(\theta)\hat A_t\)</span>, is the advantage-weighted update corrected for the fact that the token came from <span class="math inline">\(\pi_{\text{old}}\)</span>. The second term is the guardrail: if the current policy has already moved too far on this token, clipping removes the incentive to keep pushing in the reward-improving direction.</p>
+<p>That also explains why reusing the same rollout can still produce different gradients. The advantage is fixed, but <span class="math inline">\(\pi_\theta(y_t\mid x,y_{&lt;t})\)</span> is not fixed. After each optimizer step, the current log-prob changes, the ratio changes, and the selected branch of the PPO objective may change.</p>
+<p>The exact clipping cases and minibatch bookkeeping are in Appendix B. The main point here is simpler:</p>
+<blockquote class="blockquote">
+<p>PPO reuses exact sampled data to save rollout cost, and uses the probability ratio to keep that reuse from drifting too far away from the policy that generated the data.</p>
+</blockquote>
+<p>This is the first major kind of token weight: not a reward weight, but a data-reuse correction weight.</p>
+</section>
+</section>
+<section id="policy-gradient-weights-from-ppo-to-cispo" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="policy-gradient-weights-from-ppo-to-cispo"><span class="header-section-number">4</span> Policy-Gradient Weights: From PPO To CISPO</h2>
+<p>The methods in this section keep the same final actor handle: a weighted token log-probability. What changes is how the scalar weight is assembled, and sometimes whether gradients flow through the scalar or only through the current log-prob.</p>
+<p>For policy-gradient methods, I will use a slightly more explicit version of the token-weight stack:</p>
+<p><span id="eq-pg-weight-slots"><span class="math display">\[
+w_{i,t}^{\text{PG}}
+\approx
+\rho_{i,t}
+\times
+A_{i,t}
+\times
+n_{i,t}
+\times
+c_{i,t}.
+\tag{16}\]</span></span></p>
+<p>Here <span class="math inline">\(\rho_{i,t}\)</span> is the policy-ratio or data-reuse control, <span class="math inline">\(A_{i,t}\)</span> is the reward direction, <span class="math inline">\(n_{i,t}\)</span> is accounting and normalization, and <span class="math inline">\(c_{i,t}\)</span> is clipping and filtering. The split between <span class="math inline">\(n_{i,t}\)</span> and <span class="math inline">\(c_{i,t}\)</span> is intentional. Accounting and normalization decide how much scale each response or token gets in the batch. Clipping and filtering decide whether a token/sample is capped, dropped, or reweighted for stability.</p>
+<p>There is one more question that is not fully captured by the scalar factorization: the gradient path. PPO’s clipped objective can stop gradient through a clipped branch. CISPO makes this separation explicit by detaching the clipped scalar weight and keeping the current log-prob as the live gradient path [9,26].</p>
+<div id="fig-ppo-weight-edits" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ppo-weight-edits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/figure2.png" class="img-fluid figure-img" style="width:100.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ppo-weight-edits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: PPO-family methods as edits to the token-level policy-gradient update. The scalar weight is decomposed into ratio/reuse control <span class="math inline">\(\rho\)</span>, advantage direction <span class="math inline">\(A\)</span>, accounting/normalization <span class="math inline">\(n\)</span>, and clipping/filtering <span class="math inline">\(c\)</span>. The purple column is separate: it tracks whether gradients flow through the scalar weight or only through the current log-prob.
+</figcaption>
+</figure>
+</div>
+<p>Read the figure by columns rather than as a timeline. PPO introduces ratio-based reuse control and clipping [2]. GRPO mainly changes the advantage source [4,6]. RLOO [3], Dr.&nbsp;GRPO [7], and related critic-free variants change baselines and normalization choices. DAPO makes accounting and clipping/filtering central [8]. CISPO changes the scalar importance weight and, most importantly, the gradient path [9,26].</p>
+<section id="ppo-ratio-times-advantage" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="ppo-ratio-times-advantage"><span class="header-section-number">4.1</span> PPO: Ratio Times Advantage</h3>
+<p>The previous section introduced PPO as the first extension of REINFORCE: reuse rollout data from <span class="math inline">\(\pi_{\text{old}}\)</span>, correct with the ratio in <a href="#eq-ppo-ratio" class="quarto-xref">Equation&nbsp;13</a>, and clip the surrogate in <a href="#eq-ppo-objective" class="quarto-xref">Equation&nbsp;14</a>.</p>
+<p>In the Figure 2 notation, PPO’s signature edits are slot <span class="math inline">\(\rho_{i,t}\)</span>, the policy-ratio term, and slot <span class="math inline">\(c_{i,t}\)</span>, the clipping guard. If we temporarily ignore clipping and normalization, the core token-weight view is:</p>
+<p><span id="eq-ppo-token-weight"><span class="math display">\[
+w_t^{\text{PPO}}
+\approx
+\rho_t(\theta)\hat A_t,
+\tag{17}\]</span></span></p>
+<p>Clipping then changes whether that reward-improving movement is still allowed. The advantage says whether the sampled action should go up or down. The ratio says how far the current policy has moved from the old policy that generated the token.</p>
+</section>
+<section id="grpo-same-ratio-critic-free-advantage" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="grpo-same-ratio-critic-free-advantage"><span class="header-section-number">4.2</span> GRPO: Same Ratio, Critic-Free Advantage</h3>
+<p>GRPO keeps the PPO-style ratio but replaces the learned value-model advantage with a group-relative advantage [4,6].</p>
+<p>For a prompt <span class="math inline">\(x\)</span>, sample <span class="math inline">\(G\)</span> responses with rewards <span class="math inline">\(\{r_1,\ldots,r_G\}\)</span>:</p>
+<p><span id="eq-grpo-advantage"><span class="math display">\[
+\hat A_i
+=
+\frac{r_i-\mu_G}{\sigma_G+\epsilon},
+\qquad
+\mu_G
+=
+\frac{1}{G}
+\sum_j r_j.
+\tag{18}\]</span></span></p>
+<p>The advantage is response-level, then broadcast over tokens:</p>
+<p><span id="eq-grpo-broadcast"><span class="math display">\[
+\hat A_{i,t}
+=
+\hat A_i.
+\tag{19}\]</span></span></p>
+<p>The token weight becomes:</p>
+<p><span id="eq-grpo-token-weight"><span class="math display">\[
+w_{i,t}^{\text{GRPO}}
+\approx
+\rho_{i,t}(\theta)\hat A_i.
+\tag{20}\]</span></span></p>
+<p>This removes the critic, but it does not solve local credit assignment. Every token in the response inherits the same group-relative reward direction. In Figure 2 terms, GRPO mainly edits slot <span class="math inline">\(A_{i,t}\)</span> while keeping the PPO-style reuse and clipping machinery recognizable.</p>
+</section>
+<section id="rloo-dr.-grpo-and-reinforce-baselines-are-weights-too" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="rloo-dr.-grpo-and-reinforce-baselines-are-weights-too"><span class="header-section-number">4.3</span> RLOO, Dr.&nbsp;GRPO, and REINFORCE++: Baselines Are Weights Too</h3>
+<p>RLOO uses the reward of other samples for the same prompt as the baseline [3]:</p>
+<p><span id="eq-rloo-advantage"><span class="math display">\[
+\hat A_i
+=
+r_i
+-
+\frac{1}{K-1}
+\sum_{j\ne i}r_j.
+\tag{21}\]</span></span></p>
+<p>Dr.&nbsp;GRPO removes standard-deviation normalization and changes loss normalization to reduce length bias [7]:</p>
+<p><span id="eq-drgrpo-advantage"><span class="math display">\[
+\hat A_i
+=
+r_i-\mu_G.
+\tag{22}\]</span></span></p>
+<p>REINFORCE++ and related critic-free variants argue that much of PPO’s machinery is not always necessary in LLM post-training, but advantage normalization, token accounting, and stability tricks remain central [5].</p>
+<p>These details can look like bookkeeping. They are not. In long-form generation, dividing by sequence length, group standard deviation, or batch token count changes which prompts and tokens dominate the gradient. In Figure 2 terms, these variants mostly live in the advantage/baseline slot <span class="math inline">\(A_{i,t}\)</span> and the accounting/normalization slot <span class="math inline">\(n_{i,t}\)</span>.</p>
+</section>
+<section id="dapo-token-aggregation-and-asymmetric-clipping" class="level3" data-number="4.4">
+<h3 data-number="4.4" class="anchored" data-anchor-id="dapo-token-aggregation-and-asymmetric-clipping"><span class="header-section-number">4.4</span> DAPO: Token Aggregation and Asymmetric Clipping</h3>
+<p>DAPO makes the token-weighting lens unavoidable. It changes not only the advantage estimator, but also how token losses are aggregated, which prompt groups are allowed to contribute, and how ratio clipping behaves [8].</p>
+<p>Two ideas matter most for this post:</p>
+<ul>
+<li>Token-level aggregation belongs to the accounting/normalization slot <span class="math inline">\(n_{i,t}\)</span>; it keeps long responses from being systematically underweighted.</li>
+<li>Filtering and Clip-Higher belong to the clipping/filtering slot <span class="math inline">\(c_{i,t}\)</span>; they control which samples contribute and relax the upper ratio bound so rare but useful positive-advantage tokens are not clipped too early.</li>
+</ul>
+<p>In stack form, DAPO changes both slots:</p>
+<p><span id="eq-dapo-token-weight"><span class="math display">\[
+w_{i,t}^{\text{DAPO}}
+\approx
+\rho_{i,t}
+\hat A_i
+\,
+n_{i,t}^{\text{DAPO}}
+\,
+c_{i,t}^{\text{DAPO}}.
+\tag{23}\]</span></span></p>
+</section>
+<section id="cispo-clip-the-weight-keep-the-gradient-path" class="level3" data-number="4.5">
+<h3 data-number="4.5" class="anchored" data-anchor-id="cispo-clip-the-weight-keep-the-gradient-path"><span class="header-section-number">4.5</span> CISPO: Clip The Weight, Keep The Gradient Path</h3>
+<p>CISPO is useful because it separates two ideas that PPO tends to fuse [9,26]:</p>
+<ol type="1">
+<li>the scalar used to scale the update;</li>
+<li>the live log-prob term that receives gradient.</li>
+</ol>
+<p>A simplified CISPO-style actor loss is:</p>
+<p><span id="eq-cispo-loss"><span class="math display">\[
+\mathcal L^{\text{CISPO}}
+=
+-
+\sum_{i,t}
+\operatorname{sg}
+\left[
+\operatorname{clip}
+(\rho_{i,t},1-\epsilon,1+\epsilon)
+\hat A_{i,t}
+\right]
+\log \pi_\theta(y_{i,t}\mid x_i,y_{i,&lt;t}).
+\tag{24}\]</span></span></p>
+<p>The clipped ratio becomes a detached importance weight. The trainable path remains the current actor’s log-probability. In Figure 2 terms, CISPO touches the ratio/clipping scalar, but its most important distinction is the purple gradient-path slot: the scalar is detached, and gradients flow only through the live <span class="math inline">\(\log \pi_\theta\)</span> term.</p>
+<p>In plain English:</p>
+<blockquote class="blockquote">
+<p>PPO says: if the ratio moved too far, stop trusting this token’s update. CISPO says: keep the update, but cap how much the ratio can scale it.</p>
+</blockquote>
+<p>This is a useful bridge to teacher-weighting methods, because those methods also separate “where the gradient flows” from “what scalar or branch decides how much the token counts.”</p>
+</section>
+</section>
+<section id="teacher-augmented-weights-sdpo-srpo-and-rlsd" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="teacher-augmented-weights-sdpo-srpo-and-rlsd"><span class="header-section-number">5</span> Teacher-Augmented Weights: SDPO, SRPO, and RLSD</h2>
+<p>The previous section only used reward-derived advantages and policy-ratio control. On-policy distillation adds a new kind of signal: a teacher distribution evaluated on the student’s own rollout.</p>
+<p>This makes the weight stack richer, but also more dangerous. A teacher can provide local credit assignment that scalar reward cannot. It can also inject style, length preference, unsupported hindsight, or behavior that the verifier does not actually want.</p>
+<section id="loss-form-vs.-advantage-view" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="loss-form-vs.-advantage-view"><span class="header-section-number">5.1</span> Loss Form vs.&nbsp;Advantage View</h3>
+<p>Teacher-augmented RL is easy to misread because the same method can be discussed in two different mathematical languages. One language is the <strong>loss form</strong>: optimize a distillation objective between a student distribution and a teacher distribution. The other is the <strong>advantage-style view</strong>: inspect the gradient and ask whether a teacher-induced coefficient behaves like a token-level reward or advantage.</p>
+<p>These are two views of the update, not two interchangeable objectives.</p>
+<p>The first form is the loss form. We define a student next-token distribution <span class="math inline">\(p_{i,t}\)</span> and a teacher next-token distribution <span class="math inline">\(q_{i,t}\)</span>:</p>
+<p><span id="eq-student-teacher-distributions"><span class="math display">\[
+p_{i,t}(a)
+=
+\pi_\theta(a\mid c_S,y_{i,&lt;t}),
+\qquad
+q_{i,t}(a)
+=
+\operatorname{sg}
+\left[
+\pi_T(a\mid c_T,y_{i,&lt;t})
+\right].
+\tag{25}\]</span></span></p>
+<p>Then a generic distillation loss is:</p>
+<p><span id="eq-general-kd-loss"><span class="math display">\[
+\mathcal L_{\text{KD}}
+=
+\sum_{i,t}
+m_{i,t}
+D
+\left(
+q_{i,t}
+\parallel
+p_{i,t}
+\right).
+\tag{26}\]</span></span></p>
+<p>For forward KL, the teacher-side entropy term is constant with respect to the student, so the student-dependent part is the cross-entropy term:</p>
+<p><span id="eq-forward-kd-loss"><span class="math display">\[
+\mathcal L_{\text{FKL}}
+=
+\sum_{i,t}
+m_{i,t}
+D_{\text{KL}}(q_{i,t}\parallel p_{i,t})
+=
+\text{const}
++
+\sum_{i,t}
+m_{i,t}
+\left[
+-\sum_a
+q_{i,t}(a)
+\log p_{i,t}(a)
+\right].
+\tag{27}\]</span></span></p>
+<p>This is not equivalent to a sampled-token policy-gradient loss. The teacher probability <span class="math inline">\(q_{i,t}(a)\)</span> weights every possible next token <span class="math inline">\(a\)</span> in the vocabulary, not only the token that was sampled in the rollout. In this forward-KL form, it is better to think “soft supervised target,” not “advantage.”</p>
+<p>The advantage-style view becomes meaningful for reverse-KL-style self-distillation, where the current student distribution is on the sampling side of the divergence. The loss is still distribution matching:</p>
+<p><span id="eq-reverse-kd-loss"><span class="math display">\[
+\mathcal L_{\text{RKL}}
+=
+\sum_{i,t}
+m_{i,t}
+\sum_a
+p_{i,t}(a)
+\left[
+\log p_{i,t}(a)-\log q_{i,t}(a)
+\right].
+\tag{28}\]</span></span></p>
+<p>When we inspect the negative gradient of this loss, an advantage-like coefficient appears:</p>
+<p><span id="eq-teacher-advantage"><span class="math display">\[
+A_t^{\text{teacher}}(a)
+=
+\log q_t(a)
+-
+\log p_t(a).
+\tag{29}\]</span></span></p>
+<p>Positive means the feedback-conditioned teacher assigns more probability to token <span class="math inline">\(a\)</span> than the student does. Negative means the teacher assigns less. Up to constants that act like baselines, this is the term that makes reverse-KL self-distillation look policy-gradient-like.</p>
+<p>This is the bridge: a teacher method may start as a distillation loss, while a reverse-KL gradient can be read through an advantage-like coefficient. These forms are not equivalent objectives. The advantage view is an interpretation of what the loss pushes on, and it is especially useful when comparing teacher-augmented methods to PPO or GRPO.</p>
+</section>
+<section id="sdpo-distillation-loss-and-advantage-view" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="sdpo-distillation-loss-and-advantage-view"><span class="header-section-number">5.2</span> SDPO: Distillation Loss And Advantage View</h3>
+<p>SDPO samples a rollout, obtains feedback, reprompts the same model with that feedback as a self-teacher, and distills the feedback-conditioned teacher distribution back into the student [11].</p>
+<p>At the loss level, SDPO uses the teacher distribution as a dense target on the student’s own trajectory:</p>
+<p><span id="eq-sdpo-loss"><span class="math display">\[
+\mathcal L_{\text{SDPO}}
+=
+\sum_t
+m_t
+D_{\text{KL}}
+\left(
+p_t
+\parallel
+q_t
+\right)
+=
+\sum_t
+m_t
+\sum_a
+p_t(a)
+\left[
+\log p_t(a)-\log q_t(a)
+\right].
+\tag{30}\]</span></span></p>
+<p>The teacher does not need to generate a new response. It can rescore the student’s original rollout under the richer context. This is what makes SDPO appealing: it converts sparse outcome feedback into dense token-level supervision without requiring a stronger external teacher.</p>
+<p>At the update level, the same reverse-KL loss has a policy-gradient-like reading:</p>
+<p><span id="eq-sdpo-negative-gradient"><span class="math display">\[
+-\nabla_\theta \mathcal L_{\text{SDPO}}
+=
+\sum_t
+m_t
+\mathbb E_{a\sim p_t}
+\left[
+A_t^{\text{SDPO}}(a)
+\nabla_\theta \log p_t(a)
+\right]
+\tag{31}\]</span></span></p>
+<p>where:</p>
+<p><span id="eq-token-weight-sdpo-advantage"><span class="math display">\[
+A_t^{\text{SDPO}}(a)
+=
+\log q_t(a)-\log p_t(a).
+\tag{32}\]</span></span></p>
+<p>If we project this full-vocabulary update onto the sampled token <span class="math inline">\(y_t\)</span>, the local teacher gap is:</p>
+<p><span id="eq-sdpo-sampled-gap"><span class="math display">\[
+\Delta_t^{\text{SDPO}}
+=
+A_t^{\text{SDPO}}(y_t)
+=
+\log q_t(y_t)-\log p_t(y_t).
+\tag{33}\]</span></span></p>
+<p>This is often the most intuitive way to compare SDPO with reward-weighted RL: the teacher gap tells us whether the feedback-conditioned model wanted the sampled token more or less than the ordinary student did. But the actual SDPO objective in <a href="#eq-sdpo-loss" class="quarto-xref">Equation&nbsp;30</a> remains a reverse-KL distillation loss, not simply PPO with <span class="math inline">\(\Delta_t^{\text{SDPO}}\)</span> substituted for reward.</p>
+</section>
+<section id="srpo-route-before-trusting-the-teacher" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="srpo-route-before-trusting-the-teacher"><span class="header-section-number">5.3</span> SRPO: Route Before Trusting The Teacher</h3>
+<p>SRPO observes that SDPO can be very helpful on failed samples but ambiguous or harmful on already-correct samples [12]. The fix is routing. In the language of this section, SRPO is not a third mathematical form for teacher signal. It is a denoising rule: decide when the SDPO loss should be trusted at all.</p>
+<p>Let <span class="math inline">\(c_i\)</span> mark whether rollout <span class="math inline">\(i\)</span> is correct and <span class="math inline">\(m_i\)</span> mark whether usable teacher information exists:</p>
+<p><span id="eq-srpo-routing"><span class="math display">\[
+z_i^{\text{SDPO}}
+=
+(1-c_i)m_i,
+\qquad
+z_i^{\text{GRPO}}
+=
+1-z_i^{\text{SDPO}}.
+\tag{34}\]</span></span></p>
+<p>Then the routed objective is:</p>
+<p><span id="eq-srpo-loss"><span class="math display">\[
+\mathcal L_{\text{SRPO}}
+=
+\frac{
+\sum_{i,t}z_i^{\text{GRPO}}\ell_{i,t}^{\text{GRPO}}
++
+\sum_{i,t}z_i^{\text{SDPO}}\ell_{i,t}^{\text{SDPO}}
+}{
+\sum_{i,t}z_i^{\text{GRPO}}
++
+\sum_{i,t}z_i^{\text{SDPO}}
+}.
+\tag{35}\]</span></span></p>
+<p>SRPO uses the SDPO loss directly on the routed distillation branch. The next equation is <strong>not</strong> the original paper’s exact objective; it is my blog-level rewrite for the token-weighting lens. If we use the advantage-style lens only as an interpretation, the routed sampled-token signal looks like:</p>
+<p><span id="eq-srpo-advantage-view"><span class="math display">\[
+\tilde A_{i,t}^{\text{SRPO}}
+=
+z_i^{\text{GRPO}}\hat A_i^{\text{GRPO}}
++
+z_i^{\text{SDPO}}
+\Delta_{i,t}^{\text{SDPO}}.
+\tag{36}\]</span></span></p>
+<p>That equation is not the training loss, and it is not an equivalence claim. It is a bookkeeping view of the update story: use reward-relative policy optimization for samples where the teacher branch is not needed, and use the SDPO teacher gap for samples where feedback-conditioned distillation is expected to help. The faithful SRPO object to keep in mind is still the routed mixture of GRPO and SDPO losses in <a href="#eq-srpo-loss" class="quarto-xref">Equation&nbsp;35</a>.</p>
+</section>
+<section id="rlsd-reward-direction-teacher-magnitude" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="rlsd-reward-direction-teacher-magnitude"><span class="header-section-number">5.4</span> RLSD: Reward Direction, Teacher Magnitude</h3>
+<p>RLSD makes the denoising idea even sharper. Reward decides direction; the teacher-student gap only changes token-level magnitude [13].</p>
+<p>Define a detached sampled-token gap:</p>
+<p><span id="eq-rlsd-gap"><span class="math display">\[
+\Delta_{i,t}
+=
+\operatorname{sg}
+\left[
+\log \pi_T(y_{i,t}\mid c_T,y_{i,&lt;t})
+-
+\log \pi_S(y_{i,t}\mid c_S,y_{i,&lt;t})
+\right].
+\tag{37}\]</span></span></p>
+<p>A simple RLSD-style multiplier is:</p>
+<p><span id="eq-rlsd-multiplier"><span class="math display">\[
+u_{i,t}
+=
+\operatorname{clip}
+\left(
+\exp(\operatorname{sign}(\hat A_i)\Delta_{i,t}),
+1-\epsilon_w,
+1+\epsilon_w
+\right).
+\tag{38}\]</span></span></p>
+<p>Then:</p>
+<p><span id="eq-rlsd-advantage"><span class="math display">\[
+\hat A_{i,t}^{\text{RLSD}}
+=
+\hat A_i
+\left[
+(1-\lambda)+\lambda u_{i,t}
+\right].
+\tag{39}\]</span></span></p>
+<p>The effective token weight becomes:</p>
+<p><span id="eq-rlsd-token-weight"><span class="math display">\[
+w_{i,t}^{\text{RLSD}}
+\approx
+\rho_{i,t}
+\hat A_i
+\left[
+(1-\lambda)+\lambda u_{i,t}
+\right].
+\tag{40}\]</span></span></p>
+<p>The key point:</p>
+<blockquote class="blockquote">
+<p>RLSD does not ask the teacher to decide correctness. The verifier reward decides direction. The teacher only says which tokens deserve more or less magnitude inside that direction.</p>
+</blockquote>
+<p>So SRPO and RLSD are best read as two basic teacher-denoising moves. SRPO denoises by <strong>routing</strong>: only use the teacher branch on samples where teacher feedback is expected to help. RLSD denoises by <strong>anchoring direction</strong>: keep the verifier advantage as the sign of the update, and let the teacher only modulate strength.</p>
+</section>
+</section>
+<section id="when-should-we-trust-the-teacher" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="when-should-we-trust-the-teacher"><span class="header-section-number">6</span> When Should We Trust The Teacher?</h2>
+<p>Once teacher signal becomes part of the update, the next question is not simply whether the teacher is better than the student. The more useful question is local:</p>
+<blockquote class="blockquote">
+<p>Should this teacher signal affect this token or sample right now?</p>
+</blockquote>
+<p>The teacher can be right in the abstract but still noisy for the update. It may use privileged context the student will not see, change style or length rather than task behavior, give a useful sequence-level hint that is misleading at a specific token, help exploration early but become stale later, or be locally incompatible with the student’s current prefix.</p>
+<p>A useful generic form is:</p>
+<p><span id="eq-conditional-teacher-loss"><span class="math display">\[
+\mathcal L_{\text{teacher}}
+=
+\sum_{i,t}
+z_{i,t}
+\tau_{i,t}
+D_{\text{teacher}}(i,t),
+\tag{41}\]</span></span></p>
+<p>This equation has three knobs:</p>
+<ul>
+<li><span class="math inline">\(z_{i,t}\)</span> asks whether the teacher branch is active.</li>
+<li><span class="math inline">\(\tau_{i,t}\)</span> asks how strongly the teacher branch should count.</li>
+<li><span class="math inline">\(D_{\text{teacher}}(i,t)\)</span> asks what teacher signal is being trusted in the first place.</li>
+</ul>
+<p>SRPO mainly edits <span class="math inline">\(z\)</span>: route the teacher branch only where it is expected to help. RLSD mainly edits <span class="math inline">\(\tau\)</span>: keep reward as the direction and let the teacher change strength. Recent OPD and OPSD papers can be read as broadening this same trust-control pattern:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Trust Knob</th>
+<th style="text-align: left;">Question</th>
+<th style="text-align: left;">Representative Methods</th>
+<th style="text-align: left;">Core Idea</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Route <span class="math inline">\(z\)</span></td>
+<td style="text-align: left;">Should teacher signal be used here?</td>
+<td style="text-align: left;">SRPO [12], HERO [20], SocraticPO [18]</td>
+<td style="text-align: left;">Use teacher help only when it is locally relevant, needed, or should receive discounted credit.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Weight <span class="math inline">\(\tau\)</span></td>
+<td style="text-align: left;">How much should teacher signal count?</td>
+<td style="text-align: left;">RLSD [13], SG-OPD [17]</td>
+<td style="text-align: left;">Scale teacher guidance by reward direction or sign consistency.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Purify <span class="math inline">\(D_{\text{teacher}}\)</span></td>
+<td style="text-align: left;">Is the teacher signal clean?</td>
+<td style="text-align: left;">RLCSD [22], ARG-OPD [19], EDGE-OPD [27]</td>
+<td style="text-align: left;">Remove style drift, unsupported oracle residue, or absolute privileged imitation before using the teacher gap.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Change signal form</td>
+<td style="text-align: left;">Are token logits the right interface?</td>
+<td style="text-align: left;">DistIL [15], OPRD [16]</td>
+<td style="text-align: left;">Use forward-KL imitation, distributional DAgger, or representation alignment instead of only token-logit gaps.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Control context and timing</td>
+<td style="text-align: left;">Is the teacher compatible now?</td>
+<td style="text-align: left;">Context Returns [21], Teacher-Move Timing [14]</td>
+<td style="text-align: left;">Check whether internalized context remains compatible, and refresh moving teachers only after consolidation.</td>
+</tr>
+</tbody>
+</table>
+<p>The common thread is that the teacher is no longer treated as uniformly correct dense supervision. In the token-weighting view, teacher trust becomes a concrete update rule: route the teacher, scale the teacher, clean the teacher signal, change its representation, or delay it until the student is ready.</p>
+</section>
+<section id="conclusion-the-weight-is-the-interface" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="conclusion-the-weight-is-the-interface"><span class="header-section-number">7</span> Conclusion: The Weight Is The Interface</h2>
+<p>The easiest way to tell the story of LLM RL is to start with rewards. The more useful way to debug and compare training methods is to ask what finally multiplies each token’s log-probability.</p>
+<p>That weight is not one thing. In PPO, part of it is a reuse correction: the token came from an older policy, so the current policy needs a ratio and a clip. In GRPO and related critic-free methods, part of it is a response-level advantage broadcast across tokens. In DAPO and CISPO, part of it is accounting, filtering, clipping, and gradient-path design. In SDPO, SRPO, and RLSD, part of it comes from a teacher signal, but the teacher does not always enter in the same mathematical form.</p>
+<p>This is the main lesson I want to keep. A “token weight” can mean several different things:</p>
+<ul>
+<li>a reward direction;</li>
+<li>a policy-ratio correction;</li>
+<li>a normalization or filtering choice;</li>
+<li>a detached scalar that controls gradient scale;</li>
+<li>a distributional teacher loss;</li>
+<li>a route, gate, or trust score deciding whether teacher signal should count at all.</li>
+</ul>
+<p>Those are not interchangeable. A probability ratio is not a reward. A distillation loss is not automatically an advantage. A rollout-correction ratio is not the same as PPO’s current-vs-old-policy ratio. And a teacher that is useful for one failed sample may be noisy, stale, overprivileged, or unsupported on another.</p>
+<p>So the newer direction is not simply “add more teacher signal” or “make the reward better.” It is to make the update conditional: this token, under this prefix, from this rollout policy, with this reward direction, under this teacher context, should count by this much.</p>
+<p>That is why I like the token-weighting view. It turns the algorithm landscape into a practical checklist:</p>
+<ul>
+<li>Which tokens are even eligible for gradient?</li>
+<li>Which policy generated them, and how far has the actor moved?</li>
+<li>Is the reward signal sequence-level or token-local?</li>
+<li>Are normalization and clipping changing which examples dominate?</li>
+<li>Is the teacher defining the target, routing the sample, or only scaling a reward-grounded update?</li>
+<li>Is there a training-inference mismatch large enough that the token should be clipped or discarded before the actor update sees it?</li>
+</ul>
+<p>Every token gets a weight. The hard part is making sure that weight means what we think it means.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div class="references-list">
+<ol type="1">
+<li>Williams, R.J. (1992). <em>Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning.</em> <a href="https://link.springer.com/article/10.1007/BF00992696">Machine Learning</a></li>
+<li>Schulman, J. et al.&nbsp;(2017). <em>Proximal Policy Optimization Algorithms.</em> <a href="https://arxiv.org/abs/1707.06347">arXiv:1707.06347</a></li>
+<li>Ahmadian, A. et al.&nbsp;(2024). <em>Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs.</em> <a href="https://arxiv.org/abs/2402.14740">arXiv:2402.14740</a></li>
+<li>Shao, Z. et al.&nbsp;(2024). <em>DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models.</em> <a href="https://arxiv.org/abs/2402.03300">arXiv:2402.03300</a></li>
+<li>Hu, J. et al.&nbsp;(2025). <em>REINFORCE++: Stabilizing Critic-Free Policy Optimization with Global Advantage Normalization.</em> <a href="https://arxiv.org/abs/2501.03262">arXiv:2501.03262</a></li>
+<li>DeepSeek-AI et al.&nbsp;(2025). <em>DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning.</em> <a href="https://arxiv.org/abs/2501.12948">arXiv:2501.12948</a></li>
+<li>Liu, Z. et al.&nbsp;(2025). <em>Understanding R1-Zero-Like Training: A Critical Perspective.</em> <a href="https://arxiv.org/abs/2503.20783">arXiv:2503.20783</a></li>
+<li>Yu, Q. et al.&nbsp;(2025). <em>DAPO: An Open-Source LLM Reinforcement Learning System at Scale.</em> <a href="https://arxiv.org/abs/2503.14476">arXiv:2503.14476</a></li>
+<li>MiniMax et al.&nbsp;(2025). <em>MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention.</em> <a href="https://arxiv.org/abs/2506.13585">arXiv:2506.13585</a></li>
+<li>Weers, A. (2026). <em>State of RL for reasoning LLMs.</em> <a href="https://aweers.de/blog/2026/rl-for-llms/">blog</a></li>
+<li>Hübotter, J. et al.&nbsp;(2026). <em>Reinforcement Learning via Self-Distillation.</em> <a href="https://arxiv.org/abs/2601.20802">arXiv:2601.20802</a></li>
+<li>Li, G. et al.&nbsp;(2026). <em>Unifying Group-Relative and Self-Distillation Policy Optimization via Sample Routing.</em> <a href="https://arxiv.org/abs/2604.02288">arXiv:2604.02288</a></li>
+<li>Yang, C. et al.&nbsp;(2026). <em>Self-Distilled RLVR.</em> <a href="https://arxiv.org/abs/2604.03128">arXiv:2604.03128</a></li>
+<li>Guo, H. et al.&nbsp;(2026). <em>When Should the Teacher Move? Temporal Coupling and Stability in Self On-Policy Distillation.</em> <a href="https://arxiv.org/abs/2606.03532">arXiv:2606.03532</a></li>
+<li>Agrawal, R. et al.&nbsp;(2026). <em>Reinforcement Learning from Rich Feedback with Distributional DAgger.</em> <a href="https://arxiv.org/abs/2606.05152">arXiv:2606.05152</a></li>
+<li>Yang, S. et al.&nbsp;(2026). <em>OPRD: On-Policy Representation Distillation.</em> <a href="https://arxiv.org/abs/2606.06021">arXiv:2606.06021</a></li>
+<li>Xu, H. et al.&nbsp;(2026). <em>SG-OPD: Sign-Gated On-Policy Distillation via Sign-Consistency Gating and Phased Teacher Sampling.</em> <a href="https://arxiv.org/abs/2606.09304">arXiv:2606.09304</a></li>
+<li>Liu, Z. et al.&nbsp;(2026). <em>SocraticPO: Policy Optimization via Interactive Guidance.</em> <a href="https://arxiv.org/abs/2606.09887">arXiv:2606.09887</a></li>
+<li>Zhang, W. et al.&nbsp;(2026). <em>Beyond Absolute Imitation: Anchored Residual Guidance for Privileged On-Policy Distillation.</em> <a href="https://arxiv.org/abs/2606.10385">arXiv:2606.10385</a></li>
+<li>Liu, H. et al.&nbsp;(2026). <em>HERO: Hindsight-Enhanced Reflection from Environment Observations for Agentic Self-Distillation.</em> <a href="https://arxiv.org/abs/2606.11559">arXiv:2606.11559</a></li>
+<li>Wang, X. et al.&nbsp;(2026). <em>When Context Returns: Toward Robust Internalization in On-Policy Distillation.</em> <a href="https://arxiv.org/abs/2606.11627">arXiv:2606.11627</a></li>
+<li>Pan, L. et al.&nbsp;(2026). <em>RLCSD: Reinforcement Learning with Contrastive On-Policy Self-Distillation.</em> <a href="https://arxiv.org/abs/2606.11709">arXiv:2606.11709</a></li>
+<li>Yao, F. et al.&nbsp;(2025). <em>Your Efficient RL Framework Secretly Brings You Off-Policy RL Training.</em> <a href="https://fengyao.notion.site/Your-Efficient-RL-Framework-Secretly-Brings-You-Off-Policy-RL-Training-237721e3f6c48094ad67dad3ac091c56">Notion</a></li>
+<li>Zhao, X. et al.&nbsp;(2025). <em>Small Leak Can Sink a Great Ship–Boost RL Training on MoE with IcePop!</em> <a href="https://ringtech.notion.site/icepop">Notion</a></li>
+<li>ms-swift Team (2026). <em>Training-Inference-Mismatch.</em> <a href="https://swift.readthedocs.io/en/latest/Instruction/GRPO/AdvancedResearch/training_inference_mismatch.html">swift docs</a></li>
+<li>ms-swift Team (2026). <em>Clipped Importance Sampling Policy Optimization (CISPO).</em> <a href="https://swift.readthedocs.io/en/latest/Instruction/GRPO/AdvancedResearch/CISPO.html">swift docs</a></li>
+<li>Lazaridis, A. et al.&nbsp;(2026). <em>EDGE-OPD: Internalizing Privileged Context with Evidence Guided On-Policy Distillation.</em> <a href="https://arxiv.org/abs/2605.23493">arXiv:2605.23493</a></li>
+</ol>
+</div>
+</section>
+<section id="appendix-a-policy-gradient-loss-as-a-gradient-surrogate" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="appendix-a-policy-gradient-loss-as-a-gradient-surrogate">Appendix A: Policy-Gradient Loss As A Gradient Surrogate</h2>
+<p>The original RL objective is an expected reward, not a loss over labels. For a discrete sequence <span class="math inline">\(y\)</span>:</p>
+<p><span id="eq-appendix-score-function"><span class="math display">\[
+\nabla_\theta J(\theta)
+=
+\nabla_\theta
+\sum_y
+\pi_\theta(y)R(y)
+=
+\sum_y
+\pi_\theta(y)R(y)
+\nabla_\theta \log \pi_\theta(y)
+=
+\mathbb E_{y\sim \pi_\theta}
+\left[
+R(y)\nabla_\theta\log\pi_\theta(y)
+\right].
+\tag{42}\]</span></span></p>
+<p>That is why the usual REINFORCE-style training loss is better understood as a gradient surrogate:</p>
+<p><span id="eq-appendix-reinforce-surrogate"><span class="math display">\[
+\mathcal L_{\text{RF}}
+=
+-\hat A(y)
+\log \pi_\theta(y).
+\tag{43}\]</span></span></p>
+<p>For the actor update, <span class="math inline">\(\hat A(y)\)</span> is treated as fixed. In autodiff notation, this is the same as using <span class="math inline">\(\operatorname{sg}[\hat A(y)]\)</span> in the gradient:</p>
+<p><span id="eq-appendix-reinforce-gradient"><span class="math display">\[
+\nabla_\theta \mathcal L_{\text{RF}}
+=
+-\operatorname{sg}[\hat A(y)]
+\nabla_\theta \log \pi_\theta(y).
+\tag{44}\]</span></span></p>
+<p>Gradient descent on <a href="#eq-appendix-reinforce-surrogate" class="quarto-xref">Equation&nbsp;43</a> therefore performs gradient ascent on expected reward:</p>
+<p><span id="eq-appendix-reinforce-update"><span class="math display">\[
+\theta
+\leftarrow
+\theta
+-
+\eta\nabla_\theta\mathcal L_{\text{RF}}
+=
+\theta
++
+\eta\operatorname{sg}[\hat A(y)]
+\nabla_\theta\log\pi_\theta(y).
+\tag{45}\]</span></span></p>
+<p>This is also why the actor loss value can be hard to interpret during training. It may be small, positive, or negative depending on log-prob scale, advantage normalization, clipping, KL penalties, and the mixture of positive and negative samples. The more diagnostic quantities are usually reward, pass rate, KL, entropy, ratio statistics, clip fraction, token counts, and evaluation metrics.</p>
+</section>
+<section id="appendix-b-ppo-data-reuse-minibatches-and-clipping" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="appendix-b-ppo-data-reuse-minibatches-and-clipping">Appendix B: PPO Data Reuse, Minibatches, And Clipping</h2>
+<p>PPO’s “slightly off-policy” behavior comes from reusing fixed generated data [10]. A typical loop looks like this:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Term</th>
+<th style="text-align: left;">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Rollout batch</td>
+<td style="text-align: left;">Prompts, sampled responses, rewards, masks, and old log-probs generated by the rollout policy.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PPO minibatch</td>
+<td style="text-align: left;">A slice of the rollout batch used for one parameter update.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Microbatch</td>
+<td style="text-align: left;">A smaller slice used for gradient accumulation when the minibatch does not fit in memory.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Optimizer step</td>
+<td style="text-align: left;">The moment gradients are applied and <span class="math inline">\(\theta\)</span> actually changes.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PPO epoch</td>
+<td style="text-align: left;">One full pass over the fixed rollout batch. Multiple PPO epochs reuse the same sampled tokens.</td>
+</tr>
+</tbody>
+</table>
+<p>After the first optimizer step, the current actor no longer equals the actor that generated the rollout. PPO keeps using the same sampled tokens because generation and reward evaluation are expensive, while the ratio in <a href="#eq-ppo-ratio" class="quarto-xref">Equation&nbsp;13</a> measures how much the current actor has moved on those tokens.</p>
+<p>The per-token clipped surrogate is:</p>
+<p><span id="eq-appendix-ppo-token-objective"><span class="math display">\[
+J_t^{\text{clip}}
+=
+\min
+\left(
+\rho_t\hat A_t,
+\operatorname{clip}(\rho_t,1-\epsilon,1+\epsilon)\hat A_t
+\right).
+\tag{46}\]</span></span></p>
+<p>For positive advantage, PPO wants to increase the sampled token probability, but not beyond the upper trust-region edge:</p>
+<p><span id="eq-appendix-ppo-positive-clipped"><span class="math display">\[
+\hat A_t&gt;0,\quad
+\rho_t&gt;1+\epsilon
+\quad\Rightarrow\quad
+J_t^{\text{clip}}
+=
+(1+\epsilon)\hat A_t.
+\tag{47}\]</span></span></p>
+<p>In that clipped region, the selected objective no longer depends on the current policy ratio, so the reward-improving gradient through that branch is zero.</p>
+<p>For negative advantage, PPO wants to decrease the sampled token probability, but not beyond the lower edge:</p>
+<p><span id="eq-appendix-ppo-negative-clipped"><span class="math display">\[
+\hat A_t&lt;0,\quad
+\rho_t&lt;1-\epsilon
+\quad\Rightarrow\quad
+J_t^{\text{clip}}
+=
+(1-\epsilon)\hat A_t.
+\tag{48}\]</span></span></p>
+<p>This is the trust-region approximation in miniature: reuse the exact generated data for several optimizer steps, but stop taking reward-improving gradients when the current policy has moved too far from the generation policy on that token.</p>
+</section>
+<section id="appendix-c-rollout-mismatch-is-a-different-ratio" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="appendix-c-rollout-mismatch-is-a-different-ratio">Appendix C: Rollout Mismatch Is A Different Ratio</h2>
+<p>PPO’s ratio controls data reuse [2]:</p>
+<p><span id="eq-appendix-train-ratio"><span class="math display">\[
+\rho_t^{\text{train}}
+=
+\frac{
+\pi_\theta(y_t\mid s_t)
+}{
+\pi_{\text{old}}(y_t\mid s_t)
+}.
+\tag{49}\]</span></span></p>
+<p>But in real LLM RL systems, the rollout engine and the training engine may disagree [23,25]. The model that generated the token may be served through vLLM or SGLang, while the trainer recomputes log-probs through FSDP, Megatron, or another backend. Even if both engines nominally hold the same checkpoint, kernel choices, precision, batching, sampling code, or MoE routing can make the probability assigned to the same sampled token differ.</p>
+<p>That creates a second ratio:</p>
+<p><span id="eq-appendix-rollout-ratio"><span class="math display">\[
+\omega_t^{\text{rollout}}
+=
+\frac{
+\pi_{\text{old}}(y_t\mid s_t)
+}{
+\pi_{\text{rollout}}(y_t\mid s_t)
+}.
+\tag{50}\]</span></span></p>
+<p>Together:</p>
+<p><span id="eq-appendix-total-ratio"><span class="math display">\[
+\frac{
+\pi_\theta(y_t\mid s_t)
+}{
+\pi_{\text{rollout}}(y_t\mid s_t)
+}
+=
+\rho_t^{\text{train}}
+\cdot
+\omega_t^{\text{rollout}}.
+\tag{51}\]</span></span></p>
+<p>This distinction matters because PPO clipping and rollout correction are not the same fix. PPO clipping controls how far the trainable actor moves from the old actor. Training-inference importance sampling, or TIS, addresses probability-accounting mismatch between the system that generated the token and the system that scores it [23,25].</p>
+<p>A simple TIS-style correction starts from the rollout/train log-prob gap:</p>
+<p><span id="eq-appendix-tis-ratio"><span class="math display">\[
+\delta_t^{\text{TI}}
+=
+\log \pi_{\text{old}}(y_t\mid s_t)
+-
+\log \pi_{\text{rollout}}(y_t\mid s_t),
+\qquad
+\omega_t^{\text{rollout}}
+=
+\exp(\delta_t^{\text{TI}}).
+\tag{52}\]</span></span></p>
+<p>Then the system can truncate or mask the correction:</p>
+<p><span id="eq-appendix-tis-truncate-mask"><span class="math display">\[
+\tilde \omega_t
+=
+\operatorname{clip}
+\left(
+\omega_t^{\text{rollout}},
+\omega_{\min},
+\omega_{\max}
+\right),
+\qquad
+b_t
+=
+\mathbf 1
+\left[
+|\delta_t^{\text{TI}}|\le \kappa
+\right].
+\tag{53}\]</span></span></p>
+<p>The token’s effective update can then use:</p>
+<p><span id="eq-appendix-tis-effective-weight"><span class="math display">\[
+w_t
+\leftarrow
+w_t
+\cdot
+\tilde \omega_t
+\cdot
+b_t.
+\tag{54}\]</span></span></p>
+<p>The exact thresholds and whether masking happens at token level or sequence level are engineering choices. The conceptual point is stable: TIS and IcePop-style handling are about deciding whether the rollout token is still a trustworthy on-policy training record under the trainer’s probability accounting [23,24,25].</p>
+<p>IcePop is a useful concrete example because it focuses on MoE RL, where small training-inference discrepancies can be amplified by expert-routing differences and long autoregressive sequences [24]. Its lesson for this post is not that every RL pipeline should use the same thresholds. It is that rollout correction belongs to the token-weight story: severe rollout/training probability mismatch should downweight, clip, or remove a token before the actor update treats it as reliable on-policy data.</p>
+</section>
+<section id="appendix-d-teacher-trust-details" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="appendix-d-teacher-trust-details">Appendix D: Teacher Trust Details</h2>
+<p>Some teacher-weighting details are better kept out of the main line of the post. For example, dynamic SDPO-style variants can weight distillation by teacher confidence. One simple confidence proxy is teacher entropy:</p>
+<p><span id="eq-appendix-teacher-entropy"><span class="math display">\[
+H(q_t)
+=
+-\sum_a
+q_t(a)\log q_t(a).
+\tag{55}\]</span></span></p>
+<p>A confidence weight might decrease as entropy rises:</p>
+<p><span id="eq-appendix-teacher-confidence"><span class="math display">\[
+\tau_t
+=
+\operatorname{clip}
+\left(
+\exp(-\beta H(q_t)),
+\tau_{\min},
+\tau_{\max}
+\right).
+\tag{56}\]</span></span></p>
+<p>Then the teacher branch becomes:</p>
+<p><span id="eq-appendix-weighted-teacher-loss"><span class="math display">\[
+\mathcal L_{\text{weighted teacher}}
+=
+\sum_t
+m_t
+\tau_t
+D_{\text{teacher}}(p_t,q_t).
+\tag{57}\]</span></span></p>
+<p>This is the same family of questions as SRPO routing [12], RLSD magnitude control [13], sign gating [17], evidence masking [27], and teacher-move timing [14]: should the teacher be active on this token, and if so, how much should it count?</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const article = document.querySelector("main.content");
+  const titleBlock = document.querySelector(".quarto-title-meta");
+  if (!article || !titleBlock) return;
+
+  const words = article.innerText.trim().split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.round(words / 220));
+
+  const block = document.createElement("div");
+  block.innerHTML = `
+    <div class="quarto-title-meta-heading">Reading Time</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">${minutes} min</p>
+    </div>
+  `;
+  titleBlock.appendChild(block);
+});
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
