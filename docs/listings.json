@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/fixed-state-or-sparse-retrieval/index.html",
       "/posts/token_weighting_llm_rl/index.html",
       "/posts/on_policy_self_distillation/index.html",
       "/posts/rethink_sft/index.html",

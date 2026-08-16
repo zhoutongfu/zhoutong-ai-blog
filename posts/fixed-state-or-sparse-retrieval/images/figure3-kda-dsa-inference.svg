@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+  <title id="title">Inference state and next-token read paths</title>
+  <desc id="desc">A two-row comparison showing KDA fixed recurrent state and update-read operations, DSA token-growing MLA and index records with index scan and top-k main attention, and a note that K3 combines both storage types.</desc>
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#f5f3ff"/>
+    </linearGradient>
+    <filter id="shadow4" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow4" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#475569"/>
+    </marker>
+    <marker id="greenArrow4" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#059669"/>
+    </marker>
+    <marker id="orangeArrow4" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#ea580c"/>
+    </marker>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .title { font-size: 32px; font-weight: 750; fill: #0f172a; }
+      .subtitle { font-size: 17px; fill: #475569; }
+      .col-label { font-size: 13px; font-weight: 750; letter-spacing: 1.2px; fill: #64748b; }
+      .card-title { font-size: 18px; font-weight: 740; }
+      .note { font-size: 14px; fill: #475569; }
+      .small { font-size: 12.5px; fill: #64748b; }
+      .lane-label { font-size: 14px; font-weight: 750; fill: #ffffff; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="760" fill="url(#bg4)"/>
+  <rect x="28" y="24" width="1344" height="710" rx="26" fill="#ffffff" stroke="#dbe4f0" filter="url(#shadow4)"/>
+
+  <text x="70" y="75" class="sans title">Inference state and next-token read paths</text>
+  <text x="70" y="107" class="sans subtitle">KDA bounds recurrent state; DSA retains token records and restricts the main-attention read.</text>
+
+  <text x="92" y="160" class="sans col-label">PERSISTENT STATE</text>
+  <text x="474" y="160" class="sans col-label">OPERATIONS FOR THE NEXT TOKEN</text>
+  <text x="1238" y="160" class="sans col-label">OUTPUT</text>
+  <line x1="430" y1="148" x2="430" y2="656" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 7"/>
+
+  <!-- KDA lane -->
+  <rect x="62" y="180" width="1276" height="205" rx="20" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+  <rect x="82" y="198" width="64" height="28" rx="14" fill="#059669"/>
+  <text x="114" y="217" text-anchor="middle" class="sans lane-label">KDA</text>
+
+  <g transform="translate(92 240)">
+    <rect width="292" height="112" rx="16" fill="#ffffff" stroke="#34d399" stroke-width="1.8"/>
+    <g transform="translate(22 24)" stroke="#059669" stroke-width="1.6" fill="#d1fae5">
+      <rect x="0" y="0" width="22" height="22"/>
+      <rect x="24" y="0" width="22" height="22"/>
+      <rect x="48" y="0" width="22" height="22"/>
+      <rect x="0" y="24" width="22" height="22"/>
+      <rect x="24" y="24" width="22" height="22"/>
+      <rect x="48" y="24" width="22" height="22"/>
+    </g>
+    <text x="188" y="38" text-anchor="middle" class="sans card-title" fill="#047857">fixed matrix Sₜ</text>
+    <text x="188" y="64" text-anchor="middle" class="sans note">per recurrent layer</text>
+    <text x="188" y="87" text-anchor="middle" class="sans small" fill="#047857">state size independent of T</text>
+  </g>
+
+  <g transform="translate(470 249)">
+    <rect width="130" height="92" rx="15" fill="#ffffff" stroke="#6ee7b7" stroke-width="1.8"/>
+    <text x="65" y="35" text-anchor="middle" class="sans card-title" fill="#047857">qₜ, kₜ, vₜ</text>
+    <text x="65" y="61" text-anchor="middle" class="sans small">new token</text>
+  </g>
+  <line x1="600" y1="295" x2="646" y2="295" stroke="#059669" stroke-width="2.5" marker-end="url(#greenArrow4)"/>
+  <g transform="translate(654 240)">
+    <rect width="210" height="110" rx="15" fill="#ffffff" stroke="#34d399" stroke-width="1.8"/>
+    <text x="105" y="34" text-anchor="middle" class="sans card-title" fill="#047857">state update</text>
+    <text x="105" y="60" text-anchor="middle" class="sans note">decay + delta correction</text>
+    <text x="105" y="84" text-anchor="middle" class="sans small">Sₜ₋₁ → Sₜ</text>
+  </g>
+  <line x1="864" y1="295" x2="910" y2="295" stroke="#059669" stroke-width="2.5" marker-end="url(#greenArrow4)"/>
+  <g transform="translate(918 249)">
+    <rect width="176" height="92" rx="15" fill="#ffffff" stroke="#34d399" stroke-width="1.8"/>
+    <text x="88" y="35" text-anchor="middle" class="sans card-title" fill="#047857">state read</text>
+    <text x="88" y="62" text-anchor="middle" class="sans note">Sₜᵀ qₜ</text>
+  </g>
+  <line x1="1094" y1="295" x2="1190" y2="295" stroke="#059669" stroke-width="2.5" marker-end="url(#greenArrow4)"/>
+  <circle cx="1230" cy="295" r="35" fill="#059669"/>
+  <text x="1230" y="302" text-anchor="middle" class="sans card-title" fill="#ffffff">oₜ</text>
+
+  <!-- DSA lane -->
+  <rect x="62" y="405" width="1276" height="244" rx="20" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+  <rect x="82" y="423" width="64" height="28" rx="14" fill="#ea580c"/>
+  <text x="114" y="442" text-anchor="middle" class="sans lane-label">DSA</text>
+
+  <g transform="translate(92 472)">
+    <rect width="292" height="136" rx="16" fill="#ffffff" stroke="#fb923c" stroke-width="1.8"/>
+    <g transform="translate(22 22)">
+      <rect x="0" y="0" width="42" height="38" rx="7" fill="#ffedd5" stroke="#f97316"/>
+      <rect x="48" y="0" width="42" height="38" rx="7" fill="#ffedd5" stroke="#f97316"/>
+      <text x="21" y="25" text-anchor="middle" class="sans small" fill="#9a3412">c₁</text>
+      <text x="69" y="25" text-anchor="middle" class="sans small" fill="#9a3412">c₂</text>
+      <text x="108" y="25" text-anchor="middle" class="sans note" fill="#9a3412">···</text>
+      <rect x="126" y="0" width="42" height="38" rx="7" fill="#ffedd5" stroke="#f97316"/>
+      <text x="147" y="25" text-anchor="middle" class="sans small" fill="#9a3412">cₜ</text>
+    </g>
+    <text x="146" y="86" text-anchor="middle" class="sans card-title" fill="#c2410c">MLA + index records</text>
+    <text x="146" y="111" text-anchor="middle" class="sans small" fill="#9a3412">one record set per token</text>
+    <text x="146" y="129" text-anchor="middle" class="sans small" fill="#9a3412">storage grows with T</text>
+  </g>
+
+  <g transform="translate(462 492)">
+    <rect width="116" height="86" rx="14" fill="#ffffff" stroke="#fdba74" stroke-width="1.8"/>
+    <text x="58" y="34" text-anchor="middle" class="sans card-title" fill="#c2410c">query</text>
+    <text x="58" y="60" text-anchor="middle" class="sans small">current qₜ</text>
+  </g>
+  <line x1="578" y1="535" x2="618" y2="535" stroke="#ea580c" stroke-width="2.5" marker-end="url(#orangeArrow4)"/>
+  <g transform="translate(626 478)">
+    <rect width="174" height="114" rx="14" fill="#ffffff" stroke="#fb923c" stroke-width="1.8"/>
+    <text x="87" y="34" text-anchor="middle" class="sans card-title" fill="#c2410c">index scan</text>
+    <text x="87" y="60" text-anchor="middle" class="sans note">score all eligible</text>
+    <text x="87" y="81" text-anchor="middle" class="sans note">index records</text>
+    <text x="87" y="102" text-anchor="middle" class="sans small" fill="#9a3412">history-dependent</text>
+  </g>
+  <line x1="800" y1="535" x2="838" y2="535" stroke="#ea580c" stroke-width="2.5" marker-end="url(#orangeArrow4)"/>
+  <g transform="translate(846 492)">
+    <rect width="112" height="86" rx="14" fill="#ffffff" stroke="#fb923c" stroke-width="1.8"/>
+    <text x="56" y="34" text-anchor="middle" class="sans card-title" fill="#c2410c">top-k</text>
+    <text x="56" y="60" text-anchor="middle" class="sans small">candidate set</text>
+  </g>
+  <line x1="958" y1="535" x2="996" y2="535" stroke="#ea580c" stroke-width="2.5" marker-end="url(#orangeArrow4)"/>
+  <g transform="translate(1004 478)">
+    <rect width="174" height="114" rx="14" fill="#ffffff" stroke="#fb923c" stroke-width="1.8"/>
+    <text x="87" y="34" text-anchor="middle" class="sans card-title" fill="#c2410c">main attention</text>
+    <text x="87" y="60" text-anchor="middle" class="sans note">score and read</text>
+    <text x="87" y="81" text-anchor="middle" class="sans note">k MLA records</text>
+    <text x="87" y="102" text-anchor="middle" class="sans small" fill="#9a3412">restricted read</text>
+  </g>
+  <line x1="1178" y1="535" x2="1198" y2="535" stroke="#ea580c" stroke-width="2.5" marker-end="url(#orangeArrow4)"/>
+  <circle cx="1238" cy="535" r="35" fill="#ea580c"/>
+  <text x="1238" y="542" text-anchor="middle" class="sans card-title" fill="#ffffff">oₜ</text>
+
+  <path d="M384 510 C480 450, 606 448, 690 476" fill="none" stroke="#f97316" stroke-width="1.8" stroke-dasharray="6 6" marker-end="url(#orangeArrow4)"/>
+  <text x="510" y="457" text-anchor="middle" class="sans small" fill="#9a3412">all index records</text>
+  <path d="M384 582 C590 635, 892 635, 1078 594" fill="none" stroke="#f97316" stroke-width="1.8" stroke-dasharray="6 6" marker-end="url(#orangeArrow4)"/>
+  <text x="732" y="631" text-anchor="middle" class="sans small" fill="#9a3412">selected MLA records</text>
+
+  <!-- K3 note -->
+  <g transform="translate(190 674)">
+    <rect width="1020" height="42" rx="15" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.5"/>
+    <circle cx="28" cy="21" r="7" fill="#7c3aed"/>
+    <text x="48" y="27" class="sans note" fill="#5b21b6"><tspan font-weight="750">K3 hybrid:</tspan> fixed KDA states at most attention layers + token-growing MLA caches at periodic layers.</text>
+  </g>
+</svg>

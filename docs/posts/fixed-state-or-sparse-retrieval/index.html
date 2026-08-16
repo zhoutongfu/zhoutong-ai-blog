@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Zhoutong">
+<meta name="dcterms.date" content="2026-08-15">
+<meta name="description" content="A technical note on the recurrent-state lineage from linear attention to KDA, K3’s hybrid stack, and DSA as a sparse-retrieval contrast.">
+
+<title>Architecture Notes #1: From Linear Attention to KDA – Zhoutong’s Research Log</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Zhoutong’s Research Log</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/zhoutongfu/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/zhoutongfu"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#scope" id="toc-scope" class="nav-link active" data-scroll-target="#scope"><span class="header-section-number">1</span> Scope</a></li>
+  <li><a href="#deriving-a-fixed-recurrent-state-from-linear-attention" id="toc-deriving-a-fixed-recurrent-state-from-linear-attention" class="nav-link" data-scroll-target="#deriving-a-fixed-recurrent-state-from-linear-attention"><span class="header-section-number">2</span> Deriving a Fixed Recurrent State from Linear Attention</a></li>
+  <li><a href="#kda-lineage-from-additive-state-to-channel-wise-decay" id="toc-kda-lineage-from-additive-state-to-channel-wise-decay" class="nav-link" data-scroll-target="#kda-lineage-from-additive-state-to-channel-wise-decay"><span class="header-section-number">3</span> KDA Lineage: From Additive State to Channel-Wise Decay</a>
+  <ul class="collapse">
+  <li><a href="#additive-linear-attention-unconstrained-accumulation" id="toc-additive-linear-attention-unconstrained-accumulation" class="nav-link" data-scroll-target="#additive-linear-attention-unconstrained-accumulation"><span class="header-section-number">3.1</span> Additive linear attention: unconstrained accumulation</a></li>
+  <li><a href="#deltanet-prediction-error-writes" id="toc-deltanet-prediction-error-writes" class="nav-link" data-scroll-target="#deltanet-prediction-error-writes"><span class="header-section-number">3.2</span> DeltaNet: prediction-error writes</a></li>
+  <li><a href="#residual-interference-with-non-orthogonal-keys" id="toc-residual-interference-with-non-orthogonal-keys" class="nav-link" data-scroll-target="#residual-interference-with-non-orthogonal-keys"><span class="header-section-number">3.3</span> Residual interference with non-orthogonal keys</a></li>
+  <li><a href="#efficient-deltanet-exact-chunkwise-execution" id="toc-efficient-deltanet-exact-chunkwise-execution" class="nav-link" data-scroll-target="#efficient-deltanet-exact-chunkwise-execution"><span class="header-section-number">3.4</span> Efficient DeltaNet: exact chunkwise execution</a></li>
+  <li><a href="#gated-deltanet-scalar-decay-plus-delta-correction" id="toc-gated-deltanet-scalar-decay-plus-delta-correction" class="nav-link" data-scroll-target="#gated-deltanet-scalar-decay-plus-delta-correction"><span class="header-section-number">3.5</span> Gated DeltaNet: scalar decay plus delta correction</a></li>
+  <li><a href="#kda-channel-wise-decay-plus-delta-correction" id="toc-kda-channel-wise-decay-plus-delta-correction" class="nav-link" data-scroll-target="#kda-channel-wise-decay-plus-delta-correction"><span class="header-section-number">3.6</span> KDA: channel-wise decay plus delta correction</a></li>
+  <li><a href="#shortconv-as-a-supporting-local-front-end" id="toc-shortconv-as-a-supporting-local-front-end" class="nav-link" data-scroll-target="#shortconv-as-a-supporting-local-front-end"><span class="header-section-number">3.7</span> ShortConv as a supporting local front end</a></li>
+  <li><a href="#released-hybrid-branches-after-gdn" id="toc-released-hybrid-branches-after-gdn" class="nav-link" data-scroll-target="#released-hybrid-branches-after-gdn"><span class="header-section-number">3.8</span> Released hybrid branches after GDN</a></li>
+  </ul></li>
+  <li><a href="#k3-the-kdamla-hybrid-stack" id="toc-k3-the-kdamla-hybrid-stack" class="nav-link" data-scroll-target="#k3-the-kdamla-hybrid-stack"><span class="header-section-number">4</span> K3: The KDA–MLA Hybrid Stack</a></li>
+  <li><a href="#dsa-top-k-retrieval-over-mla-records" id="toc-dsa-top-k-retrieval-over-mla-records" class="nav-link" data-scroll-target="#dsa-top-k-retrieval-over-mla-records"><span class="header-section-number">5</span> DSA: Top-k Retrieval over MLA Records</a>
+  <ul class="collapse">
+  <li><a href="#training-the-discrete-indexer" id="toc-training-the-discrete-indexer" class="nav-link" data-scroll-target="#training-the-discrete-indexer"><span class="header-section-number">5.1</span> Training the discrete indexer</a></li>
+  <li><a href="#complexity-and-retained-state" id="toc-complexity-and-retained-state" class="nav-link" data-scroll-target="#complexity-and-retained-state"><span class="header-section-number">5.2</span> Complexity and retained state</a></li>
+  </ul></li>
+  <li><a href="#inference-state-and-decode-work" id="toc-inference-state-and-decode-work" class="nav-link" data-scroll-target="#inference-state-and-decode-work"><span class="header-section-number">6</span> Inference State and Decode Work</a>
+  <ul class="collapse">
+  <li><a href="#persistent-state-growth" id="toc-persistent-state-growth" class="nav-link" data-scroll-target="#persistent-state-growth"><span class="header-section-number">6.1</span> Persistent-state growth</a></li>
+  <li><a href="#per-token-decoding-work" id="toc-per-token-decoding-work" class="nav-link" data-scroll-target="#per-token-decoding-work"><span class="header-section-number">6.2</span> Per-token decoding work</a></li>
+  <li><a href="#short-context-performance" id="toc-short-context-performance" class="nav-link" data-scroll-target="#short-context-performance"><span class="header-section-number">6.3</span> Short-context performance</a></li>
+  </ul></li>
+  <li><a href="#retention-and-retrieval-failure-modes" id="toc-retention-and-retrieval-failure-modes" class="nav-link" data-scroll-target="#retention-and-retrieval-failure-modes"><span class="header-section-number">7</span> Retention and Retrieval Failure Modes</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="header-section-number">8</span> Summary</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Architecture Notes #1: From Linear Attention to KDA</h1>
+<p class="subtitle lead">DeltaNet, Gated DeltaNet, Kimi K3, and a Comparison with Sparse Retrieval</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Architecture</div>
+    <div class="quarto-category">Long Context</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    A technical note on the recurrent-state lineage from linear attention to KDA, K3’s hybrid stack, and DSA as a sparse-retrieval contrast.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Zhoutong </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">August 15, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="scope" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="scope"><span class="header-section-number">1</span> Scope</h2>
+<p>This note follows the recurrent-state lineage from linear attention through DeltaNet and Gated DeltaNet to Kimi Delta Attention (KDA) [1–8]. It then uses DeepSeek Sparse Attention (DSA) [10] as a contrasting long-context mechanism. The comparison is limited to four inference-relevant properties: the state update, the representation retained after each token, cache growth with sequence length, and the read path used during decoding. It is not a benchmark comparison between Kimi K3 and DeepSeek-V3.2, which are different model stacks trained under different conditions.</p>
+<p>Dense multi-head attention retains a key and value record for every token and scores the full history for each new query. Multi-head Latent Attention (MLA) reduces the channels stored for each token but preserves the sequence of token records [9]. Its original RoPE-based form also caches a small positional key; the NoPE form used by Kimi Linear and K3 omits that term [7–9]. KDA instead folds the history into a fixed-size recurrent matrix. DSA retains MLA records and inserts a learned selector before the expensive attention operation.</p>
+<p>The distinction used throughout the note is therefore between <strong>storage-time compression</strong> and <strong>read-time selection</strong>. KDA updates a shared state before future queries are known. DSA preserves token-addressable records and chooses a top-k subset when the query arrives.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Mechanism</th>
+<th style="text-align: left;">Persistent representation</th>
+<th style="text-align: left;">Query-time read</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Dense MHA</td>
+<td style="text-align: left;">Full key/value record per token</td>
+<td style="text-align: left;">Every record</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MLA</td>
+<td style="text-align: left;">A compressed KV latent per token; optionally a positional key</td>
+<td style="text-align: left;">Every token record</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">KDA</td>
+<td style="text-align: left;">One mutable key-to-value map per head</td>
+<td style="text-align: left;">The fixed recurrent state</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">DSA over MLA</td>
+<td style="text-align: left;">Compressed token records plus index records</td>
+<td style="text-align: left;">A selected top-k set</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">K3 hybrid</td>
+<td style="text-align: left;">Fixed KDA states plus MLA records at global-attention layers</td>
+<td style="text-align: left;">KDA state in KDA layers; all token records in each MLA layer</td>
+</tr>
+</tbody>
+</table>
+<p>K3 supplies a concrete hybrid instance: most of its attention layers use KDA, while periodic MLA layers retain global token-addressable attention [8]. Accordingly, K3 is neither a pure recurrent-linear model nor a conventional full-attention stack. The fixed-state derivation below establishes the mechanism used by its recurrent path before the hybrid stack is examined.</p>
+</section>
+<section id="deriving-a-fixed-recurrent-state-from-linear-attention" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="deriving-a-fixed-recurrent-state-from-linear-attention"><span class="header-section-number">2</span> Deriving a Fixed Recurrent State from Linear Attention</h2>
+<p>Start with a causal attention-like operation using a factorized similarity kernel:</p>
+<p><span class="math display">\[
+\kappa(q,k)=\phi(q)^\top\phi(k).
+\]</span></p>
+<p>Ignoring normalization for one moment, the output at token <span class="math inline">\(t\)</span> is:</p>
+<p><span class="math display">\[
+o_t
+=
+\sum_{i\leq t}\kappa(q_t,k_i)v_i
+=
+\sum_{i\leq t}
+\left[\phi(q_t)^\top\phi(k_i)\right]v_i.
+\]</span></p>
+<p>Matrix multiplication is associative, so the query-dependent term can move outside the historical sum:</p>
+<p><span class="math display">\[
+o_t
+=
+\left(
+\sum_{i\leq t}\phi(k_i)v_i^\top
+\right)^\top
+\phi(q_t).
+\]</span></p>
+<p>Define a historical state:</p>
+<p><span class="math display">\[
+S_t
+=
+\sum_{i\leq t}\phi(k_i)v_i^\top.
+\]</span></p>
+<p>Then the whole history can be updated and read recurrently:</p>
+<p><span class="math display">\[
+S_t=S_{t-1}+\phi(k_t)v_t^\top,
+\qquad
+o_t=S_t^\top\phi(q_t).
+\]</span></p>
+<p>This is the basic result behind recurrent linear attention [1, 2]. A list of past token interactions becomes one query-independent matrix. Each token adds an outer product; each query reads the matrix. The matrix contents change with the sequence, but its dimensions do not.</p>
+<p>Normalized linear attention keeps one additional vector:</p>
+<p><span class="math display">\[
+z_t=z_{t-1}+\phi(k_t),
+\]</span></p>
+<p>and reads:</p>
+<p><span class="math display">\[
+o_t
+=
+\frac{S_t^\top\phi(q_t)}
+{z_t^\top\phi(q_t)}.
+\]</span></p>
+<p>The important property is not the absence of normalization. It is the finite feature-map factorization that lets the model accumulate sufficient statistics before seeing a future query.</p>
+<p>Ordinary softmax attention has a different structure:</p>
+<p><span class="math display">\[
+o(q)
+=
+\frac{
+\sum_j \exp(q^\top k_j)v_j
+}{
+\sum_j \exp(q^\top k_j)
+}.
+\]</span></p>
+<p>Both the contribution of each token and the denominator depend on the current query. Exact exponential softmax does not generally collapse into the same finite-dimensional, query-independent state. Approximate feature maps exist; the distinction here concerns exact access to the stored records.</p>
+<p>The database metaphor is useful only up to a point. A softmax key is an immutable address associated with one cached token. A recurrent-linear key is a learned direction used to edit a shared function. Its value is a target for that function, and the query asks what the current function returns in another direction. None of these directions has to correspond to a human-readable field or fact.</p>
+<p>The recurrent layer’s persistent-state size is therefore independent of sequence length. Its representational constraint is equally direct: every historical association must coexist inside the same finite matrix.</p>
+</section>
+<section id="kda-lineage-from-additive-state-to-channel-wise-decay" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="kda-lineage-from-additive-state-to-channel-wise-decay"><span class="header-section-number">3</span> KDA Lineage: From Additive State to Channel-Wise Decay</h2>
+<p>The direct recurrent-update lineage used in this note is:</p>
+<p><span class="math display">\[
+\text{recurrent linear attention}
+\rightarrow
+\text{DeltaNet}
+\rightarrow
+\text{Efficient DeltaNet}
+\rightarrow
+\text{Gated DeltaNet}
+\rightarrow
+\text{KDA}.
+\]</span></p>
+<p>This is the direct technical trunk used in this note. Mamba-2/SSD and Gated Linear Attention (GLA) contribute neighboring ideas—scalar adaptive decay and channel-wise gating—but they are not inserted as fictitious stages in a single historical chain.</p>
+<p><img src="images/figure2-kda-lineage.svg" class="img-fluid" alt="The mechanism lineage from recurrent linear attention to KDA, with neighboring gating contributions and released Qwen3-Next and K3 hybrid branches."></p>
+<p><em>Figure 1: Solid black arrows trace the direct technical lineage from recurrent linear attention through DeltaNet, Efficient DeltaNet, Gated DeltaNet, and KDA/Kimi Linear. Dotted purple arrows mark neighboring gating contributions; blue arrows connect the mechanisms to released Qwen3-Next and K3 hybrids. Original synthesis based on [1–8, 11].</em></p>
+<section id="additive-linear-attention-unconstrained-accumulation" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="additive-linear-attention-unconstrained-accumulation"><span class="header-section-number">3.1</span> Additive linear attention: unconstrained accumulation</h3>
+<p>Using the Kimi orientation, let <span class="math inline">\(S_t\in\mathbb{R}^{d_k\times d_v}\)</span> and read it as <span class="math inline">\(S_t^\top q_t\)</span>. The simplest update is:</p>
+<p><span class="math display">\[
+S_t=S_{t-1}+k_tv_t^\top.
+\]</span></p>
+<p>Every token adds a key-value association. This converts an arbitrarily long history into fixed-size state, but the update is purely additive. It has no explicit instruction for replacing an outdated association or clearing space. State magnitude and cross-talk can accumulate as the sequence grows.</p>
+</section>
+<section id="deltanet-prediction-error-writes" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="deltanet-prediction-error-writes"><span class="header-section-number">3.2</span> DeltaNet: prediction-error writes</h3>
+<p>DeltaNet treats the temporary state as an online key-to-value predictor. For the current pair <span class="math inline">\((k_t,v_t)\)</span>, define a reconstruction objective:</p>
+<p><span class="math display">\[
+\mathcal L_t^{\mathrm{inner}}(S)
+=
+\frac12\left\|S^\top k_t-v_t\right\|_2^2.
+\]</span></p>
+<p>One gradient step on the recurrent state with a learned step size <span class="math inline">\(\beta_t\)</span> gives:</p>
+<p><span class="math display">\[
+\begin{aligned}
+S_t
+&amp;=S_{t-1}-\beta_t\nabla_S
+\mathcal L_t^{\mathrm{inner}}(S_{t-1})\\
+&amp;=S_{t-1}
++\beta_tk_t
+\left(v_t-S_{t-1}^\top k_t\right)^\top.
+\end{aligned}
+\]</span></p>
+<p>The term in parentheses is the prediction error [2, 7]. If the state already returns the desired value, the write is small. If it returns the wrong value, the update corrects the mapping along <span class="math inline">\(k_t\)</span>. For a unit-norm key and <span class="math inline">\(\beta_t=1\)</span>, the state returns the new target immediately after the update.</p>
+<p>This inner objective is an interpretation of the forward recurrence. It is not an auxiliary reconstruction loss added to next-token training. The state is a sequence-dependent activation, not a persistent model parameter; the language model loss trains the projections that produce <span class="math inline">\(q\)</span>, <span class="math inline">\(k\)</span>, <span class="math inline">\(v\)</span>, and <span class="math inline">\(\beta\)</span>.</p>
+</section>
+<section id="residual-interference-with-non-orthogonal-keys" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="residual-interference-with-non-orthogonal-keys"><span class="header-section-number">3.3</span> Residual interference with non-orthogonal keys</h3>
+<p>Write the update contributed by one token as:</p>
+<p><span class="math display">\[
+\Delta S_t=\beta_tk_te_t^\top,
+\qquad
+e_t=v_t-S_{t-1}^\top k_t.
+\]</span></p>
+<p>At a different key-like direction <span class="math inline">\(k'\)</span>, the readout changes by:</p>
+<p><span class="math display">\[
+(\Delta S_t)^\top k'
+=
+\beta_te_t(k_t^\top k').
+\]</span></p>
+<p>The write is isolated only when the two keys are orthogonal. This is the geometric source of cross-talk in finite fast-weight memory [2].</p>
+<p>Consider a scalar-value example. Let two unit keys overlap by:</p>
+<p><span class="math display">\[
+k_1^\top k_2=0.6.
+\]</span></p>
+<p>Suppose the current state stores <span class="math inline">\(k_1\mapsto1\)</span>, so <span class="math inline">\(S_1=k_1\)</span>. Before writing at <span class="math inline">\(k_2\)</span>, the state predicts <span class="math inline">\(S_1^\top k_2=0.6\)</span>. If the desired value at <span class="math inline">\(k_2\)</span> is zero and <span class="math inline">\(\beta_2=1\)</span>, the error is <span class="math inline">\(-0.6\)</span> and:</p>
+<p><span class="math display">\[
+\Delta S_2=-0.6k_2.
+\]</span></p>
+<p>The old read at <span class="math inline">\(k_1\)</span> changes by:</p>
+<p><span class="math display">\[
+k_1^\top\Delta S_2
+=
+-0.6(k_1^\top k_2)
+=
+-0.36.
+\]</span></p>
+<p>It falls from <span class="math inline">\(1\)</span> to <span class="math inline">\(0.64\)</span>, even though the new write targeted <span class="math inline">\(k_2\)</span>.</p>
+<p>This is an intuition pump, not an empirical estimate of KDA’s error rate. Real models learn high-dimensional keys, multiple heads, gates, and many layers. Those features give the model much more capacity to organize memory. They do not turn each head’s fixed matrix into an unlimited collection of immutable token slots.</p>
+</section>
+<section id="efficient-deltanet-exact-chunkwise-execution" class="level3" data-number="3.4">
+<h3 data-number="3.4" class="anchored" data-anchor-id="efficient-deltanet-exact-chunkwise-execution"><span class="header-section-number">3.4</span> Efficient DeltaNet: exact chunkwise execution</h3>
+<p>DeltaNet’s token-by-token update is natural for autoregressive decoding but poorly matched to parallel training hardware. Efficient DeltaNet derives an exact chunkwise form that groups many ordered updates into matrix operations [3].</p>
+<p>Write one transition as:</p>
+<p><span class="math display">\[
+S_t=F_tS_{t-1}+B_t,
+\]</span></p>
+<p>where, for DeltaNet,</p>
+<p><span class="math display">\[
+F_t=I-\beta_tk_tk_t^\top,
+\qquad
+B_t=\beta_tk_tv_t^\top.
+\]</span></p>
+<p>For two tokens in a chunk:</p>
+<p><span class="math display">\[
+S_2
+=F_2F_1S_{\mathrm{in}}+F_2B_1+B_2.
+\]</span></p>
+<p>The order is still present: in general <span class="math inline">\(F_2F_1\neq F_1F_2\)</span>. The chunkwise algorithm computes the same causal transformation without launching one small recurrent kernel per token. It is an execution improvement for training and prefill, not a new memory rule and not an approximation that treats writes as independent. One-token decoding still uses the recurrence.</p>
+</section>
+<section id="gated-deltanet-scalar-decay-plus-delta-correction" class="level3" data-number="3.5">
+<h3 data-number="3.5" class="anchored" data-anchor-id="gated-deltanet-scalar-decay-plus-delta-correction"><span class="header-section-number">3.5</span> Gated DeltaNet: scalar decay plus delta correction</h3>
+<p>Delta correction can repair the current key direction, but associations that are never revisited can persist. Gated DeltaNet combines the delta rule with a learned scalar retention gate [6]:</p>
+<p><span class="math display">\[
+S_t
+=
+\alpha_t
+\left(I-\beta_tk_tk_t^\top\right)S_{t-1}
++\beta_tk_tv_t^\top,
+\qquad
+\alpha_t\in(0,1).
+\]</span></p>
+<p>The two controls solve different problems. The delta term makes a targeted correction; <span class="math inline">\(\alpha_t\)</span> can rapidly clear stale state even if the current key does not match it. The limitation is granularity. A single scalar gives each head one retention rate at each token. The head cannot preserve one key feature while quickly refreshing another.</p>
+<p>Mamba-2/SSD is relevant here because its structured recurrence also uses an input-dependent scalar decay and is designed for efficient matrix-oriented execution [4]. GDN is not simply Mamba-2 renamed: its defining step is the combination of scalar forgetting with DeltaNet’s targeted correction.</p>
+</section>
+<section id="kda-channel-wise-decay-plus-delta-correction" class="level3" data-number="3.6">
+<h3 data-number="3.6" class="anchored" data-anchor-id="kda-channel-wise-decay-plus-delta-correction"><span class="header-section-number">3.6</span> KDA: channel-wise decay plus delta correction</h3>
+<p>KDA replaces the scalar gate with a vector over key channels [7]:</p>
+<p><span class="math display">\[
+\alpha_t\in(0,1)^{d_k}.
+\]</span></p>
+<p>Its update is:</p>
+<p><span class="math display">\[
+S_t
+=
+\left(I-\beta_tk_tk_t^\top\right)
+\operatorname{Diag}(\alpha_t)S_{t-1}
++\beta_tk_tv_t^\top.
+\]</span></p>
+<p>Left multiplication by <span class="math inline">\(\operatorname{Diag}(\alpha_t)\)</span> scales the rows of <span class="math inline">\(S_t\)</span>, so each key feature can learn a different retention timescale. The write strength <span class="math inline">\(\beta_t\)</span> remains scalar. KDA makes forgetting channel-wise; it does not make every part of the write independently gated.</p>
+<p>GLA supplies an important precedent. It uses a channel-wise diagonal retention gate in a matrix-valued recurrent state and provides a hardware-aware chunkwise algorithm [5]. Its central recurrence is additive after decay, whereas KDA keeps the delta-correction factor. The shared structure is fine-grained retention, not an identical memory update.</p>
+<p>The update sequence is summarized below:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Stage</th>
+<th style="text-align: left;">New capability</th>
+<th style="text-align: left;">Remaining pressure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Recurrent linear attention</td>
+<td style="text-align: left;">Accumulate associations in fixed state</td>
+<td style="text-align: left;">Cannot explicitly edit or forget</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">DeltaNet</td>
+<td style="text-align: left;">Correct the value predicted at the current key</td>
+<td style="text-align: left;">Stale state can persist; writes still interfere</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Efficient DeltaNet</td>
+<td style="text-align: left;">Evaluate the ordered updates chunkwise</td>
+<td style="text-align: left;">Memory semantics unchanged</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Gated DeltaNet</td>
+<td style="text-align: left;">Forget a head at an adaptive rate</td>
+<td style="text-align: left;">One timescale for all key channels</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">KDA</td>
+<td style="text-align: left;">Retain key channels at different rates</td>
+<td style="text-align: left;">History still shares one finite matrix</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="shortconv-as-a-supporting-local-front-end" class="level3" data-number="3.7">
+<h3 data-number="3.7" class="anchored" data-anchor-id="shortconv-as-a-supporting-local-front-end"><span class="header-section-number">3.7</span> ShortConv as a supporting local front end</h3>
+<p>Practical GDN and KDA blocks do more than apply the recurrence. Their query, key, and value paths use a small causal convolution before the activation; Q and K are also L2-normalized [6, 7]. The convolution supplies local token mixing that the fixed-state mechanism does not model as directly.</p>
+<p>Kimi Linear reports a small but non-negligible ablation: in its first-scale 16-head, 16-layer setup, removing the convolution changes training/validation perplexity from <span class="math inline">\(9.23/5.65\)</span> to <span class="math inline">\(9.29/5.70\)</span> [7]. Gated DeltaNet also reports the ShortConv as important in its component ablation [6]. This justifies including it in an exact block diagram. It does not make ShortConv a stage between GDN and KDA; the recurrent lineage is defined by how <span class="math inline">\(S_t\)</span> changes.</p>
+<p><img src="images/source-gdn-figure-1.png" class="img-fluid" alt="The hybrid layouts and block-level computation paths used in Gated DeltaNet."></p>
+<p><em>Figure 2: Gated DeltaNet hybrid layouts and block design. The right-hand panel places ShortConv on the projected Q/K/V paths and separates the recurrent controls from the output gate. Source: Yang, Kautz, and Hatamizadeh [6], Figure 1.</em></p>
+</section>
+<section id="released-hybrid-branches-after-gdn" class="level3" data-number="3.8">
+<h3 data-number="3.8" class="anchored" data-anchor-id="released-hybrid-branches-after-gdn"><span class="header-section-number">3.8</span> Released hybrid branches after GDN</h3>
+<p>Two released hybrid families share GDN as a recurrent ancestor. Qwen3-Next reports a 3:1 hybrid of GDN layers and gated standard-attention layers [11]. Kimi Linear instead extends GDN’s scalar decay to KDA’s channel-wise decay and interleaves KDA with MLA [7]. K3 scales that KDA–MLA branch [8].</p>
+<p>This is a claim about released mechanisms, not either lab’s private research chronology. It also means that Qwen’s GDN and Kimi’s KDA are close relatives on the recurrent side, while their full-attention components—gated attention versus MLA—are a separate architectural comparison.</p>
+</section>
+</section>
+<section id="k3-the-kdamla-hybrid-stack" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="k3-the-kdamla-hybrid-stack"><span class="header-section-number">4</span> K3: The KDA–MLA Hybrid Stack</h2>
+<p>KDA’s fixed state saves memory precisely because old tokens are no longer independent records. Once their contributions are mixed, a future query can only read what the current map still represents. This is where MLA enters the Kimi design.</p>
+<p>MLA preserves one token record while compressing its content channels. In the NoPE form used by Kimi Linear and K3, each token starts with a joint low-dimensional KV latent:</p>
+<p><span class="math display">\[
+c_j^{KV}=W^{DKV}h_j.
+\]</span></p>
+<p>Learned up-projections define the token’s content key and value:</p>
+<p><span class="math display">\[
+k_j^C=W^{UK}c_j^{KV},
+\qquad
+v_j^C=W^{UV}c_j^{KV}.
+\]</span></p>
+<p>At inference time, this NoPE form caches <span class="math inline">\(c_j^{KV}\)</span> rather than full head-specific keys and values. The fixed up-projections can be algebraically absorbed into the query and output projections, so historical K and V do not need to be materialized [9]. DeepSeek-V2’s original MLA additionally caches a decoupled RoPE key; Kimi’s NoPE MLA omits that positional branch [7–9].</p>
+<p>MLA therefore compresses <em>within a token record</em>. It does not remove the time axis. Every old position keeps its own latent, and a future query can still assign a separate softmax score to each position.</p>
+<p>Kimi Linear reports that a uniform 3:1 ratio—three KDA layers followed by one MLA layer—gave the best quality-throughput trade-off among its tested ratios [7]. In its 16-layer ablation, 3:1 reached validation perplexity 5.65, compared with 5.66 for 1:1, 5.70 for 7:1, 5.82 for 15:1, and 5.77 for pure MLA. There is no pure-KDA row. These results support sufficiently frequent global attention in that setup; they do not establish 3:1 as a universal law.</p>
+<p>K3 retains the same broad division of labor. Its released architecture has 69 KDA and 24 Gated MLA layers [8]. The KDA layers perform frequent fixed-state mixing. The MLA layers periodically provide direct selection over the token sequence.</p>
+<p><img src="images/source-k3-figure-2-architecture.png" class="img-fluid" alt="The complete Kimi K3 architecture, including its repeated KDA–Gated MLA pattern."></p>
+<p><em>Figure 3: The released K3 architecture. For this note, the relevant path is the repeated block at right: three KDA layers followed by one Gated MLA layer, with the KDA module expanded at lower left. Stable LatentMoE and Attention Residuals are shown for context but are outside this note’s scope. Source: Kimi Team [8], Figure 2.</em></p>
+<p>Kimi Linear and K3 use No Position Encoding (NoPE) in those MLA layers. Their published design delegates order- and recency-sensitive mixing to KDA while using MLA for unrestricted global content interaction [7, 8]. This is a division of labor across the hybrid stack; it should not be read as evidence that a standalone NoPE MLA layer can infer sequence order from raw token embeddings.</p>
+<p>This note refers to the MLA layers as <strong>addressability checkpoints</strong>. At such a layer, every token representation at that depth remains separately available, so later tokens can issue content-specific global queries. This is a descriptive label used here, not a causal conclusion from an isolated K3 ablation. It has two limits:</p>
+<ol type="1">
+<li>An MLA layer cannot reconstruct information already destroyed before the representation reaches that layer.</li>
+<li>The MLA cache grows with context, so the complete K3 stack is not constant-memory.</li>
+</ol>
+<p>K3 also refines the KDA block in two ways. First, it replaces Kimi Linear’s unbounded negative-Softplus log-decay with a scaled sigmoid bounded below by <span class="math inline">\(g_{\min}=-5\)</span>:</p>
+<p><span class="math display">\[
+\mathbf g_t^h
+=g_{\min}\operatorname{Sigmoid}
+\left(e^{A_h}\mathbf z_t^h\right),
+\qquad
+\boldsymbol\alpha_t^h=\exp(\mathbf g_t^h).
+\]</span></p>
+<p>Here <span class="math inline">\(A_h\)</span> is a learned per-head log-scale, while <span class="math inline">\(\mathbf z_t^h\)</span> and <span class="math inline">\(\mathbf g_t^h\)</span> contain one value per key channel.</p>
+<p>The published motivation is numerical and computational. KDA’s chunkwise form divides by cumulative decay. Bounding each 16-token tile’s cumulative log-decay keeps the reciprocal inside BF16’s exponent range and allows both diagonal and off-diagonal tiles to use dense Tensor Core operations [8]. It is not reported as an isolated quality win.</p>
+<p>Second, K3 replaces Kimi Linear’s low-rank output gate with an input-dependent full-rank projection:</p>
+<p><span class="math display">\[
+y_t
+=W_o\left[
+\operatorname{Sigmoid}(W_gx_t)
+\odot
+\operatorname{RMSNorm}(\tilde o_t)
+\right].
+\]</span></p>
+<p>This output gate is different from both recurrent controls:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Control</th>
+<th style="text-align: left;">Acts on</th>
+<th style="text-align: left;">Role</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\alpha_t\)</span></td>
+<td style="text-align: left;">Old recurrent state</td>
+<td style="text-align: left;">Retention of key channels</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(\beta_t\)</span></td>
+<td style="text-align: left;">Delta correction</td>
+<td style="text-align: left;">Strength of the current correction</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Output gate</td>
+<td style="text-align: left;">Retrieved output</td>
+<td style="text-align: left;">Channel filtering before the output projection</td>
+</tr>
+</tbody>
+</table>
+<p>The full-rank gate can expose or suppress channels after the read. It cannot recover information that the recurrent state has already forgotten. K3 does not publish a controlled low-rank-versus-full-rank quality ablation, so the strong supported claim is architectural: the projection is less constrained, at greater parameter and compute cost. K3 applies the analogous full-rank sigmoid gate to its MLA outputs as well, giving both paths a common token-dependent channel filter [8].</p>
+</section>
+<section id="dsa-top-k-retrieval-over-mla-records" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="dsa-top-k-retrieval-over-mla-records"><span class="header-section-number">5</span> DSA: Top-k Retrieval over MLA Records</h2>
+<p>DSA puts the bottleneck elsewhere. It is instantiated over MLA, so the model still retains a compressed latent for every historical token. A lightweight indexer scores the eligible history:</p>
+<p><span class="math display">\[
+I_{t,s}
+=
+\sum_{h=1}^{H_I}
+w_{t,h}^I
+\operatorname{ReLU}
+\left({q_{t,h}^I}^\top k_s^I\right).
+\]</span></p>
+<p>The indexer selects a candidate set:</p>
+<p><span class="math display">\[
+\mathcal T_t
+=
+\operatorname{TopK}_s(I_{t,s}),
+\]</span></p>
+<p>and main attention runs only over those records [10]:</p>
+<p><span class="math display">\[
+o_t
+=
+\sum_{s\in\mathcal T_t}
+\operatorname{Softmax}_{s\in\mathcal T_t}
+\left(q_t^\top k_s\right)v_s.
+\]</span></p>
+<p>The indexer score is not the final attention weight. It is a candidate-routing signal. Main attention independently re-scores the survivors with its own representations.</p>
+<p>This creates asymmetric mistakes. Suppose five records receive index scores:</p>
+<pre class="text"><code>record        A     B     C     D     E
+index score  .91   .84   .80   .22   .10</code></pre>
+<p>With <span class="math inline">\(k=2\)</span>, only A and B reach main attention. Main attention can give almost all probability to B and suppress A; A then costs a candidate slot but does not force an incorrect output. If C contained the decisive information, the error is more serious. Main attention cannot recover C because the selector made it invisible.</p>
+<p>The indexer should therefore optimize candidate recall, while main attention supplies precision. DeepSeek-V3.2 uses a relatively generous 2,048 selected KV records per query [10]. That number is a released configuration, not a universal optimum.</p>
+<section id="training-the-discrete-indexer" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="training-the-discrete-indexer"><span class="header-section-number">5.1</span> Training the discrete indexer</h3>
+<p>The top-k membership decision is discrete. DeepSeek converts a dense MLA model to DSA in two stages [10].</p>
+<p>During <strong>dense warm-up</strong>, dense attention remains active, the backbone is frozen, and the indexer learns to imitate the dense model’s head-aggregated attention distribution <span class="math inline">\(p_t\)</span>:</p>
+<p><span class="math display">\[
+\mathcal L_{\mathrm{warm}}^I
+=
+\sum_t
+D_{KL}
+\left(
+p_{t,:}
+\,\middle\|\,
+\operatorname{Softmax}(I_{t,:})
+\right).
+\]</span></p>
+<p>The report uses 1,000 steps, totaling about 2.1 billion tokens.</p>
+<p>During <strong>sparse adaptation</strong>, top-k selection is enabled. The backbone trains with language-modeling loss, while the indexer continues to receive a separate KL objective over the selected set:</p>
+<p><span class="math display">\[
+\mathcal L_{\mathrm{sparse}}^I
+=
+\sum_t
+D_{KL}
+\left(
+p_{t,\mathcal T_t}
+\,\middle\|\,
+\operatorname{Softmax}(I_{t,\mathcal T_t})
+\right).
+\]</span></p>
+<p>DeepSeek detaches the indexer input from the backbone’s computation graph. The indexer learns from its auxiliary objective; the main model learns from the LM objective. Dense warm-up matters because once sparse routing begins, an omitted record has no ordinary main-attention path through which that decision can be repaired.</p>
+</section>
+<section id="complexity-and-retained-state" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="complexity-and-retained-state"><span class="header-section-number">5.2</span> Complexity and retained state</h3>
+<p>If the sequence has length <span class="math inline">\(L\)</span> and main attention reads <span class="math inline">\(k\)</span> records, its core pairwise work falls from roughly <span class="math inline">\(O(L^2)\)</span> to <span class="math inline">\(O(Lk)\)</span> during prefill. The lightweight indexer still scans query-history pairs, so the DeepSeek-V3.2 report retains an <span class="math inline">\(O(L^2)\)</span> indexing component, albeit with fewer heads, small projections, FP8 execution, and much lower cost than main MLA [10]. During one-token decoding, the broad index scan remains dependent on the history length before the top-k read.</p>
+<p>Storage does not become constant either. MLA latents and index records still grow with the number of tokens. DSA primarily reduces how much retained history the expensive attention path reads; it does not eliminate the retained history.</p>
+</section>
+</section>
+<section id="inference-state-and-decode-work" class="level2 page-columns page-full" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="inference-state-and-decode-work"><span class="header-section-number">6</span> Inference State and Decode Work</h2>
+<p>Architecture-level inference analysis should keep three quantities separate:</p>
+<ol type="1">
+<li>persistent state after the prompt;</li>
+<li>work performed for each generated token;</li>
+<li>realized wall-clock behavior on a particular kernel and hardware stack.</li>
+</ol>
+<p>They are related but not interchangeable.</p>
+<section id="persistent-state-growth" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="persistent-state-growth"><span class="header-section-number">6.1</span> Persistent-state growth</h3>
+<p>For <span class="math inline">\(N_{MLA}\)</span> MLA layers, context length <span class="math inline">\(T\)</span>, latent width <span class="math inline">\(d_c\)</span>, optional positional-key width <span class="math inline">\(d_p\)</span>, and <span class="math inline">\(b\)</span> bytes per cached value, the history-dependent cache is approximately:</p>
+<p><span class="math display">\[
+C_{MLA}(T)
+\approx
+N_{MLA}T(d_c+d_p)b.
+\]</span></p>
+<p>For K3’s NoPE MLA, <span class="math inline">\(d_p=0\)</span>. RoPE-based MLA retains the additional positional key, and DSA adds its index records on top of this token-growing cache.</p>
+<p>For <span class="math inline">\(N_{KDA}\)</span> recurrent layers with <span class="math inline">\(H\)</span> heads, the persistent matrix states are approximately:</p>
+<p><span class="math display">\[
+C_{KDA}
+\approx
+N_{KDA}H d_kd_v b_s+C_{local},
+\]</span></p>
+<p>where <span class="math inline">\(C_{local}\)</span> includes the small local-convolution state and other fixed bookkeeping. This term does not grow with <span class="math inline">\(T\)</span>.</p>
+<p>A KDA–MLA hybrid therefore has:</p>
+<p><span class="math display">\[
+C_{hybrid}(T)
+\approx
+C_{KDA,fixed}
++N_{MLA}T d_c b.
+\]</span></p>
+<p>The hybrid reduces the <em>slope</em> of cache growth; it does not remove it. At short contexts, the fixed recurrent state is not yet well amortized, so the realized memory advantage can be much smaller than the long-context asymptote.</p>
+<p>For one NoPE layer replacement, the approximate cache break-even length is:</p>
+<p><span class="math display">\[
+T_{\mathrm{cross}}
+\approx
+\frac{H d_kd_v b_s}{d_c b}.
+\]</span></p>
+<p>This is a memory-accounting threshold, not a latency crossover. Fixed local state, allocator overhead, cache precision, and the full hybrid layer counts shift the realized point.</p>
+<p>DSA retains approximately the same token-growing MLA history plus index data. Its principal saving is read-side compute and traffic in main attention, not the removal of token records.</p>
+<p><img src="images/figure3-kda-dsa-inference.svg" class="img-fluid" alt="Persistent state and next-token read paths for KDA, DSA, and the K3 hybrid."></p>
+<p><em>Figure 4: KDA updates and reads a fixed recurrent state. DSA retains token-growing MLA and index records, scans the index, and restricts main attention to top-k entries. K3 combines fixed KDA states with MLA caches at its global-attention layers. Original synthesis based on [7, 8, 10].</em></p>
+</section>
+<section id="per-token-decoding-work" class="level3 page-columns page-full" data-number="6.2">
+<h3 data-number="6.2" class="anchored" data-anchor-id="per-token-decoding-work"><span class="header-section-number">6.2</span> Per-token decoding work</h3>
+<div class="column-page wide-comparison-table">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Mechanism</th>
+<th style="text-align: left;">Stored history</th>
+<th style="text-align: left;">Work for the next token</th>
+<th style="text-align: left;">Remaining dependence on context length</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">KDA layer</td>
+<td style="text-align: left;">Fixed recurrent state</td>
+<td style="text-align: left;">Decay, correct, and query the state</td>
+<td style="text-align: left;">None for the recurrent update/read</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Dense MLA layer</td>
+<td style="text-align: left;">One latent per token</td>
+<td style="text-align: left;">Score/read all token latents</td>
+<td style="text-align: left;">Linear in <span class="math inline">\(T\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">DSA over MLA</td>
+<td style="text-align: left;">Latent and index records per token</td>
+<td style="text-align: left;">Broad index scan, then top-k main attention</td>
+<td style="text-align: left;">Indexing and storage still grow with <span class="math inline">\(T\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">K3 hybrid</td>
+<td style="text-align: left;">Fixed KDA states plus MLA records</td>
+<td style="text-align: left;">Fixed-state reads in KDA layers and full-history reads in each MLA layer</td>
+<td style="text-align: left;">MLA layers still scale with <span class="math inline">\(T\)</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The table separates the two mechanisms directly: KDA bounds retained token history at its recurrent layers, whereas DSA bounds the record set inspected by main attention.</p>
+</section>
+<section id="short-context-performance" class="level3" data-number="6.3">
+<h3 data-number="6.3" class="anchored" data-anchor-id="short-context-performance"><span class="header-section-number">6.3</span> Short-context performance</h3>
+<p>Asymptotic complexity does not promise a large gain below 100K tokens. The fixed KDA state, projections, ShortConv, output gates, MoE layers, kernel launches, and remaining MLA layers all have costs that do not disappear at short context. Highly optimized dense attention can also be difficult to beat when its working set is still modest.</p>
+<p>Kimi Linear reports a limited matched-model result. Its 48B comparison reports prefill performance comparable to MLA at 4K–16K, with a clear separation from 128K onward; it reports <span class="math inline">\(2.3\times\)</span> prefill speedup at 512K and <span class="math inline">\(2.9\times\)</span> at 1M. Figure 7 uses batch size 1 for both its prefill and decode tests, and reports up to <span class="math inline">\(6\times\)</span> at 1M during decoding [7]. The paper does not provide a dense, batch-controlled table that establishes one universal sub-100K decode crossover.</p>
+<p>The defensible conclusion is therefore modest. Kimi Linear’s hybrid can match or improve short-context model quality in its matched pretraining evaluations. Its inference advantage becomes much clearer as the cache and attention-read costs grow. The exact crossover depends on the model, kernel, hardware, batch, cache precision, and serving policy.</p>
+<p>Lower per-request state can also let more histories fit in accelerator memory, which may increase batch capacity. That is a system-capacity benefit, not a guarantee of lower single-user latency. Prefix caching, state checkpoints, rollback, cache allocation, and scheduling deserve their own serving note.</p>
+</section>
+</section>
+<section id="retention-and-retrieval-failure-modes" class="level2 page-columns page-full" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="retention-and-retrieval-failure-modes"><span class="header-section-number">7</span> Retention and Retrieval Failure Modes</h2>
+<p>FLOP counts do not identify which historical information remains recoverable. That property depends on where the architecture makes an irreversible—or at least difficult to reverse—transformation.</p>
+<div class="column-page wide-comparison-table">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Mechanism</th>
+<th style="text-align: left;">Retained information</th>
+<th style="text-align: left;">How a needed detail can fail to influence the output</th>
+<th style="text-align: left;">Direct revisit of an old record</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">KDA</td>
+<td style="text-align: left;">One mutable map</td>
+<td style="text-align: left;">Decay, overwrite, or key-space interference</td>
+<td style="text-align: left;">No</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Dense MLA</td>
+<td style="text-align: left;">One compressed latent per token</td>
+<td style="text-align: left;">Per-token compression or insufficient attention weight</td>
+<td style="text-align: left;">Yes</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">DSA</td>
+<td style="text-align: left;">MLA records, conditionally visible</td>
+<td style="text-align: left;">Indexer omits the record</td>
+<td style="text-align: left;">Yes, if selected</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">K3 hybrid</td>
+<td style="text-align: left;">Fixed states plus periodic MLA records</td>
+<td style="text-align: left;">Recurrent loss or insufficient later global retrieval</td>
+<td style="text-align: left;">At MLA layers</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>KDA makes an early commitment. A token is transformed into a contribution to a shared state before future queries are known. The benefit is fixed storage and context-independent recurrent-layer decoding. The risk is semantic capacity: the shared state may no longer represent an exact detail.</p>
+<p>DSA makes a later commitment. It keeps the record, scans an inexpensive index, and hides most records from main attention for the current query. The benefit is that selected old records remain individually recoverable. The risk is a selection miss: the evidence exists but is inaccessible at that layer.</p>
+<p>This also separates two meanings of capacity:</p>
+<ul>
+<li><strong>System capacity:</strong> how many request histories fit in hardware memory.</li>
+<li><strong>Semantic capacity:</strong> how much historical information the model can still represent and recover.</li>
+</ul>
+<p>KDA helps system capacity by bounding recurrent state growth. The same fixed state makes semantic capacity an architectural concern. DSA preserves more explicit token-addressable evidence but continues paying token-growing system memory.</p>
+<p>Neither mechanism removes the cost of compression; it relocates the information constraint.</p>
+</section>
+<section id="summary" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="summary"><span class="header-section-number">8</span> Summary</h2>
+<p>KDA replaces token-indexed history with a fixed-size matrix state. Delta correction makes writes conditional on the state’s current prediction, while scalar and then channel-wise decay provide explicit control over retained state. The resulting recurrent layer has context-independent persistent-state size, with interference and forgetting as the corresponding representation constraints.</p>
+<p>K3 does not apply that recurrence uniformly. It combines KDA at most attention layers with periodic Gated MLA layers, so its complete cache contains both fixed recurrent states and token-growing latent records.</p>
+<p>DSA retains token-addressable MLA and index records. Its indexer scans the eligible history, selects top-k candidates, and limits the expensive main attention read to that set. Storage still grows with context length, and a selector miss can hide a retained record from the current layer.</p>
+<p>The mechanisms therefore differ along three concrete inference properties: persistent-state growth, the operations required for the next-token read, and the point at which historical information can become inaccessible. Those properties do not by themselves determine model quality or a universal latency crossover.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div class="references-list">
+<ol type="1">
+<li>Katharopoulos, A. et al.&nbsp;(2020). <em>Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention.</em> <a href="https://arxiv.org/abs/2006.16236">arXiv:2006.16236</a></li>
+<li>Schlag, I., Irie, K. &amp; Schmidhuber, J. (2021). <em>Linear Transformers Are Secretly Fast Weight Programmers.</em> <a href="https://arxiv.org/abs/2102.11174">arXiv:2102.11174</a></li>
+<li>Yang, S. et al.&nbsp;(2024). <em>Parallelizing Linear Transformers with the Delta Rule over Sequence Length.</em> <a href="https://arxiv.org/abs/2406.06484">arXiv:2406.06484</a></li>
+<li>Dao, T. &amp; Gu, A. (2024). <em>Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State Space Duality.</em> <a href="https://arxiv.org/abs/2405.21060">arXiv:2405.21060</a></li>
+<li>Yang, S. et al.&nbsp;(2024). <em>Gated Linear Attention Transformers with Hardware-Efficient Training.</em> <a href="https://arxiv.org/abs/2312.06635">arXiv:2312.06635</a></li>
+<li>Yang, S., Kautz, J. &amp; Hatamizadeh, A. (2025). <em>Gated Delta Networks: Improving Mamba2 with Delta Rule.</em> <a href="https://arxiv.org/abs/2412.06464">arXiv:2412.06464</a></li>
+<li>Kimi Team (2025). <em>Kimi Linear: An Expressive, Efficient Attention Architecture.</em> <a href="https://arxiv.org/abs/2510.26692">arXiv:2510.26692</a></li>
+<li>Kimi Team (2026). <em>Kimi K3: Open Frontier Intelligence.</em> <a href="https://arxiv.org/abs/2607.24653">arXiv:2607.24653</a></li>
+<li>DeepSeek-AI (2024). <em>DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model.</em> <a href="https://arxiv.org/abs/2405.04434">arXiv:2405.04434</a></li>
+<li>DeepSeek-AI (2025). <em>DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models.</em> <a href="https://arxiv.org/abs/2512.02556">arXiv:2512.02556</a></li>
+<li>Qwen Team (2025). <em>Qwen3-Next: Towards Ultimate Training &amp; Inference Efficiency.</em> <a href="https://qwen.ai/blog?id=e34c4305036ce60d55a0791b170337c2b70ae51d">Official technical post</a></li>
+</ol>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

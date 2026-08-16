@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="640" viewBox="0 0 1600 640" role="img" aria-labelledby="title desc">
+  <title id="title">From recurrent linear attention to KDA</title>
+  <desc id="desc">The direct technical lineage from recurrent linear attention through DeltaNet, Efficient DeltaNet, Gated DeltaNet, and KDA in Kimi Linear, with neighboring gating contributions and released Qwen3-Next and K3 hybrid branches.</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#f5f3ff"/>
+    </linearGradient>
+    <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="mainArrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto">
+      <path d="M0,0 L11,5.5 L0,11 Z" fill="#334155"/>
+    </marker>
+    <marker id="sideArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#8b5cf6"/>
+    </marker>
+    <marker id="branchArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .title { font-size: 32px; font-weight: 750; fill: #0f172a; }
+      .subtitle { font-size: 17px; fill: #475569; }
+      .stage-title { font-size: 19px; font-weight: 750; fill: #0f172a; }
+      .stage-note { font-size: 14px; fill: #475569; }
+      .small-title { font-size: 17px; font-weight: 720; }
+      .small-note { font-size: 13px; }
+      .pill { font-size: 12px; font-weight: 700; letter-spacing: 0.4px; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="640" fill="url(#bg2)"/>
+  <rect x="28" y="24" width="1544" height="590" rx="26" fill="#ffffff" stroke="#dbe4f0" filter="url(#shadow2)"/>
+
+  <text x="70" y="75" class="sans title">From recurrent linear attention to KDA</text>
+  <text x="70" y="107" class="sans subtitle">Direct technical lineage, neighboring gating contributions, and released hybrid architectures.</text>
+
+  <!-- neighboring contributions -->
+  <g transform="translate(770 130)">
+    <rect width="250" height="78" rx="15" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.8"/>
+    <rect x="16" y="-10" width="126" height="24" rx="12" fill="#7c3aed"/>
+    <text x="79" y="7" text-anchor="middle" class="sans pill" fill="#ffffff">NEIGHBORING IDEA</text>
+    <text x="125" y="39" text-anchor="middle" class="sans small-title" fill="#6d28d9">Mamba-2 / SSD [4]</text>
+    <text x="125" y="61" text-anchor="middle" class="sans small-note" fill="#5b21b6">input-dependent scalar decay</text>
+  </g>
+  <g transform="translate(1104 130)">
+    <rect width="250" height="78" rx="15" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.8"/>
+    <rect x="16" y="-10" width="126" height="24" rx="12" fill="#7c3aed"/>
+    <text x="79" y="7" text-anchor="middle" class="sans pill" fill="#ffffff">NEIGHBORING IDEA</text>
+    <text x="125" y="39" text-anchor="middle" class="sans small-title" fill="#6d28d9">GLA [5]</text>
+    <text x="125" y="61" text-anchor="middle" class="sans small-note" fill="#5b21b6">channel-wise diagonal retention</text>
+  </g>
+
+  <!-- main trunk arrows -->
+  <line x1="300" y1="310" x2="342" y2="310" stroke="#334155" stroke-width="3" marker-end="url(#mainArrow)"/>
+  <line x1="575" y1="310" x2="617" y2="310" stroke="#334155" stroke-width="3" marker-end="url(#mainArrow)"/>
+  <line x1="850" y1="310" x2="892" y2="310" stroke="#334155" stroke-width="3" marker-end="url(#mainArrow)"/>
+  <line x1="1125" y1="310" x2="1167" y2="310" stroke="#334155" stroke-width="3" marker-end="url(#mainArrow)"/>
+
+  <!-- side arrows -->
+  <path d="M895 208 C900 225, 965 222, 1008 246" fill="none" stroke="#8b5cf6" stroke-width="2.4" stroke-dasharray="7 7" marker-end="url(#sideArrow)"/>
+  <path d="M1229 208 C1232 224, 1260 230, 1283 246" fill="none" stroke="#8b5cf6" stroke-width="2.4" stroke-dasharray="7 7" marker-end="url(#sideArrow)"/>
+
+  <!-- stage 1 -->
+  <g transform="translate(70 250)">
+    <rect width="230" height="126" rx="18" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+    <circle cx="25" cy="24" r="15" fill="#64748b"/>
+    <text x="25" y="29" text-anchor="middle" class="sans small-note" fill="#ffffff" font-weight="700">1</text>
+    <text x="115" y="47" text-anchor="middle" class="sans stage-title">Recurrent linear</text>
+    <text x="115" y="70" text-anchor="middle" class="sans stage-title">attention [1]</text>
+    <text x="115" y="97" text-anchor="middle" class="sans stage-note">accumulate associations</text>
+    <text x="115" y="116" text-anchor="middle" class="sans stage-note">in fixed state</text>
+  </g>
+
+  <!-- stage 2 -->
+  <g transform="translate(345 250)">
+    <rect width="230" height="126" rx="18" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/>
+    <circle cx="25" cy="24" r="15" fill="#2563eb"/>
+    <text x="25" y="29" text-anchor="middle" class="sans small-note" fill="#ffffff" font-weight="700">2</text>
+    <text x="115" y="53" text-anchor="middle" class="sans stage-title" fill="#1d4ed8">DeltaNet [2]</text>
+    <text x="115" y="84" text-anchor="middle" class="sans stage-note" fill="#1e40af">correct the state's</text>
+    <text x="115" y="104" text-anchor="middle" class="sans stage-note" fill="#1e40af">current prediction</text>
+  </g>
+
+  <!-- stage 3 -->
+  <g transform="translate(620 250)">
+    <rect width="230" height="126" rx="18" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <circle cx="25" cy="24" r="15" fill="#2563eb"/>
+    <text x="25" y="29" text-anchor="middle" class="sans small-note" fill="#ffffff" font-weight="700">3</text>
+    <text x="115" y="47" text-anchor="middle" class="sans stage-title" fill="#1d4ed8">Efficient</text>
+    <text x="115" y="70" text-anchor="middle" class="sans stage-title" fill="#1d4ed8">DeltaNet [3]</text>
+    <text x="115" y="97" text-anchor="middle" class="sans stage-note" fill="#1e40af">same ordered update</text>
+    <text x="115" y="116" text-anchor="middle" class="sans stage-note" fill="#1e40af">executed chunkwise</text>
+  </g>
+
+  <!-- stage 4 -->
+  <g transform="translate(895 250)">
+    <rect width="230" height="126" rx="18" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/>
+    <circle cx="25" cy="24" r="15" fill="#ea580c"/>
+    <text x="25" y="29" text-anchor="middle" class="sans small-note" fill="#ffffff" font-weight="700">4</text>
+    <text x="115" y="47" text-anchor="middle" class="sans stage-title" fill="#c2410c">Gated</text>
+    <text x="115" y="70" text-anchor="middle" class="sans stage-title" fill="#c2410c">DeltaNet [6]</text>
+    <text x="115" y="97" text-anchor="middle" class="sans stage-note" fill="#9a3412">add adaptive scalar</text>
+    <text x="115" y="116" text-anchor="middle" class="sans stage-note" fill="#9a3412">forgetting</text>
+  </g>
+
+  <!-- stage 5 -->
+  <g transform="translate(1170 250)">
+    <rect width="230" height="126" rx="18" fill="#ecfdf5" stroke="#10b981" stroke-width="2.4"/>
+    <circle cx="25" cy="24" r="15" fill="#059669"/>
+    <text x="25" y="29" text-anchor="middle" class="sans small-note" fill="#ffffff" font-weight="700">5</text>
+    <text x="115" y="53" text-anchor="middle" class="sans stage-title" fill="#047857">KDA</text>
+    <text x="115" y="81" text-anchor="middle" class="sans stage-note" fill="#065f46">Kimi Linear [7]</text>
+    <text x="115" y="105" text-anchor="middle" class="sans stage-note" fill="#065f46">channel-wise decay</text>
+  </g>
+
+  <!-- released hybrid branches -->
+  <path d="M1010 376 L1010 462" fill="none" stroke="#2563eb" stroke-width="2.6" marker-end="url(#branchArrow)"/>
+  <path d="M1285 376 L1285 462" fill="none" stroke="#2563eb" stroke-width="2.6" marker-end="url(#branchArrow)"/>
+
+  <g transform="translate(875 470)">
+    <rect width="270" height="98" rx="18" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/>
+    <text x="135" y="34" text-anchor="middle" class="sans small-title" fill="#1d4ed8">Qwen3-Next [11]</text>
+    <text x="135" y="61" text-anchor="middle" class="sans stage-note" fill="#1e40af">3:1 GDN + gated attention</text>
+    <text x="135" y="82" text-anchor="middle" class="sans small-note" fill="#1e40af">released GDN hybrid</text>
+  </g>
+  <g transform="translate(1150 470)">
+    <rect width="270" height="98" rx="18" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+    <text x="135" y="34" text-anchor="middle" class="sans small-title" fill="#047857">Kimi K3 [8]</text>
+    <text x="135" y="61" text-anchor="middle" class="sans stage-note" fill="#065f46">KDA + periodic MLA</text>
+    <text x="135" y="82" text-anchor="middle" class="sans small-note" fill="#065f46">released KDA hybrid</text>
+  </g>
+
+  <!-- legend -->
+  <g transform="translate(82 468)">
+    <text x="0" y="0" class="sans pill" fill="#64748b">LINE TYPES</text>
+    <line x1="0" y1="29" x2="72" y2="29" stroke="#334155" stroke-width="3" marker-end="url(#mainArrow)"/>
+    <text x="91" y="34" class="sans stage-note">direct technical lineage</text>
+    <line x1="0" y1="61" x2="72" y2="61" stroke="#8b5cf6" stroke-width="2.4" stroke-dasharray="7 7" marker-end="url(#sideArrow)"/>
+    <text x="91" y="66" class="sans stage-note">neighboring contribution</text>
+    <line x1="0" y1="93" x2="72" y2="93" stroke="#2563eb" stroke-width="2.6" marker-end="url(#branchArrow)"/>
+    <text x="91" y="98" class="sans stage-note">released model branch</text>
+  </g>
+
+</svg>
