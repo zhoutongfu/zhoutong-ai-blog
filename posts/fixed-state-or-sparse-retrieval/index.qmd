@@ -1,11 +1,11 @@
 ---
-title: "Architecture Notes #1: From Linear Attention to KDA"
+title: "From Linear Attention to KDA"
 subtitle: "DeltaNet, Gated DeltaNet, Kimi K3, and a Comparison with Sparse Retrieval"
 author: "Zhoutong"
 date: "2026-08-15"
 categories: [LLMs, Architecture, Long Context]
 description: "A technical note on the recurrent-state lineage from linear attention to KDA, K3's hybrid stack, and DSA as a sparse-retrieval contrast."
-image: images/figure3-kda-dsa-inference.svg
+image: images/source-gdn-figure-1.png
 format:
   html:
     toc: true
