@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Zhoutong">
+<meta name="dcterms.date" content="2026-09-01">
+<meta name="description" content="How precision choices across rollout, training, and synchronization shape the policy optimized by LLM reinforcement learning.">
+
+<title>Low-Precision RL: From Rollout to Update – Zhoutong’s Research Log</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Zhoutong’s Research Log</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/zhoutongfu/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/zhoutongfu"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#scope" id="toc-scope" class="nav-link active" data-scroll-target="#scope"><span class="header-section-number">1</span> Scope</a></li>
+  <li><a href="#one-token-two-executions" id="toc-one-token-two-executions" class="nav-link" data-scroll-target="#one-token-two-executions"><span class="header-section-number">2</span> One Token, Two Executions</a></li>
+  <li><a href="#from-one-linear-layer-to-an-rl-update" id="toc-from-one-linear-layer-to-an-rl-update" class="nav-link" data-scroll-target="#from-one-linear-layer-to-an-rl-update"><span class="header-section-number">3</span> From One Linear Layer to an RL Update</a>
+  <ul class="collapse">
+  <li><a href="#format-scale-and-execution" id="toc-format-scale-and-execution" class="nav-link" data-scroll-target="#format-scale-and-execution"><span class="header-section-number">3.1</span> Format, scale, and execution</a></li>
+  <li><a href="#fprop-dgrad-and-wgrad" id="toc-fprop-dgrad-and-wgrad" class="nav-link" data-scroll-target="#fprop-dgrad-and-wgrad"><span class="header-section-number">3.2</span> FProp, DGrad, and WGrad</a></li>
+  <li><a href="#tracing-one-rl-update" id="toc-tracing-one-rl-update" class="nav-link" data-scroll-target="#tracing-one-rl-update"><span class="header-section-number">3.3</span> Tracing one RL update</a></li>
+  </ul></li>
+  <li><a href="#where-precision-enters-the-rl-step" id="toc-where-precision-enters-the-rl-step" class="nav-link" data-scroll-target="#where-precision-enters-the-rl-step"><span class="header-section-number">4</span> Where Precision Enters the RL Step</a>
+  <ul class="collapse">
+  <li><a href="#unified-fp8-as-a-complete-trace" id="toc-unified-fp8-as-a-complete-trace" class="nav-link" data-scroll-target="#unified-fp8-as-a-complete-trace"><span class="header-section-number">4.1</span> Unified FP8 as a complete trace</a></li>
+  </ul></li>
+  <li><a href="#closing-the-loop-at-frontier-model-scale" id="toc-closing-the-loop-at-frontier-model-scale" class="nav-link" data-scroll-target="#closing-the-loop-at-frontier-model-scale"><span class="header-section-number">5</span> Closing the Loop at Frontier-Model Scale</a>
+  <ul class="collapse">
+  <li><a href="#glm-5.2-bf16-training-and-fp8-rollout" id="toc-glm-5.2-bf16-training-and-fp8-rollout" class="nav-link" data-scroll-target="#glm-5.2-bf16-training-and-fp8-rollout"><span class="header-section-number">5.1</span> GLM-5.2: BF16 training and FP8 rollout</a></li>
+  <li><a href="#kimi-k3-packed-mxfp4-rollout-weights-and-a-bf16-adapter" id="toc-kimi-k3-packed-mxfp4-rollout-weights-and-a-bf16-adapter" class="nav-link" data-scroll-target="#kimi-k3-packed-mxfp4-rollout-weights-and-a-bf16-adapter"><span class="header-section-number">5.2</span> Kimi K3: packed MXFP4 rollout weights and a BF16 adapter</a></li>
+  <li><a href="#qwen3.8-operator-scope-still-matters" id="toc-qwen3.8-operator-scope-still-matters" class="nav-link" data-scroll-target="#qwen3.8-operator-scope-still-matters"><span class="header-section-number">5.3</span> Qwen3.8: operator scope still matters</a></li>
+  </ul></li>
+  <li><a href="#validating-the-policy-across-two-runtimes" id="toc-validating-the-policy-across-two-runtimes" class="nav-link" data-scroll-target="#validating-the-policy-across-two-runtimes"><span class="header-section-number">6</span> Validating the Policy Across Two Runtimes</a>
+  <ul class="collapse">
+  <li><a href="#reading-failures-by-where-they-first-appear" id="toc-reading-failures-by-where-they-first-appear" class="nav-link" data-scroll-target="#reading-failures-by-where-they-first-appear"><span class="header-section-number">6.1</span> Reading failures by where they first appear</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">7</span> Conclusion</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Low-Precision RL: From Rollout to Update</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Reinforcement Learning</div>
+    <div class="quarto-category">Quantization</div>
+    <div class="quarto-category">Systems</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    How precision choices across rollout, training, and synchronization shape the policy optimized by LLM reinforcement learning.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Zhoutong </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 1, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="scope" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="scope"><span class="header-section-number">1</span> Scope</h2>
+<p>This became concrete for me while working on continual post-training built on top of GLM-5.2 and Kimi K3. The difficult questions were not simply whether a model could be loaded in FP8 or MXFP4. They were whether the trainer and rollout engine represented the intended policy, whether an update became visible in the correct form, and whether an observed mismatch came from quantization, stale weights, routing, model state, or an implementation bug.</p>
+<p>Low precision is often introduced as a hardware optimization. Smaller weights use less memory, lower-precision Tensor Cores can execute more arithmetic, and compressed checkpoints are easier to place across a cluster. Those benefits matter, but they do not capture what makes low precision unusual in language model reinforcement learning.</p>
+<p>An RL system normally executes the policy in at least two places. A rollout engine generates tokens and records their probabilities. A training engine later scores those tokens, constructs an objective, and updates the model. Even when both engines use the same weight version, differences in precision, scaling, kernels, routing, or weight conversion can make their output probabilities differ.</p>
+<p>That difference does not automatically make the RL update invalid. It does mean that we need to identify which policy generated the data, which policy the trainer evaluates, and how a new weight or adapter version reaches rollout.</p>
+<p>This post develops the topic in three parts:</p>
+<ol type="1">
+<li>the conceptual foundation: why RL has separate rollout and training executions, and why numerical differences matter;</li>
+<li>the systems view: how precision enters rollout, FProp, DGrad, WGrad, optimizer state, and live synchronization;</li>
+<li>the practical view: what GLM-5.2 and Kimi K3 reveal about correctness, memory, hardware, and model-specific support.</li>
+</ol>
+<p>The narrative follows two objects through the same RL cycle: a sampled token moves from rollout into training, while an updated weight or adapter moves from training back to rollout.</p>
+<p>Low-precision RL works when we can identify, measure, and control both paths.</p>
+</section>
+<section id="one-token-two-executions" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="one-token-two-executions"><span class="header-section-number">2</span> One Token, Two Executions</h2>
+<p>For a prefix <span class="math inline">\(s_t\)</span>, the rollout engine samples a token from a behavior policy:</p>
+<p><span class="math display">\[
+a_t\sim\mu(\cdot\mid s_t).
+\]</span></p>
+<p>The generated token is now part of the training data. The trainer feeds the same token and prefix through its current policy and recomputes:</p>
+<p><span class="math display">\[
+\log\pi_\theta(a_t\mid s_t).
+\]</span></p>
+<p>Many RL objectives compare the two policies through a ratio:</p>
+<p><span class="math display">\[
+\rho_t
+=
+\frac{\pi_\theta(a_t\mid s_t)}
+     {\mu(a_t\mid s_t)}
+=
+\exp\left(
+\log\pi_\theta(a_t\mid s_t)
+-
+\log\mu(a_t\mid s_t)
+\right).
+\]</span></p>
+<p>If the policy has changed because of an optimizer update, a ratio away from one is expected. In an asynchronous system, the rollout policy may also be several versions behind the trainer. But the trainer and rollout engine can disagree even at the same weight version.</p>
+<p>Let <span class="math inline">\(\pi_t\)</span> be the current trainer policy, and let <span class="math inline">\(\mu_\tau\)</span> be the behavior policy that generated the token, where <span class="math inline">\(\tau\leq t\)</span>. To separate two common causes of disagreement, define <span class="math inline">\(\mu_t\)</span> as the policy the rollout engine would execute after receiving weight version <span class="math inline">\(t\)</span>. For the same token and prefix:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\log\pi_t(a_t\mid s_t)
+-
+\log\mu_\tau(a_t\mid s_t)
+=
+\underbrace{
+\log\pi_t(a_t\mid s_t)
+-
+\log\mu_t(a_t\mid s_t)
+}_{\text{same-version precision mismatch}}
++
+\underbrace{
+\log\mu_t(a_t\mid s_t)
+-
+\log\mu_\tau(a_t\mid s_t)
+}_{\text{rollout staleness}}.
+\end{aligned}
+\]</span></p>
+<p>The first term is the <strong>same-version precision mismatch</strong>. The second is <strong>rollout staleness</strong>. The algebra is exact only when all three scores refer to the same token and prefix. It is still a debugging decomposition rather than a promise that the two causes can be measured independently. In a nonlinear model, an early numerical difference can change a router decision or recurrent state, which then changes the later computation path.</p>
+<p>MoE models make this especially visible. If two router scores lie close to a top-<span class="math inline">\(k\)</span> boundary, a small quantization change can select a different expert. The resulting difference is no longer only a slightly perturbed matrix multiplication. The two executions have entered different branches of the model.</p>
+<p>The first low-precision RL question is therefore:</p>
+<blockquote class="blockquote">
+<p>How much of the trainer–rollout log-probability gap comes from the precision configuration, and how much comes from rollout staleness?</p>
+</blockquote>
+<p>Three related diagnostics should remain separate:</p>
+<div id="tbl-probability-diagnostics" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-probability-diagnostics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Probability diagnostics used to separate trainer–rollout agreement from movement relative to a reference policy.
+</figcaption>
+<div aria-describedby="tbl-probability-diagnostics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Diagnostic</th>
+<th style="text-align: left;">Comparison</th>
+<th style="text-align: left;">What it answers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Direct trainer–rollout log-probability difference</td>
+<td style="text-align: left;"><span class="math inline">\(\log\pi_t(a_t\mid s_t)-\log\mu_t(a_t\mid s_t)\)</span> for identical tokens and prefixes</td>
+<td style="text-align: left;">How large is the same-version mismatch? Report absolute differences, tails, token-position dependence, and routing agreement rather than only a signed mean.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Trainer–rollout KL diagnostic</td>
+<td style="text-align: left;">The same trainer and rollout policies, aggregated over sampled tokens</td>
+<td style="text-align: left;">Does the end-to-end gap remain near an established baseline or grow over time? This is a diagnostic unless the objective explicitly uses it.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Reference-policy KL</td>
+<td style="text-align: left;">The trained or quantized policy versus a separate reference policy, often BF16</td>
+<td style="text-align: left;">How far has the policy moved from that reference? It does not directly measure trainer–rollout agreement.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>Figure 1 expands the first row of <a href="#tbl-probability-diagnostics" class="quarto-xref">Table&nbsp;1</a>. Its trainer-to-same-version-rollout edge is the direct log-probability difference; the second edge adds rollout staleness. The trainer–rollout KL in the second row aggregates the same policy pair over tokens, while the reference-policy KL in the third row uses a separate reference and is not part of the figure.</p>
+<p>The importance ratio is constructed from the first comparison. A clipping or truncation statistic then reports how often that ratio reaches the objective’s control boundary. It measures a consequence of mismatch; it does not identify whether the cause is precision or staleness.</p>
+<p><img src="images/trainer-rollout-policy-gap.svg" class="img-fluid" alt="The trainer, same-version rollout, and behavior rollout score the same token and prefix, separating precision mismatch from rollout staleness."></p>
+<p><em>Figure 1: Holding the token and prefix fixed separates the observed trainer–behavior gap into a same-version precision mismatch and rollout staleness. The decomposition is exact for the three displayed scores; routing and state differences remain possible causes inside the measured terms. Original synthesis.</em></p>
+</section>
+<section id="from-one-linear-layer-to-an-rl-update" class="level2 page-columns page-full" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="from-one-linear-layer-to-an-rl-update"><span class="header-section-number">3</span> From One Linear Layer to an RL Update</h2>
+<p>Before following a full RL update, it helps to make the word <em>precision</em> more specific. A number format is only one part of a quantization scheme.</p>
+<section id="format-scale-and-execution" class="level3 page-columns page-full" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="format-scale-and-execution"><span class="header-section-number">3.1</span> Format, scale, and execution</h3>
+<p>Consider a high-precision value <span class="math inline">\(x\)</span> represented on a lower-precision grid:</p>
+<p><span class="math display">\[
+\widehat{x}
+=
+s\,Q\left(\frac{x}{s}\right),
+\]</span></p>
+<p>where <span class="math inline">\(Q\)</span> rounds and clamps to the available codes and <span class="math inline">\(s\)</span> determines which real values those codes cover.</p>
+<p>The format determines the local number system. The scale moves that number system to a useful range. Scale grouping determines which values must share that range. One tensor-wide scale, one scale per row, one scale per block, and one scale per token can produce different reconstructed values even when the payload format is unchanged.</p>
+<p>In this post, <strong>format</strong> means the encoded datatype, such as FP8 or MXFP4. A <strong>quantization scheme</strong> includes the format, scale grouping, rounding, and exceptions. A <strong>precision configuration</strong> says where those schemes are used in rollout and training. The final component, <strong>convert and synchronize</strong>, says how a new weight or adapter version becomes an active rollout representation.</p>
+<p>A concrete toy example shows why scale grouping matters. Consider a signed INT4 quantizer with integer codes from <span class="math inline">\(-7\)</span> to <span class="math inline">\(7\)</span>. If the values <span class="math inline">\(1\)</span>, <span class="math inline">\(3\)</span>, and <span class="math inline">\(100\)</span> share one scale, preserving <span class="math inline">\(100\)</span> requires <span class="math inline">\(s=100/7\approx14.3\)</span>. Both <span class="math inline">\(1\)</span> and <span class="math inline">\(3\)</span> then round to code zero, while <span class="math inline">\(100\)</span> is reconstructed exactly. If <span class="math inline">\(1\)</span> and <span class="math inline">\(3\)</span> form a separate group, its scale can be <span class="math inline">\(s=3/7\approx0.43\)</span>: <span class="math inline">\(3\)</span> remains exact and <span class="math inline">\(1\)</span> reconstructs to about <span class="math inline">\(0.86\)</span> instead of zero. Finer groups preserve local resolution, but they also require more scale metadata and more scale computation.</p>
+<p>Even after choosing a format, an implementation still has to decide how values are scaled, which representations persist between operations, what actually reaches the GEMM, and what crosses a communication boundary.</p>
+<p>Concretely, a precision description should make five decisions explicit:</p>
+<ul>
+<li><strong>Encoded values and scales:</strong> FP8, MXFP4, or INT4 payloads are incomplete descriptions without tensor, row, block, token, or expert-level scale organization.</li>
+<li><strong>GEMM operands:</strong> a real FP8 GEMM consumes FP8 operands and scales, whereas a fake-quantized path reconstructs values and sends BF16 operands to the GEMM.</li>
+<li><strong>Accumulation and output:</strong> products may be accumulated or materialized in BF16 or FP32 even when their input operands are low precision.</li>
+<li><strong>Persistent representation:</strong> the copy that survives between operations may be an optimizer master, a trainer parameter, or a packed rollout weight.</li>
+<li><strong>Communication representation:</strong> ranks or runtimes may exchange BF16, FP8, packed low-bit weights, or only adapter tensors.</li>
+</ul>
+<p>A format name alone answers only part of the first decision.</p>
+<p>This is why an FP8 GEMM does not imply an entirely FP8 model. The persistent trainer weight, optimizer moments, residual stream, normalization layers, GEMM outputs, and selected sensitive operations may all remain wider.</p>
+<p>The main configurations discussed later use the following numerical representations. These rows describe the cited systems rather than universal definitions of each format [1–5, 7].</p>
+<div class="column-page">
+<div id="tbl-format-configurations" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-format-configurations-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Formats and scale organizations used by the low-precision configurations discussed in this post.
+</figcaption>
+<div aria-describedby="tbl-format-configurations-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Configuration</th>
+<th style="text-align: left;">Encoded values</th>
+<th style="text-align: left;">Scale organization</th>
+<th style="text-align: left;">Where it is executed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Blockwise FP8</td>
+<td style="text-align: left;">E4M3 weights and activations</td>
+<td style="text-align: left;">FP32 scales; <span class="math inline">\(1\times128\)</span> activation tiles and <span class="math inline">\(128\times128\)</span> weight blocks in Unified FP8</td>
+<td style="text-align: left;">SGLang rollout and eligible Transformer Engine trainer GEMMs on Hopper</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">INT4 QAT / W4A16</td>
+<td style="text-align: left;">INT4 weights with BF16 activations</td>
+<td style="text-align: left;">grouped weight scales; packing follows the rollout kernel</td>
+<td style="text-align: left;">weight-resident SGLang rollout, with QDQ values consumed by BF16 trainer GEMMs</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MXFP8</td>
+<td style="text-align: left;">E4M3 values</td>
+<td style="text-align: left;">one E8M0 scale for every 32 consecutive values</td>
+<td style="text-align: left;">rollout and eligible trainer GEMMs on Blackwell</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MXFP4</td>
+<td style="text-align: left;">E2M1 values in a packed model-specific layout</td>
+<td style="text-align: left;">one E8M0 scale for every 32 consecutive values</td>
+<td style="text-align: left;">K3’s frozen rollout base on Blackwell</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NVFP4</td>
+<td style="text-align: left;">E2M1 values</td>
+<td style="text-align: left;">one E4M3 scale per 16 values plus an outer FP32 scale</td>
+<td style="text-align: left;">selected routed-expert rollout and trainer FProp GEMMs on Blackwell</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</div>
+<p>The hardware generation then determines which of those representations have a native execution path. Hopper provides the natural starting point for blockwise FP8 training and W4A16 rollout, but not the Blackwell microscaling paths. Blackwell adds native MXFP8 and NVFP4 paths, together with packed MXFP4 rollout where the model kernels support it. In either case, hardware support does not guarantee model, kernel, framework, or complete RL support.</p>
+<p>Three lessons follow. Low-bit storage is not the same as low-bit computation; native hardware support is not the same as complete model support; and peak Tensor Core throughput is not full RL-step throughput. Scale construction, transposes, packing, communication, small RL microbatches, ragged expert GEMMs, and launch gaps can dominate the measured system.</p>
+</section>
+<section id="fprop-dgrad-and-wgrad" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="fprop-dgrad-and-wgrad"><span class="header-section-number">3.2</span> FProp, DGrad, and WGrad</h3>
+<p>The names FProp, DGrad, and WGrad are easiest to understand by starting from an ordinary forward and backward pass. For one linear layer, the forward pass maps input activations <span class="math inline">\(X\)</span> and weights <span class="math inline">\(W\)</span> to output activations <span class="math inline">\(Y\)</span>:</p>
+<p><span class="math display">\[
+Y=XW^\top.
+\]</span></p>
+<p>Later layers turn <span class="math inline">\(Y\)</span> into a scalar loss <span class="math inline">\(L\)</span>. When backpropagation reaches this layer, it supplies the upstream gradient <span class="math inline">\(G_Y=\partial L/\partial Y\)</span>. The layer must then compute two different derivatives:</p>
+<p><span class="math display">\[
+G_X
+=
+\frac{\partial L}{\partial X}
+=
+G_YW,
+\]</span></p>
+<p><span class="math display">\[
+G_W
+=
+\frac{\partial L}{\partial W}
+=
+G_Y^\top X.
+\]</span></p>
+<p>The first computation is <strong>DGrad</strong>: it produces <span class="math inline">\(G_X\)</span>, which carries the learning signal into earlier layers. The second is <strong>WGrad</strong>: it produces <span class="math inline">\(G_W\)</span>, which tells the optimizer how this layer’s weights should change. <strong>FProp</strong> is the original computation of <span class="math inline">\(Y\)</span>. These three matrix multiplications consume different operand pairs:</p>
+<ul>
+<li>FProp uses <span class="math inline">\(X\)</span> and <span class="math inline">\(W\)</span>;</li>
+<li>DGrad uses <span class="math inline">\(G_Y\)</span> and <span class="math inline">\(W\)</span>;</li>
+<li>WGrad uses <span class="math inline">\(G_Y\)</span> and <span class="math inline">\(X\)</span>.</li>
+</ul>
+<p>FProp determines the numerical function used to score the current tokens. DGrad and WGrad determine how that score changes the model. The distinction is important because a precision configuration does not have to treat all three computations identically.</p>
+<p>For example, a trainer can match a quantized rollout in FProp while keeping DGrad and WGrad in BF16. That aligns the policy used to score the current tokens without claiming four-bit or eight-bit backward computation. Backward precision still matters, but it affects the update and therefore future policies rather than the probabilities already used in the current objective.</p>
+<p>This asymmetric case motivates <strong>fake quantization</strong>. Suppose rollout executes low-bit weights, but the trainer still uses BF16 GEMMs. The trainer can quantize and immediately dequantize its operands before the matrix multiplication:</p>
+<p><span class="math display">\[
+Y_{\mathrm{fake}}
+=
+DQ(Q(X))DQ(Q(W))^\top.
+\]</span></p>
+<p>The forward computation now contains real quantization error because it sees values reconstructed from the low-precision grid, but the GEMM itself still consumes BF16 operands. This lets us match or approximate the rollout’s quantized forward function without requiring a low-bit trainer kernel. If the quantized weights are trainable, quantization-aware training also needs a rule for propagating gradients through rounding, commonly a straight-through estimator.</p>
+</section>
+<section id="tracing-one-rl-update" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="tracing-one-rl-update"><span class="header-section-number">3.3</span> Tracing one RL update</h3>
+<p>The complete RL update adds rollout, optimizer state, and synchronization to the three trained-linear operations. The rollout engine first extends each prefix with behavior policy <span class="math inline">\(\mu_\tau\)</span> and returns the sampled tokens together with their behavior log-probabilities. Rewards are then evaluated and converted into returns or advantages. Trainer FProp feeds the same prefixes and sampled tokens through the current policy <span class="math inline">\(\pi_t\)</span>, which is the point at which trainer precision directly enters the probability ratio.</p>
+<p>The RL objective combines the current and behavior log-probabilities with the advantages, clipping or truncation, and any reference-policy KL term. It produces the scalar loss that drives backward, but it does not introduce a new weight representation. For the precision trace, it is therefore the bridge between Trainer FProp and the two backward computations: DGrad propagates sensitivity into earlier layers, while WGrad forms gradients for the tensors that are actually trainable.</p>
+<div id="tbl-rl-loop-components" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-rl-loop-components-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3: Components used to trace precision across one RL update.
+</figcaption>
+<div aria-describedby="tbl-rl-loop-components-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Component</th>
+<th style="text-align: left;">Main question</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Rollout</td>
+<td style="text-align: left;">Which behavior policy generated the tokens and request state?</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Trainer FProp</td>
+<td style="text-align: left;">How does the current trainer policy score the same tokens?</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">DGrad</td>
+<td style="text-align: left;">Which weight representation propagates sensitivity backward?</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">WGrad</td>
+<td style="text-align: left;">Which activation representation forms gradients for the trainable tensors?</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Optimizer</td>
+<td style="text-align: left;">Which parameter and moment representations create <span class="math inline">\(W_{t+1}\)</span>?</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Convert and synchronize</td>
+<td style="text-align: left;">How does <span class="math inline">\(W_{t+1}\)</span> become a complete, active rollout version?</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>The optimizer consumes those gradients and its persistent parameter and moment state to create <span class="math inline">\(W_{t+1}\)</span>, or a new adapter version. <strong>Convert and synchronize</strong> covers everything required to turn that logical update into the next rollout representation: quantization, scale construction, padding, packing, tensor fusion, target-runtime sharding, transfer, installation, and activation. Keeping these actions in one component makes its contract clear: the rollout engine should expose one complete new version, not a mixture of old and new tensors.</p>
+<p>The weights are not the only state in this process. The trainer maintains optimizer state and saved activations. Autoregressive generation maintains request state, including the accepted prefix, KV cache, recurrent or convolution state, and sometimes routing or draft-model state. A request must remain paired with the weight or adapter version used to score and extend it.</p>
+<p>Figure 2 follows the same component sequence as <a href="#tbl-rl-loop-components" class="quarto-xref">Table&nbsp;3</a>. The token and its behavior log-probability move through rollout and trainer FProp; rewards and advantages enter the objective as a side input; the resulting loss drives DGrad and WGrad; and the optimizer’s next logical version returns through conversion and synchronization. The objective is shown on the bridge between components rather than as a seventh component.</p>
+<p><img src="images/rl-update-precision-path.svg" class="img-fluid" alt="The token path from rollout through trainer FProp, DGrad, and WGrad, followed by the update components of optimization, conversion, and synchronization."></p>
+<p><em>Figure 2: The same six components from Table 3, arranged as a cycle. The token moves from rollout into training; the optimizer creates the next logical version, which is converted and synchronized back to rollout. Original synthesis.</em></p>
+<p>The same <span class="math inline">\(W_t\)</span> may exist simultaneously as an FP32 optimizer master, a BF16 trainer parameter, rowwise and columnwise quantized GEMM operands, and a packed rollout tensor. These are representations of one weight version, not four different updates. The version changes when the optimizer creates <span class="math inline">\(W_{t+1}\)</span>.</p>
+</section>
+</section>
+<section id="where-precision-enters-the-rl-step" class="level2 page-columns page-full" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="where-precision-enters-the-rl-step"><span class="header-section-number">4</span> Where Precision Enters the RL Step</h2>
+<p>The previous section separated format, execution, hardware, and the components of an RL update. We can now combine them. A <strong>precision configuration</strong> assigns a representation and execution mode to rollout, FProp, DGrad, WGrad, optimizer state, and conversion and synchronization. <a href="#tbl-precision-configurations" class="quarto-xref">Table&nbsp;4</a> compares five published configurations that make different choices at those boundaries.</p>
+<div class="column-page">
+<div id="tbl-precision-configurations" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-precision-configurations-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;4: Precision placement across the low-precision RL configurations discussed in this post.
+</figcaption>
+<div aria-describedby="tbl-precision-configurations-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Precision configuration</th>
+<th style="text-align: left;">Rollout</th>
+<th style="text-align: left;">FProp</th>
+<th style="text-align: left;">DGrad</th>
+<th style="text-align: left;">WGrad</th>
+<th style="text-align: left;">Optimizer</th>
+<th style="text-align: left;">Convert and synchronize</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Unified FP8 [1]</td>
+<td style="text-align: left;">matching blockwise FP8</td>
+<td style="text-align: left;">real blockwise FP8 for eligible GEMMs</td>
+<td style="text-align: left;">real blockwise FP8 for eligible GEMMs</td>
+<td style="text-align: left;">real blockwise FP8 for eligible GEMMs</td>
+<td style="text-align: left;">higher-precision master and moments</td>
+<td style="text-align: left;">rebuild and transfer the matching blockwise-FP8 policy</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">INT4 QAT / W4A16 [2]</td>
+<td style="text-align: left;">real W4A16</td>
+<td style="text-align: left;">BF16 GEMM over QDQ weights</td>
+<td style="text-align: left;">BF16 using reconstructed weights</td>
+<td style="text-align: left;">BF16 from saved activations; STE passes the gradient through weight quantization</td>
+<td style="text-align: left;">higher precision</td>
+<td style="text-align: left;">quantize and pack updated INT4 weights</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MXFP8 [3]</td>
+<td style="text-align: left;">matching MXFP8</td>
+<td style="text-align: left;">real MXFP8 for eligible GEMMs</td>
+<td style="text-align: left;">real MXFP8 for eligible GEMMs</td>
+<td style="text-align: left;">real MXFP8 for eligible GEMMs</td>
+<td style="text-align: left;">higher precision</td>
+<td style="text-align: left;">rebuild codes, scales, layouts, and exceptions</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Selective NVFP4 [3, 4]</td>
+<td style="text-align: left;">NVFP4 routed experts with wider exceptions</td>
+<td style="text-align: left;">real NVFP4 expert GEMMs</td>
+<td style="text-align: left;">BF16 using original or reconstructed weights</td>
+<td style="text-align: left;">BF16 using original or reconstructed activations</td>
+<td style="text-align: left;">higher precision</td>
+<td style="text-align: left;">reproduce the quantizer, layout, and specified exceptions</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Frozen low-bit base with BF16 LoRA [5]</td>
+<td style="text-align: left;">packed low-bit base plus BF16 adapter</td>
+<td style="text-align: left;">wider frozen weights plus BF16 adapter</td>
+<td style="text-align: left;">wider sensitivity through the base and adapter paths</td>
+<td style="text-align: left;">adapter tensors only</td>
+<td style="text-align: left;">adapter state only</td>
+<td style="text-align: left;">synchronize the adapter; leave the rollout base unchanged</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</div>
+<p>The table should not be read as a ranking or as a promise of equal treatment in the rest of the post. It is a map of the precision configurations. Unified FP8 is traced in detail below because it provides a clean example of how to follow precision through the entire RL step. The other rows remain comparison points and return at different depth in the model-specific sections.</p>
+<p>Unified FP8 and MXFP8 try to align rollout and trainer execution while also using native low-precision trainer GEMMs. INT4 QAT adapts a higher-precision trainer to a low-bit rollout function without claiming INT4 backward speed. The published NVFP4 example uses four-bit expert execution in the forward path while keeping a wider backward for stability. LoRA over frozen base weights changes the final component: instead of converting and moving the full model after every optimizer step, it moves only the trainable adapter.</p>
+<section id="unified-fp8-as-a-complete-trace" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="unified-fp8-as-a-complete-trace"><span class="header-section-number">4.1</span> Unified FP8 as a complete trace</h3>
+<p>The term <strong>Unified FP8</strong> follows the configuration introduced in <em>Unified FP8: Moving Beyond Mixed Precision for Stable and Accelerated MoE RL</em> [1]. Here it means that rollout and trainer FProp target the same blockwise-quantized policy while eligible trainer FProp, DGrad, and WGrad GEMMs execute in FP8. It does not mean that every tensor, operation, or persistent state is FP8.</p>
+<p>This configuration is a useful complete trace because it exposes three questions that a format label tends to collapse: which quantized values define the forward policy, which kernels actually consume FP8 operands, and which representation persists or crosses a runtime boundary.</p>
+<section id="matching-the-forward-comes-first" class="level4" data-number="4.1.1">
+<h4 data-number="4.1.1" class="anchored" data-anchor-id="matching-the-forward-comes-first"><span class="header-section-number">4.1.1</span> Matching the forward comes first</h4>
+<p>The published Hopper setup uses an SGLang blockwise FP8 rollout policy and Transformer Engine blockwise FP8 for eligible trainer GEMMs. Both use E4M3 values with FP32 scales, <span class="math inline">\(1\times128\)</span> activation tiles, and <span class="math inline">\(128\times128\)</span> weight blocks. Accumulation, normalization, residual paths, optimizer state, and unsupported operations can remain wider [1, 10].</p>
+<p>The two block shapes reflect different statistics. An activation matrix is organized as token-like rows by hidden channels. A <span class="math inline">\(1\times128\)</span> tile gives each token row its own scale for every 128 adjacent channels, so an outlier in one token does not reduce the resolution available to neighboring tokens. A weight matrix has two stable structural axes and is reused across many tokens; a <span class="math inline">\(128\times128\)</span> block can therefore share one scale across a small two- dimensional region with much lower metadata overhead. The common dimension of 128 aligns both schemes with chunks of the GEMM inner dimension, but the outer shape differs because activations and weights have different reuse patterns.</p>
+<p>That shared quantizer is not enough by itself to establish what matters. The Unified FP8 study uses four trainer variants to separate three variables: whether FProp sees quantized values, whether backward sees quantized values, and whether the GEMM kernel consumes BF16 or FP8 operands. Rollout remains blockwise FP8 in every case.</p>
+<div id="tbl-unified-fp8-ablations" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-unified-fp8-ablations-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;5: Controlled trainer variants in the Unified FP8 study; rollout remains blockwise FP8 in all four cases.
+</figcaption>
+<div aria-describedby="tbl-unified-fp8-ablations-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Trainer case</th>
+<th style="text-align: left;">FProp</th>
+<th style="text-align: left;">DGrad and WGrad</th>
+<th style="text-align: left;">Comparison isolated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">BF16 baseline</td>
+<td style="text-align: left;">ordinary BF16 values and GEMMs</td>
+<td style="text-align: left;">ordinary BF16</td>
+<td style="text-align: left;">original same-version BF16-trainer/FP8-rollout mismatch</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Forward fake quantization</td>
+<td style="text-align: left;">QDQ values followed by BF16 GEMMs</td>
+<td style="text-align: left;">ordinary BF16</td>
+<td style="text-align: left;">effect of matching the quantized forward values</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Forward and backward fake quantization</td>
+<td style="text-align: left;">QDQ values followed by BF16 GEMMs</td>
+<td style="text-align: left;">QDQ operands followed by BF16 GEMMs</td>
+<td style="text-align: left;">additional effect of quantized backward values without FP8 kernels</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Real FP8</td>
+<td style="text-align: left;">blockwise FP8 operands and FP8 GEMMs</td>
+<td style="text-align: left;">FP8-capable DGrad and WGrad</td>
+<td style="text-align: left;">fake-versus-real execution after the represented values are aligned</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>In the <strong>BF16 baseline</strong>, the trainer and rollout can hold the same logical weight version and still score different policies: trainer FProp evaluates ordinary BF16 values, while rollout evaluates quantized weights and activations. This is the original same-version precision mismatch.</p>
+<p>With <strong>forward fake quantization</strong>, the trainer applies the rollout-like QDQ operation to its forward operands and then uses a BF16 GEMM. Backward remains ordinary BF16. This variant deliberately changes the policy scored by the trainer without attempting an FP8 training speedup. Comparing it with the BF16 baseline asks whether forward-value alignment alone is sufficient to reduce the trainer–rollout discrepancy.</p>
+<p>The third variant applies <strong>fake quantization in forward and backward</strong>. DGrad and WGrad now see reconstructed FP8-grid values, but their GEMMs remain BF16. Comparing the second and third variants isolates how quantized backward values change optimization. They can affect gradient quality and future updates, but they do not retroactively change the forward probabilities used for the current trajectory.</p>
+<p>Finally, <strong>real FP8</strong> gives eligible FProp, DGrad, and WGrad operations FP8 codes and scales and executes FP8 Tensor Core GEMMs. Comparing the third and fourth variants holds the represented grid values approximately fixed while changing the kernel, layout, accumulation, and conversion path.</p>
+<p>The study reports that the three variants with a quantized trainer forward have much better trainer–rollout agreement than the ordinary BF16 baseline [1]. At the same time, their KL to a BF16 reference can be higher because that metric also counts the intentional movement from a BF16 policy to a quantized one. This is why <a href="#tbl-probability-diagnostics" class="quarto-xref">Table&nbsp;1</a> separates trainer–rollout agreement from reference-policy KL.</p>
+<p>The fake-versus-real comparison supplies another useful debugging rule. If a BF16 GEMM over QDQ operands agrees with a real FP8 GEMM, but both differ from the unquantized BF16 baseline, the dominant change is information lost during quantization. If fake and real paths disagree with each other, kernel layout, accumulation order, scale application, or another execution detail becomes a more likely cause. Matching FProp comes first because FProp defines the policy used in the current objective; backward precision determines how that policy will learn next.</p>
+</section>
+<section id="real-fp8-gemms-are-only-one-part-of-the-configuration" class="level4" data-number="4.1.2">
+<h4 data-number="4.1.2" class="anchored" data-anchor-id="real-fp8-gemms-are-only-one-part-of-the-configuration"><span class="header-section-number">4.1.2</span> Real FP8 GEMMs are only one part of the configuration</h4>
+<p>Real FP8 GEMMs still coexist with several wider or differently packed representations. In a Megatron trainer configured to use Transformer Engine, <code>--transformer-impl transformer_engine</code>, <code>--fp8-format e4m3</code>, and <code>--fp8-recipe blockwise</code> select blockwise FP8 execution for supported Transformer Engine operators. Transformer Engine performs the online operand quantization, manages FP8 metadata, and invokes eligible FP8 forward and backward GEMMs. Megatron still owns model partitioning, the training schedule, parameter gathering, and optimizer integration.</p>
+<p>Several representations therefore coexist, each for a different reason.</p>
+<p><strong>Optimizer source of truth.</strong> Higher-precision master parameters and moments remain responsible for producing the next logical weight version. Real FP8 GEMMs do not imply that the optimizer applies updates directly to an E4M3 payload.</p>
+<p><strong>Persistent trainer parameters.</strong> The trainer’s primary parameter is BF16 by default, while eligible FP8 primary weights are optional. This representation belongs to parameter ownership and distributed gathering; it is distinct from the online operands consumed by a GEMM.</p>
+<p><strong>Compute operands and wider exceptions.</strong> Transformer Engine constructs blockwise-FP8 operands and scale metadata for supported FProp, DGrad, and WGrad GEMMs. Norms, residual paths, embeddings, the language-model head, custom architecture operators, and selected sensitive operations can remain BF16 or FP32. FP8 codes and scales, transposed operand copies, workspaces, saved activations, and higher-precision optimizer state also explain why end-to-end memory does not shrink in direct proportion to the payload width.</p>
+<p>The optional <code>--fp8-param-gather</code> flag is a useful example of why these representation boundaries must remain separate. Without it, eligible primary weights and their data-parallel AllGather can remain BF16; Transformer Engine quantizes them online into operands for real FP8 GEMMs. With it, supported primary weights and the AllGather use FP8. The eligible GEMMs are real FP8 in both cases, while master parameters and optimizer moments remain wider. The flag therefore changes trainer parameter storage and communication rather than defining whether FProp, DGrad, or WGrad is FP8. In the referenced stack, this option requires the Transformer Engine FusedAdam path and is incompatible with Megatron CPU Adam offload [10].</p>
+<p><strong>Rollout and recovery representations.</strong> In the convert-and-synchronize component, the referenced Miles integration can use a BF16 interoperability bridge before SGLang constructs its blockwise-FP8 runtime layout. Its distributed checkpoint is also BF16 [10]. The bridge, rollout artifact, and checkpoint serve different consumers; none determines whether the trainer’s eligible GEMMs execute in FP8.</p>
+<p>The value of tracing Unified FP8 this way is precisely that “FP8” no longer hides which RL component, numerical representation, or framework owns a particular behavior.</p>
+</section>
+</section>
+</section>
+<section id="closing-the-loop-at-frontier-model-scale" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="closing-the-loop-at-frontier-model-scale"><span class="header-section-number">5</span> Closing the Loop at Frontier-Model Scale</h2>
+<p>Unified FP8 is the cleanest case: rollout and trainer FProp can target the same quantized policy. Frontier-scale systems do not always have that option. Model size, checkpoint format, available kernels, and synchronization cost can force the two runtimes to keep different representations. GLM-5.2 and Kimi K3 show two ways to close the RL loop under those constraints.</p>
+<p>GLM-5.2 updates the complete model and accepts both BF16-versus-FP8 precision mismatch and asynchronous version lag. K3 instead freezes different base representations in the two runtimes and makes a BF16 adapter the only moving state. Reading the cases through the component trace in <a href="#tbl-rl-loop-components" class="quarto-xref">Table&nbsp;3</a> makes the contrast much sharper than their format names alone.</p>
+<section id="glm-5.2-bf16-training-and-fp8-rollout" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="glm-5.2-bf16-training-and-fp8-rollout"><span class="header-section-number">5.1</span> GLM-5.2: BF16 training and FP8 rollout</h3>
+<p>The GLM-5.2 continual post-training configuration pairs a BF16 Megatron trainer with an FP8 SGLang rollout engine on separate GPU pools [6]. The rollout side also uses an FP8 E4M3 KV cache. Model-weight precision and cache precision are separate decisions: one changes the executed network, while the other changes how attention state is stored during generation. In the component trace from Section 3.3, rollout is FP8, trainer FProp, DGrad, and WGrad are BF16, the optimizer updates all parameters from higher-precision state, and conversion and synchronization perform an asynchronous full-weight refresh.</p>
+<p>The separate pools let rollout and training proceed concurrently, but that choice creates two independent sources of off-policy behavior. Even at the same weight version, BF16 trainer FProp and FP8 rollout can disagree. While the next full rollout artifact is being converted and transferred, active workers may also continue generating from an older version. Applying the decomposition from Section 2, the first effect is same-version precision mismatch and the second is rollout staleness. Both enter the same importance ratio, but they require different measurements and interventions.</p>
+<p>Truncated importance sampling can limit the effect of extreme ratios on the update. It does not make the BF16 trainer equal to the FP8 rollout engine, restore the stale behavior policy, or prove that both systems selected the same experts. Precision mismatch and rollout staleness still need separate diagnostics: fixed-prefix same-version scoring for the first, and explicit rollout-version age for the second.</p>
+</section>
+<section id="kimi-k3-packed-mxfp4-rollout-weights-and-a-bf16-adapter" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="kimi-k3-packed-mxfp4-rollout-weights-and-a-bf16-adapter"><span class="header-section-number">5.2</span> Kimi K3: packed MXFP4 rollout weights and a BF16 adapter</h3>
+<p>K3 starts from a different constraint. Its released rollout checkpoint is a packed MXFP4 representation of a 2.8-trillion-parameter model. Merging an adapter into a complete BF16 base, requantizing the full model, and redistributing a new MXFP4 artifact after every optimizer step would make the full base the moving state. The disclosed RL configuration avoids that path [5].</p>
+<p>The Megatron trainer keeps a frozen BF16 base, while SGLang executes the frozen packed MXFP4 base directly on Blackwell. A BF16 LoRA adapter is the only trainable representation shared between them. The two runtimes therefore do not agree on the numerical base, but they do agree on what changes.</p>
+<p>The disclosed workflow also uses a different schedule from GLM-5.2. Rather than assigning rollout and training to dedicated asynchronous pools, it colocates them and alternates rollout-active and trainer-active phases. That removes the same kind of concurrent full-model refresh, but it does not remove the version boundary: every rollout worker must still switch to one complete adapter version before the next trajectories are generated.</p>
+<p>For one adapted projection:</p>
+<p><span class="math display">\[
+Y_T
+=
+\mathcal L_T(X_T;W_{\mathrm{BF16}})
++
+\frac{\alpha}{r}X_TA_t^\top B_t^\top,
+\]</span></p>
+<p><span class="math display">\[
+Y_R
+=
+\mathcal L_R(X_R;W_{\mathrm{MXFP4}})
++
+\frac{\alpha}{r}X_RA_t^\top B_t^\top.
+\]</span></p>
+<p>Here <span class="math inline">\(\mathcal L_T\)</span> is the trainer’s BF16 base operation and <span class="math inline">\(\mathcal L_R\)</span> is SGLang’s packed MXFP4 operation. The separate <span class="math inline">\(X_T\)</span> and <span class="math inline">\(X_R\)</span> are important: earlier BF16 and MXFP4 layers may already have produced different hidden states. These equations describe one adapted projection, not an additive decomposition of the complete nonlinear model. In the same component trace, rollout uses the packed MXFP4 base plus BF16 LoRA, trainer FProp and DGrad use the frozen BF16 base plus LoRA, WGrad and the optimizer cover only the adapter, and synchronization installs the adapter without rebuilding the frozen rollout base.</p>
+<p>Freezing the base removes its WGrad and optimizer state; it does not remove the base from backpropagation. DGrad must still pass sensitivity through the frozen linear operation so that earlier adapted layers receive a learning signal. The base participates in the derivative with respect to activations without receiving a parameter update.</p>
+<p>“Only the adapter moves” still describes a distributed model update. Megatron adapter shards must be reconstructed into the rollout TP/EP ownership and tensor layouts, transferred in bounded groups, installed, and acknowledged. The rollout must activate adapter version <span class="math inline">\(t+1\)</span> only after all of its tensors have been installed; otherwise one trajectory can observe a mixture of adapter versions <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span>. Successful byte transfer alone does not prove that the rollout kernel reads the new adapter.</p>
+<p>This architecture changes the validation target. A same-version BF16-versus-MXFP4 probability gap is expected before the first adapter update. The relevant question is whether that gap stays near its measured baseline after synchronization. A sudden change can indicate a missing tensor, an incorrect TP/EP mapping, a mixed adapter version, or a rollout kernel that did not activate the installed adapter. KDA recurrent state, the ShortConv window, and MLA cache state introduce additional request-level variables, but they belong to the validation contract rather than to the adapter-update mechanism itself.</p>
+<p><img src="images/glm52-k3-update-lifecycles.svg" class="img-fluid" alt="GLM-5.2 asynchronously moves a full FP8 rollout policy, while Kimi K3 keeps the low-bit base fixed and moves only a BF16 LoRA adapter."></p>
+<p><em>Figure 3: GLM-5.2 and K3 place the moving state at different boundaries. GLM-5.2 converts and asynchronously refreshes the full rollout policy; K3 keeps distinct frozen base representations and atomically installs only the updated adapter. Original synthesis based on [5, 6].</em></p>
+<p>Figure 3 distills the comparison without treating the two systems as variants of one configuration. GLM-5.2 pays the systems cost of converting and refreshing the complete policy, and its diagnostics must separate precision mismatch from asynchronous age. K3 avoids rebuilding the 2.8-trillion- parameter rollout base, but moves the engineering boundary to adapter shard mapping and atomic activation. Its expected starting point is a stable, nonzero BF16-versus-MXFP4 base mismatch rather than the tighter same-version agreement targeted by Unified FP8.</p>
+</section>
+<section id="qwen3.8-operator-scope-still-matters" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="qwen3.8-operator-scope-still-matters"><span class="header-section-number">5.3</span> Qwen3.8: operator scope still matters</h3>
+<p>Qwen3.8 provides a short transfer test. Its rollout checkpoint applies NVFP4 to linear layers in routed-expert MLPs, while LoRA trains attention projections [8, 9]. The quantized operator scope and the trainable operator scope therefore do not have to match, and “NVFP4 rollout” should not be read as “every layer and every trainer computation is NVFP4.”</p>
+<p>This is the more general lesson from the three cases. A new model must be evaluated by tracing its actual operator coverage, trainable tensors, request state, and update boundary. A shared format label is not enough to transfer K3’s tensor mapping, GLM-5.2’s staleness assumptions, or Unified FP8’s expected same-version agreement to another architecture.</p>
+</section>
+</section>
+<section id="validating-the-policy-across-two-runtimes" class="level2 page-columns page-full" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="validating-the-policy-across-two-runtimes"><span class="header-section-number">6</span> Validating the Policy Across Two Runtimes</h2>
+<p>The case studies lead to an operational question: when trainer and rollout probabilities disagree, how do we locate the boundary that introduced the difference? An end-to-end KL or clipping statistic can show that the loop is inconsistent, but it cannot identify whether the cause is quantization, kernel execution, routing, request state, or version activation.</p>
+<p>Validation should therefore expand from the smallest deterministic object to the complete RL system. These are <strong>validation levels</strong>, not additional RL components. Each level in <a href="#tbl-validation-ladder" class="quarto-xref">Table&nbsp;6</a> holds more of the loop fixed than the level after it. That ordering prevents an RL run from becoming the first test of a quantizer, converter, or convert-and-synchronize implementation.</p>
+<div class="column-page">
+<div id="tbl-validation-ladder" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-validation-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;6: A validation ladder from numerical representation to end-to-end RL behavior.
+</figcaption>
+<div aria-describedby="tbl-validation-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Validation level</th>
+<th style="text-align: left;">Controlled comparison</th>
+<th style="text-align: left;">What a failure localizes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1. Precision contract</td>
+<td style="text-align: left;">record formats, scale groups, exceptions, trainable tensors, version rules, and allowed staleness</td>
+<td style="text-align: left;">an undefined expectation rather than an implementation discrepancy</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2. Quantizer and converter</td>
+<td style="text-align: left;">compare reconstructed values, scale bytes, grouping, padding, packing, and tensor names</td>
+<td style="text-align: left;">numerical representation or serialization</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">3. One operator</td>
+<td style="text-align: left;">compare BF16, QDQ reference, and real low-precision kernel output</td>
+<td style="text-align: left;">quantization error versus kernel, layout, or accumulation error</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4. Fixed-prefix scoring</td>
+<td style="text-align: left;">give trainer and rollout identical weights or adapters, prefixes, and sampled tokens</td>
+<td style="text-align: left;">end-to-end same-version forward mismatch</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">5. Routes and request state</td>
+<td style="text-align: left;">compare expert IDs, KV cache, recurrent state, and convolution windows</td>
+<td style="text-align: left;">discontinuous routing or state-history divergence</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">6. Live update</td>
+<td style="text-align: left;">install a known synthetic change and verify the active runtime version</td>
+<td style="text-align: left;">shard mapping, transfer, installation, or activation</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">7. Deterministic training step</td>
+<td style="text-align: left;">hold one trajectory fixed while changing forward or backward precision</td>
+<td style="text-align: left;">gradient, optimizer, or precision-specific update behavior</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">8. Bounded RL run</td>
+<td style="text-align: left;">track rewards, entropy, gradients, ratios, routes, and version age</td>
+<td style="text-align: left;">interaction among numerical mismatch, staleness, and learning</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">9. Performance profile</td>
+<td style="text-align: left;">measure actual RL shapes, conversions, communication, and phase transitions</td>
+<td style="text-align: left;">whether the precision configuration improves the complete system</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</div>
+<p>The fixed-prefix level deserves special emphasis. Both engines should score the same existing tokens before either is allowed to sample independently. Once their tokens diverge, later hidden states, routes, and request state no longer provide a controlled comparison. For an MoE model, the first layer with different expert IDs is often more informative than the final log-probability difference.</p>
+<p>The live-update level needs equally strong evidence. A checksum proves that bytes arrived; it does not prove that the runtime kernel read them. A useful test installs a known perturbation, confirms the active version manifest, and then observes the expected change in fixed-prefix scores. Adapter systems must also prove that every tensor becomes active together rather than allowing one trajectory to see a mixture of versions.</p>
+<section id="reading-failures-by-where-they-first-appear" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="reading-failures-by-where-they-first-appear"><span class="header-section-number">6.1</span> Reading failures by where they first appear</h3>
+<p>Once the validation ladder is in place, symptoms can be interpreted by the first boundary at which they appear. Disagreement at the first same-version check points toward token alignment, quantization, layout, or operator coverage. A difference that begins at one MoE layer points more specifically toward router inputs, expert selection, or expert packing. If the initial load matches but a live update fails, the likely boundary shifts to shard reconstruction, tensor fusion, packing, or version activation. An adapter whose bytes arrive without changing behavior should be checked at the tensor manifest, active-version, and kernel-read boundaries.</p>
+<p>Other symptoms follow the same logic. Context-length-dependent drift suggests KV-cache or recurrent-state history; gradient spikes after a matched forward suggest DGrad, WGrad, optimizer state, or sensitive-operation exceptions; and a missing speedup calls for profiling scale construction, transposes, small or ragged GEMMs, launch gaps, and communication.</p>
+<p>The expected baseline depends on the configuration. GLM-5.2 requires a same-version BF16-versus-FP8 measurement plus a separate record of rollout version age. K3 begins with a nonzero BF16-versus-MXFP4 base mismatch and then asks whether installing an adapter preserves that baseline. Unified FP8 aims for much tighter forward agreement but still has to validate operator coverage, routing, and the conversion bridge. A stable aggregate curve is useful only after those expectations have been defined.</p>
+</section>
+</section>
+<section id="conclusion" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">7</span> Conclusion</h2>
+<p>The tempting question is whether a model can be trained or served in FP8 or FP4. For reinforcement learning, that is only the beginning. The more useful question is which numerical policy generated the tokens, which policy the trainer evaluated, and how the next version became active in rollout.</p>
+<p>Unified FP8 shows what becomes possible when the two forward executions can share a quantized policy. GLM-5.2 shows a different compromise: the complete model moves asynchronously between a BF16 trainer and an FP8 rollout engine, so precision mismatch and version lag must be measured separately. K3 keeps two frozen base representations and makes the BF16 adapter the common moving state. Qwen3.8 narrows the lesson further by showing that even one low-bit checkpoint can apply its format to only a subset of operators.</p>
+<p>As models grow, their precision configurations are likely to become more heterogeneous rather than more uniform. Different operator families will use different formats; wider request and optimizer state will coexist with lower-bit weights; and small trainable deltas will increasingly sit on top of deployment-native checkpoints. In that setting, “the model uses FP8” tells us very little. What matters is the complete path from the policy that produced a token to the update that creates the next one.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div class="references-list">
+<ol type="1">
+<li>LMSYS Org (2025). <em>Unified FP8: Moving Beyond Mixed Precision for Stable and Accelerated MoE RL.</em> <a href="https://www.lmsys.org/blog/2025-11-25-fp8-rl">Blog post</a></li>
+<li>LMSYS Org (2026). <em>Squeezing 1TB Model Rollout into a Single H200.</em> <a href="https://www.lmsys.org/blog/2026-01-26-int4-qat">Blog post</a></li>
+<li>LMSYS Org (2026). <em>Towards Blackwell-Native 8-bit and 4-bit RL.</em> <a href="https://www.lmsys.org/blog/2026-07-29-mxfp8-nvfp4-rl/">Blog post</a></li>
+<li>Humans&amp;AI (2026). <em>The 4-bitter Lesson: Balancing Stability and Performance in NVFP4 RL.</em> <a href="https://humansand.ai/blog/nvfp4-rl">Blog post</a></li>
+<li>LMSYS Org (2026). <em>SGLang and Miles Add Day-0 Support for Kimi K3.</em> <a href="https://www.lmsys.org/blog/2026-07-27-kimi-k3-day0-support">Blog post</a></li>
+<li>RadixArk (2026). <em>Miles GLM-5.2 reference recipe.</em> <a href="https://github.com/radixark/miles/tree/main/examples/experimental/openenv/glm52_tbench2">GitHub</a></li>
+<li>NVIDIA. <em>Transformer Engine FP8 and FP4 primer.</em> <a href="https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/examples/fp8_primer.html">Documentation</a></li>
+<li>LMSYS Org (2026). <em>Qwen3.8 day-zero support.</em> <a href="https://www.lmsys.org/blog/2026-08-12-qwen3-8-day0-support">Blog post</a></li>
+<li>RadixArk (2026). <em>Qwen3.8 NVFP4 checkpoint card.</em> <a href="https://huggingface.co/RadixArk/Qwen3.8-2.4T-A95B-NVFP4">Hugging Face</a></li>
+<li>RadixArk (2026). <em>Miles FP8 training examples.</em> <a href="https://github.com/radixark/miles/blob/main/examples/infra_features/low_precision/README.md">GitHub</a></li>
+</ol>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
