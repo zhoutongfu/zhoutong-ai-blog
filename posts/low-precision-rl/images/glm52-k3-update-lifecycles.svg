@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title desc">
+  <title id="title">GLM-5.2 and Kimi K3 move different state through the RL loop</title>
+  <desc id="desc">GLM-5.2 converts and asynchronously activates a complete FP8 rollout policy after a BF16 full-model update. Kimi K3 keeps separate frozen BF16 and MXFP4 bases and atomically activates only a remapped BF16 LoRA adapter.</desc>
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#f0fdf4"/>
+    </linearGradient>
+    <filter id="shadow3" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="blueArrow3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="orangeArrow3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#ea580c"/>
+    </marker>
+    <marker id="greenArrow3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#16a34a"/>
+    </marker>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .title { font-size: 32px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-size: 17px; fill: #475569; }
+      .panel-title { font-size: 25px; font-weight: 700; fill: #0f172a; }
+      .panel-subtitle { font-size: 14px; fill: #64748b; }
+      .card-title { font-size: 18px; font-weight: 700; fill: #0f172a; }
+      .body { font-size: 14px; fill: #475569; }
+      .small { font-size: 12.5px; fill: #64748b; }
+      .tag { font-size: 12px; font-weight: 700; fill: #ffffff; letter-spacing: .4px; }
+      .artifact-title { font-size: 13px; font-weight: 700; fill: #64748b; letter-spacing: .6px; }
+      .artifact-value { font-size: 16px; font-weight: 700; fill: #0f172a; }
+      .callout { font-size: 15px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="820" fill="url(#bg3)"/>
+  <rect x="28" y="24" width="1344" height="770" rx="26" fill="#ffffff" stroke="#dbe4f0" filter="url(#shadow3)"/>
+  <text x="70" y="76" class="sans title">Two ways to close the low-precision RL loop</text>
+  <text x="70" y="108" class="sans subtitle">The complete policy moves for GLM-5.2; only the trainable adapter moves for K3.</text>
+
+  <!-- GLM-5.2 panel -->
+  <rect x="64" y="142" width="615" height="610" rx="22" fill="#f8fafc" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text x="94" y="184" class="sans panel-title">GLM-5.2</text>
+  <text x="94" y="210" class="sans panel-subtitle">Separate GPU pools · asynchronous full-model refresh</text>
+
+  <g transform="translate(94 248)">
+    <rect width="190" height="150" rx="18" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.8"/>
+    <rect x="18" y="18" width="104" height="27" rx="13.5" fill="#2563eb"/>
+    <text x="70" y="36" text-anchor="middle" class="sans tag">TRAINER POOL</text>
+    <text x="95" y="77" text-anchor="middle" class="sans card-title">BF16 Megatron</text>
+    <text x="95" y="106" text-anchor="middle" class="sans body">all parameters update</text>
+    <text x="95" y="132" text-anchor="middle" class="sans small">creates complete Wₜ₊₁</text>
+  </g>
+
+  <line x1="284" y1="323" x2="302" y2="323" stroke="#ea580c" stroke-width="2.6" marker-end="url(#orangeArrow3)"/>
+  <g transform="translate(310 270)">
+    <rect width="120" height="106" rx="16" fill="#ffffff" stroke="#fdba74" stroke-width="1.6"/>
+    <text x="60" y="27" text-anchor="middle" class="sans artifact-title">WHAT MOVES</text>
+    <text x="60" y="57" text-anchor="middle" class="sans artifact-value">full FP8</text>
+    <text x="60" y="79" text-anchor="middle" class="sans artifact-value">policy</text>
+    <text x="60" y="97" text-anchor="middle" class="sans small">async</text>
+  </g>
+  <line x1="430" y1="323" x2="451" y2="323" stroke="#ea580c" stroke-width="2.6" marker-end="url(#orangeArrow3)"/>
+
+  <g transform="translate(459 248)">
+    <rect width="190" height="150" rx="18" fill="#fff7ed" stroke="#fb923c" stroke-width="1.8"/>
+    <rect x="18" y="18" width="112" height="27" rx="13.5" fill="#ea580c"/>
+    <text x="74" y="36" text-anchor="middle" class="sans tag">ROLLOUT POOL</text>
+    <text x="95" y="77" text-anchor="middle" class="sans card-title">FP8 SGLang</text>
+    <text x="95" y="106" text-anchor="middle" class="sans body">behavior policy + KV cache</text>
+    <text x="95" y="132" text-anchor="middle" class="sans small">may execute older Wτ</text>
+  </g>
+
+  <line x1="459" y1="430" x2="292" y2="430" stroke="#2563eb" stroke-width="2.4" marker-end="url(#blueArrow3)"/>
+  <text x="375" y="420" text-anchor="middle" class="sans small">trajectories + behavior log-probabilities</text>
+
+  <rect x="94" y="462" width="555" height="104" rx="17" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="120" y="495" class="sans card-title">Mismatch to diagnose</text>
+  <rect x="120" y="514" width="222" height="32" rx="16" fill="#dbeafe"/>
+  <text x="231" y="535" text-anchor="middle" class="sans body" fill="#1d4ed8">BF16 ↔ FP8 precision gap</text>
+  <text x="367" y="535" text-anchor="middle" class="sans card-title">+</text>
+  <rect x="392" y="514" width="226" height="32" rx="16" fill="#ffedd5"/>
+  <text x="505" y="535" text-anchor="middle" class="sans body" fill="#c2410c">asynchronous version lag</text>
+
+  <rect x="94" y="594" width="555" height="118" rx="18" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="120" y="628" class="sans callout" fill="#1d4ed8">Correctness condition</text>
+  <text x="120" y="657" class="sans body">Convert, transfer, and activate one complete rollout version;</text>
+  <text x="120" y="680" class="sans body">measure same-version precision mismatch separately from its age.</text>
+  <text x="120" y="700" class="sans small">Truncation bounds consequences but does not remove either source.</text>
+
+  <!-- K3 panel -->
+  <rect x="721" y="142" width="615" height="610" rx="22" fill="#f8fafc" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text x="751" y="184" class="sans panel-title">Kimi K3</text>
+  <text x="751" y="210" class="sans panel-subtitle">Colocated phases · frozen base representations</text>
+
+  <g transform="translate(751 248)">
+    <rect width="190" height="150" rx="18" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.8"/>
+    <rect x="18" y="18" width="118" height="27" rx="13.5" fill="#2563eb"/>
+    <text x="77" y="36" text-anchor="middle" class="sans tag">TRAINER PHASE</text>
+    <text x="95" y="77" text-anchor="middle" class="sans card-title">BF16 base + LoRA</text>
+    <text x="95" y="106" text-anchor="middle" class="sans body">base frozen; adapter updates</text>
+    <text x="95" y="132" text-anchor="middle" class="sans small">DGrad still passes through base</text>
+  </g>
+
+  <line x1="941" y1="323" x2="959" y2="323" stroke="#16a34a" stroke-width="2.6" marker-end="url(#greenArrow3)"/>
+  <g transform="translate(967 270)">
+    <rect width="120" height="106" rx="16" fill="#ffffff" stroke="#86efac" stroke-width="1.6"/>
+    <text x="60" y="27" text-anchor="middle" class="sans artifact-title">WHAT MOVES</text>
+    <text x="60" y="57" text-anchor="middle" class="sans artifact-value">BF16 LoRA</text>
+    <text x="60" y="79" text-anchor="middle" class="sans artifact-value">adapter</text>
+    <text x="60" y="97" text-anchor="middle" class="sans small">versioned</text>
+  </g>
+  <line x1="1087" y1="323" x2="1108" y2="323" stroke="#16a34a" stroke-width="2.6" marker-end="url(#greenArrow3)"/>
+
+  <g transform="translate(1116 248)">
+    <rect width="190" height="150" rx="18" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.8"/>
+    <rect x="18" y="18" width="126" height="27" rx="13.5" fill="#16a34a"/>
+    <text x="81" y="36" text-anchor="middle" class="sans tag">ROLLOUT PHASE</text>
+    <text x="95" y="77" text-anchor="middle" class="sans card-title">MXFP4 base + LoRA</text>
+    <text x="95" y="106" text-anchor="middle" class="sans body">packed base stays fixed</text>
+    <text x="95" y="132" text-anchor="middle" class="sans small">adapter remains separate</text>
+  </g>
+
+  <line x1="1116" y1="430" x2="949" y2="430" stroke="#2563eb" stroke-width="2.4" marker-end="url(#blueArrow3)"/>
+  <text x="1032" y="420" text-anchor="middle" class="sans small">trajectories + behavior log-probabilities</text>
+
+  <rect x="751" y="462" width="555" height="104" rx="17" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="777" y="495" class="sans card-title">Baseline and update risk</text>
+  <rect x="777" y="514" width="222" height="32" rx="16" fill="#dcfce7"/>
+  <text x="888" y="535" text-anchor="middle" class="sans body" fill="#15803d">BF16 ↔ MXFP4 base gap</text>
+  <text x="1024" y="535" text-anchor="middle" class="sans card-title">+</text>
+  <rect x="1049" y="514" width="226" height="32" rx="16" fill="#f1f5f9"/>
+  <text x="1162" y="535" text-anchor="middle" class="sans body">adapter version / mapping</text>
+
+  <rect x="751" y="594" width="555" height="118" rx="18" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="777" y="628" class="sans callout" fill="#15803d">Correctness condition</text>
+  <text x="777" y="657" class="sans body">Remap and install every adapter tensor, then activate the</text>
+  <text x="777" y="680" class="sans body">complete version without merging or rebuilding the frozen base.</text>
+  <text x="777" y="700" class="sans small">The BF16-versus-MXFP4 mismatch is an expected nonzero baseline.</text>
+
+  <line x1="700" y1="154" x2="700" y2="742" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 8"/>
+  <text x="700" y="780" text-anchor="middle" class="sans body">Same RL lifecycle; different moving state, mismatch baseline, and activation contract.</text>
+</svg>

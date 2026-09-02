@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="800" viewBox="0 0 1400 800" role="img" aria-labelledby="title desc">
+  <title id="title">Precision across one reinforcement-learning update</title>
+  <desc id="desc">A six-component cycle shows tokens and behavior log probabilities moving from rollout to trainer forward, with rewards and advantages entering the RL objective that produces the backward loss. Parallel DGrad and WGrad operations feed the optimizer, which creates a new logical weight version that is converted and synchronized back to rollout.</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#f5f3ff"/>
+    </linearGradient>
+    <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#475569"/>
+    </marker>
+    <marker id="blueArrow2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="purpleArrow2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#7c3aed"/>
+    </marker>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .title { font-size: 32px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 1.2px; fill: #64748b; }
+      .step { font-size: 19px; font-weight: 700; fill: #0f172a; }
+      .body { font-size: 14px; fill: #475569; }
+      .small { font-size: 12.5px; fill: #64748b; }
+      .lane { font-size: 14px; font-weight: 700; fill: #ffffff; }
+      .version { font-size: 17px; font-weight: 700; fill: #4c1d95; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="800" fill="url(#bg2)"/>
+  <rect x="28" y="24" width="1344" height="752" rx="26" fill="#ffffff" stroke="#dbe4f0" filter="url(#shadow2)"/>
+  <text x="70" y="76" class="sans title">Precision across one RL update</text>
+  <text x="70" y="108" class="sans subtitle">The token moves into training; the next logical weight version moves back to rollout.</text>
+
+  <rect x="70" y="145" width="1260" height="310" rx="22" fill="#f8fafc" stroke="#cbd5e1"/>
+  <rect x="92" y="164" width="120" height="30" rx="15" fill="#2563eb"/>
+  <text x="152" y="184" text-anchor="middle" class="sans lane">TOKEN FLOW</text>
+
+  <g transform="translate(92 226)">
+    <rect width="180" height="144" rx="18" fill="#fff7ed" stroke="#fb923c" stroke-width="1.8"/>
+    <text x="90" y="40" text-anchor="middle" class="sans step">Rollout</text>
+    <text x="90" y="70" text-anchor="middle" class="sans body">behavior policy μτ</text>
+    <text x="90" y="96" text-anchor="middle" class="sans body">low-bit or mixed</text>
+    <text x="90" y="121" text-anchor="middle" class="sans small">request state persists</text>
+  </g>
+  <line x1="272" y1="298" x2="310" y2="298" stroke="#2563eb" stroke-width="2.5" marker-end="url(#blueArrow2)"/>
+  <text x="291" y="275" text-anchor="middle" class="sans small">tokens +</text>
+  <text x="291" y="290" text-anchor="middle" class="sans small">log μτ</text>
+
+  <g transform="translate(318 226)">
+    <rect width="180" height="144" rx="18" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.8"/>
+    <text x="90" y="40" text-anchor="middle" class="sans step">Trainer FProp</text>
+    <text x="90" y="70" text-anchor="middle" class="sans body">scores the same tokens</text>
+    <text x="90" y="96" text-anchor="middle" class="sans body">defines current πₜ</text>
+    <text x="90" y="121" text-anchor="middle" class="sans small">forward precision matters first</text>
+  </g>
+  <rect x="472" y="164" width="176" height="36" rx="18" fill="#fffbeb" stroke="#fbbf24" stroke-width="1.4"/>
+  <text x="560" y="187" text-anchor="middle" class="sans small" fill="#92400e">rewards + advantages</text>
+  <line x1="560" y1="200" x2="560" y2="256" stroke="#d97706" stroke-width="2" marker-end="url(#arrow2)"/>
+  <line x1="498" y1="298" x2="602" y2="298" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow2)"/>
+  <text x="550" y="278" text-anchor="middle" class="sans small">RL objective → loss</text>
+
+  <g transform="translate(610 210)">
+    <rect width="330" height="176" rx="18" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.8"/>
+    <text x="165" y="32" text-anchor="middle" class="sans step">Backward</text>
+    <g transform="translate(16 50)">
+      <rect width="142" height="104" rx="15" fill="#ffffff" stroke="#86efac"/>
+      <text x="71" y="34" text-anchor="middle" class="sans step">DGrad</text>
+      <text x="71" y="61" text-anchor="middle" class="sans body">propagates sensitivity</text>
+      <text x="71" y="84" text-anchor="middle" class="sans small">to earlier layers</text>
+    </g>
+    <g transform="translate(172 50)">
+      <rect width="142" height="104" rx="15" fill="#ffffff" stroke="#86efac"/>
+      <text x="71" y="34" text-anchor="middle" class="sans step">WGrad</text>
+      <text x="71" y="61" text-anchor="middle" class="sans body">forms gradients</text>
+      <text x="71" y="84" text-anchor="middle" class="sans small">for trainable tensors</text>
+    </g>
+  </g>
+  <line x1="940" y1="298" x2="1128" y2="298" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow2)"/>
+  <text x="1034" y="279" text-anchor="middle" class="sans small">trainable gradients</text>
+
+  <g transform="translate(1136 226)">
+    <rect width="170" height="144" rx="18" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.8"/>
+    <text x="85" y="40" text-anchor="middle" class="sans step">Optimizer</text>
+    <text x="85" y="70" text-anchor="middle" class="sans body">master + moments</text>
+    <text x="85" y="96" text-anchor="middle" class="sans body">create Wₜ₊₁</text>
+    <text x="85" y="121" text-anchor="middle" class="sans small">usually higher precision</text>
+  </g>
+
+  <rect x="70" y="488" width="1260" height="230" rx="22" fill="#faf5ff" stroke="#d8b4fe"/>
+  <rect x="92" y="507" width="154" height="30" rx="15" fill="#7c3aed"/>
+  <text x="169" y="527" text-anchor="middle" class="sans lane">UPDATE FLOW</text>
+
+  <g transform="translate(1055 562)">
+    <rect width="250" height="102" rx="17" fill="#ffffff" stroke="#a78bfa" stroke-width="1.8"/>
+    <text x="125" y="36" text-anchor="middle" class="sans version">logical version Wₜ₊₁</text>
+    <text x="125" y="64" text-anchor="middle" class="sans body">optimizer source of truth</text>
+    <text x="125" y="85" text-anchor="middle" class="sans small">full weight or adapter</text>
+  </g>
+  <line x1="1055" y1="613" x2="918" y2="613" stroke="#7c3aed" stroke-width="2.7" marker-end="url(#purpleArrow2)"/>
+
+  <g transform="translate(480 562)">
+    <rect width="430" height="102" rx="17" fill="#ffffff" stroke="#a78bfa" stroke-width="1.8"/>
+    <text x="215" y="34" text-anchor="middle" class="sans step">Convert + synchronize</text>
+    <text x="215" y="62" text-anchor="middle" class="sans body">codes · scales · layout · target-runtime shards</text>
+    <text x="215" y="84" text-anchor="middle" class="sans small">transfer · install · activate the complete version</text>
+  </g>
+  <path d="M480 613 H155 C112 613 92 590 92 550 V382" fill="none" stroke="#7c3aed" stroke-width="2.7" marker-end="url(#purpleArrow2)"/>
+
+  <text x="700" y="754" text-anchor="middle" class="sans body">One version may coexist as FP32 optimizer state, BF16 trainer weights, low-precision GEMM operands, and a packed rollout artifact.</text>
+</svg>
