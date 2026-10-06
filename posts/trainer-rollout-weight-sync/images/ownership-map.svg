@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="806" viewBox="0 0 1440 806" role="img" aria-labelledby="title desc">
+<title id="title">One weight, different shard layouts</title>
+<desc id="desc">Trainer T0 owns rows 0–1 and T1 owns rows 2–3 of a 4-by-4 version-18 weight. Replica A holds complementary 4-by-2 column shards on A0 and A1. T1's bottom-left four values map to A0's bottom two rows. Replica B repeats the layout on B0 and B1. Arrows show logical mapping, not network traffic.</desc>
+<defs>
+  <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#475569"/></marker>
+  <marker id="control" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#7c3aed"/></marker>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; fill: #172033; }
+    .title { font-size: 32px; font-weight: 700; }
+    .head { font-size: 27px; font-weight: 700; }
+    .body { font-size: 24px; }
+    .note { font-size: 22px; fill: #475569; }
+    .small { font-size: 20px; fill: #475569; }
+    .mono { font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 27px; }
+    .strong { font-size: 24px; font-weight: 700; }
+  </style>
+</defs>
+<rect width="1440" height="806" fill="#ffffff"/>
+<text x="48" y="56" class="title" >One weight, different shard layouts</text>
+<text x="48" y="94" class="note" >Version 18: arrows map tensor coordinates, not physical network links.</text>
+<text x="48" y="153" class="head" >(a) Trainer owners</text>
+<text x="858" y="153" class="head" >(b) Serving replica A</text>
+<text x="300" y="198" class="note" text-anchor="middle">columns 0–1</text>
+<text x="520" y="198" class="note" text-anchor="middle">columns 2–3</text>
+<text x="245" y="224" class="small" text-anchor="middle">0</text>
+<text x="355" y="224" class="small" text-anchor="middle">1</text>
+<text x="465" y="224" class="small" text-anchor="middle">2</text>
+<text x="575" y="224" class="small" text-anchor="middle">3</text>
+<rect x="190" y="235" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="245" y="284" class="mono" text-anchor="middle">w00</text>
+<rect x="300" y="235" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="355" y="284" class="mono" text-anchor="middle">w01</text>
+<rect x="410" y="235" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="465" y="284" class="mono" text-anchor="middle">w02</text>
+<rect x="520" y="235" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="575" y="284" class="mono" text-anchor="middle">w03</text>
+<rect x="190" y="315" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="245" y="364" class="mono" text-anchor="middle">w10</text>
+<rect x="300" y="315" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="355" y="364" class="mono" text-anchor="middle">w11</text>
+<rect x="410" y="315" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="465" y="364" class="mono" text-anchor="middle">w12</text>
+<rect x="520" y="315" width="110" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="575" y="364" class="mono" text-anchor="middle">w13</text>
+<rect x="190" y="395" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="245" y="444" class="mono" text-anchor="middle">w20</text>
+<rect x="300" y="395" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="355" y="444" class="mono" text-anchor="middle">w21</text>
+<rect x="410" y="395" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="465" y="444" class="mono" text-anchor="middle">w22</text>
+<rect x="520" y="395" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="575" y="444" class="mono" text-anchor="middle">w23</text>
+<rect x="190" y="475" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="245" y="524" class="mono" text-anchor="middle">w30</text>
+<rect x="300" y="475" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="355" y="524" class="mono" text-anchor="middle">w31</text>
+<rect x="410" y="475" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="465" y="524" class="mono" text-anchor="middle">w32</text>
+<rect x="520" y="475" width="110" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="575" y="524" class="mono" text-anchor="middle">w33</text>
+<text x="60" y="305" class="head" >T0</text>
+<text x="60" y="335" class="small" >rows 0–1</text>
+<text x="60" y="465" class="head" >T1</text>
+<text x="60" y="495" class="small" >rows 2–3</text>
+<text x="990" y="193" class="strong" text-anchor="middle">A0 · [4, 2]</text>
+<text x="990" y="221" class="small" text-anchor="middle">columns 0–1</text>
+<text x="1260" y="193" class="strong" text-anchor="middle">A1 · [4, 2]</text>
+<text x="1260" y="221" class="small" text-anchor="middle">columns 2–3</text>
+<rect x="900" y="235" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="945" y="284" class="mono" text-anchor="middle">w00</text>
+<rect x="990" y="235" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="1035" y="284" class="mono" text-anchor="middle">w01</text>
+<rect x="900" y="315" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="945" y="364" class="mono" text-anchor="middle">w10</text>
+<rect x="990" y="315" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="1035" y="364" class="mono" text-anchor="middle">w11</text>
+<rect x="900" y="395" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="945" y="444" class="mono" text-anchor="middle">w20</text>
+<rect x="990" y="395" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="1035" y="444" class="mono" text-anchor="middle">w21</text>
+<rect x="900" y="475" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="945" y="524" class="mono" text-anchor="middle">w30</text>
+<rect x="990" y="475" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="1035" y="524" class="mono" text-anchor="middle">w31</text>
+<rect x="1170" y="235" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="1215" y="284" class="mono" text-anchor="middle">w02</text>
+<rect x="1260" y="235" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="1305" y="284" class="mono" text-anchor="middle">w03</text>
+<rect x="1170" y="315" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="1215" y="364" class="mono" text-anchor="middle">w12</text>
+<rect x="1260" y="315" width="90" height="80" rx="0" fill="#dbeafe" stroke="#94a3b8" />
+<text x="1305" y="364" class="mono" text-anchor="middle">w13</text>
+<rect x="1170" y="395" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="1215" y="444" class="mono" text-anchor="middle">w22</text>
+<rect x="1260" y="395" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="1305" y="444" class="mono" text-anchor="middle">w23</text>
+<rect x="1170" y="475" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="1215" y="524" class="mono" text-anchor="middle">w32</text>
+<rect x="1260" y="475" width="90" height="80" rx="0" fill="#ffedd5" stroke="#94a3b8" />
+<text x="1305" y="524" class="mono" text-anchor="middle">w33</text>
+<rect x="190" y="395" width="220" height="160" rx="0" fill="none" stroke="#7c3aed" stroke-width="4"/>
+<rect x="900" y="395" width="180" height="160" rx="0" fill="none" stroke="#7c3aed" stroke-width="4"/>
+<path d="M300 558 V610 H990 V558" fill="none" stroke="#7c3aed" stroke-width="3" marker-end="url(#control)"/>
+<text x="645" y="593" class="note" text-anchor="middle">T1’s four bottom-left values</text>
+<rect x="48" y="647" width="640" height="74" rx="14" fill="#f8fafc" stroke="#cbd5e1" />
+<text x="70" y="677" class="strong" >Focus: W[2:4, 0:2] from T1</text>
+<text x="70" y="705" class="note" >A0 also needs T0’s top-left values.</text>
+<rect x="858" y="647" width="550" height="74" rx="14" fill="#f8fafc" stroke="#cbd5e1" />
+<text x="880" y="677" class="note" >Replica B repeats this layout on B0/B1.</text>
+<text x="880" y="705" class="note" >Each replica collectively holds all 16 values.</text>
+<rect x="48" y="753" width="24" height="24" rx="3" fill="#dbeafe" stroke="#94a3b8" />
+<text x="82" y="772" class="small" >Owned by T0</text>
+<rect x="302" y="753" width="24" height="24" rx="3" fill="#ffedd5" stroke="#94a3b8" />
+<text x="336" y="772" class="small" >Owned by T1</text>
+<rect x="556" y="753" width="24" height="24" rx="3" fill="none" stroke="#7c3aed" stroke-width="3"/>
+<text x="590" y="772" class="small" >Highlighted mapping followed in the prose</text>
+</svg>

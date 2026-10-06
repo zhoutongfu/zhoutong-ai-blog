@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1080" viewBox="0 0 1440 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Broadcast versus mapped P2P delivery</title>
+  <desc id="desc">Both paths gather trainer weights. Broadcast delivers a complete tensor to each rank; mapped P2P prepares and delivers only the destination shard.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8" fill="#64748b"/>
+    </marker>
+  </defs>
+  <style>text{font-family:Arial,Helvetica,sans-serif;fill:#172033}.title{font-size:32px;font-weight:700}.head{font-size:27px;font-weight:700}.body{font-size:24px}.note{font-size:22px;fill:#475569}.small{font-size:20px;fill:#475569}.cell{font-size:19px}</style>
+  <rect width="1440" height="1080" fill="#fff"/>
+  <text x="40" y="48" class="title" text-anchor="start">Same reconstructed weight, different delivery plans</text>
+  <rect x="310" y="82" width="820" height="120" rx="12" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="720" y="120" class="head" text-anchor="middle">Shared first stage: trainer-side reconstruction</text>
+  <text x="720" y="157" class="body" text-anchor="middle">T0 rows 0&#x2013;1 + T1 rows 2&#x2013;3 &#x2192; gathered weight bucket</text>
+  <text x="720" y="187" class="small" text-anchor="middle">Miles: TP/EP gathers within each PP stage</text>
+  <path d="M 545 206 L 370 260" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M 895 206 L 1070 260" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="30" y="274" width="665" height="718" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="745" y="274" width="665" height="718" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="58" y="315" class="head" text-anchor="start">Broadcast baseline</text>
+  <text x="773" y="315" class="head" text-anchor="start">Mapped P2P / Mooncake RDMA</text>
+  <text x="58" y="351" class="note" text-anchor="start">Stage head publishes the gathered tensor</text>
+  <text x="773" y="351" class="note" text-anchor="start">Sources prepare SGLang-shaped CPU ranges</text>
+  <rect x="265" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="290.5" y="410" class="cell" text-anchor="middle">w00</text>
+  <rect x="316" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="341.5" y="410" class="cell" text-anchor="middle">w01</text>
+  <rect x="367" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="392.5" y="410" class="cell" text-anchor="middle">w02</text>
+  <rect x="418" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="443.5" y="410" class="cell" text-anchor="middle">w03</text>
+  <rect x="265" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="290.5" y="447" class="cell" text-anchor="middle">w10</text>
+  <rect x="316" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="341.5" y="447" class="cell" text-anchor="middle">w11</text>
+  <rect x="367" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="392.5" y="447" class="cell" text-anchor="middle">w12</text>
+  <rect x="418" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="443.5" y="447" class="cell" text-anchor="middle">w13</text>
+  <rect x="265" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="290.5" y="484" class="cell" text-anchor="middle">w20</text>
+  <rect x="316" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="341.5" y="484" class="cell" text-anchor="middle">w21</text>
+  <rect x="367" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="392.5" y="484" class="cell" text-anchor="middle">w22</text>
+  <rect x="418" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="443.5" y="484" class="cell" text-anchor="middle">w23</text>
+  <rect x="265" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="290.5" y="521" class="cell" text-anchor="middle">w30</text>
+  <rect x="316" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="341.5" y="521" class="cell" text-anchor="middle">w31</text>
+  <rect x="367" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="392.5" y="521" class="cell" text-anchor="middle">w32</text>
+  <rect x="418" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="443.5" y="521" class="cell" text-anchor="middle">w33</text>
+  <text x="367" y="564" class="body" text-anchor="middle">16 values</text>
+  <rect x="832" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="857.5" y="410" class="cell" text-anchor="middle">w00</text>
+  <rect x="883" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="908.5" y="410" class="cell" text-anchor="middle">w01</text>
+  <rect x="832" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="857.5" y="447" class="cell" text-anchor="middle">w10</text>
+  <rect x="883" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="908.5" y="447" class="cell" text-anchor="middle">w11</text>
+  <rect x="832" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="857.5" y="484" class="cell" text-anchor="middle">w20</text>
+  <rect x="883" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="908.5" y="484" class="cell" text-anchor="middle">w21</text>
+  <rect x="832" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="857.5" y="521" class="cell" text-anchor="middle">w30</text>
+  <rect x="883" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="908.5" y="521" class="cell" text-anchor="middle">w31</text>
+  <rect x="1211" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1236.5" y="410" class="cell" text-anchor="middle">w02</text>
+  <rect x="1262" y="385" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1287.5" y="410" class="cell" text-anchor="middle">w03</text>
+  <rect x="1211" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1236.5" y="447" class="cell" text-anchor="middle">w12</text>
+  <rect x="1262" y="422" width="51" height="37" rx="0" fill="#dbeafe" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1287.5" y="447" class="cell" text-anchor="middle">w13</text>
+  <rect x="1211" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1236.5" y="484" class="cell" text-anchor="middle">w22</text>
+  <rect x="1262" y="459" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1287.5" y="484" class="cell" text-anchor="middle">w23</text>
+  <rect x="1211" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1236.5" y="521" class="cell" text-anchor="middle">w32</text>
+  <rect x="1262" y="496" width="51" height="37" rx="0" fill="#ffedd5" stroke="#94a3b8" stroke-width="2"/>
+  <text x="1287.5" y="521" class="cell" text-anchor="middle">w33</text>
+  <text x="883" y="563" class="body" text-anchor="middle">Left columns</text>
+  <text x="1262" y="563" class="body" text-anchor="middle">Right columns</text>
+  <text x="883" y="596" class="note" text-anchor="middle">8 values</text>
+  <text x="1262" y="596" class="note" text-anchor="middle">8 values</text>
+  <path d="M 366 581 L 366 638" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="366" y="675" class="note" text-anchor="middle">Full tensor delivered to every rank</text>
+  <rect x="57" y="715" width="142" height="150" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="128" y="752" class="head" text-anchor="middle">A0</text>
+  <text x="128" y="795" class="small" text-anchor="middle">16 received</text>
+  <text x="128" y="833" class="small" text-anchor="middle">8 retained</text>
+  <rect x="214" y="715" width="142" height="150" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="285" y="752" class="head" text-anchor="middle">A1</text>
+  <text x="285" y="795" class="small" text-anchor="middle">16 received</text>
+  <text x="285" y="833" class="small" text-anchor="middle">8 retained</text>
+  <rect x="371" y="715" width="142" height="150" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="442" y="752" class="head" text-anchor="middle">B0</text>
+  <text x="442" y="795" class="small" text-anchor="middle">16 received</text>
+  <text x="442" y="833" class="small" text-anchor="middle">8 retained</text>
+  <rect x="528" y="715" width="142" height="150" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="599" y="752" class="head" text-anchor="middle">B1</text>
+  <text x="599" y="795" class="small" text-anchor="middle">16 received</text>
+  <text x="599" y="833" class="small" text-anchor="middle">8 retained</text>
+  <path d="M366 687 V702 M128 702 H599 M128 702 V712 M285 702 V712 M442 702 V712 M599 702 V712" fill="none" stroke="#64748b" stroke-width="2"/>
+  <path d="M 883 611 L 883 710" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M 1262 611 L 1262 710" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="773" y="715" width="222" height="150" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="884" y="754" class="head" text-anchor="middle">A0 + B0</text>
+  <text x="884" y="795" class="small" text-anchor="middle">8 received / rank</text>
+  <text x="884" y="833" class="small" text-anchor="middle">8 retained / rank</text>
+  <rect x="1151" y="715" width="222" height="150" rx="12" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="1262" y="754" class="head" text-anchor="middle">A1 + B1</text>
+  <text x="1262" y="795" class="small" text-anchor="middle">8 received / rank</text>
+  <text x="1262" y="833" class="small" text-anchor="middle">8 retained / rank</text>
+  <text x="362" y="917" class="body" text-anchor="middle">64 values delivered &#x2192; 32 retained</text>
+  <text x="1077" y="917" class="body" text-anchor="middle">32 values delivered &#x2192; 32 retained</text>
+  <text x="362" y="955" class="note" text-anchor="middle">Receiver selects its shard</text>
+  <text x="1077" y="955" class="note" text-anchor="middle">Sender constructs each destination shard</text>
+  <text x="40" y="1031" class="body" text-anchor="start">Both paths still require receiver post-load work and safe activation.</text>
+  <text x="40" y="1064" class="small" text-anchor="start">Toy endpoint totals, not physical link traffic. Blue: originally T0-owned. Orange: originally T1-owned.</text>
+</svg>

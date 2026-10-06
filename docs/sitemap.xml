@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/posts/trainer-rollout-weight-sync/index.html</loc>
+    <lastmod>2026-10-06T05:49:04.438Z</lastmod>
+  </url>
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/posts/static_llm_memory/index.html</loc>
+    <lastmod>2026-03-10T07:10:41.598Z</lastmod>
+  </url>
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/posts/on_policy_self_distillation/index.html</loc>
+    <lastmod>2026-03-10T07:36:54.735Z</lastmod>
+  </url>
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/posts/fixed-state-or-sparse-retrieval/index.html</loc>
+    <lastmod>2026-08-30T20:41:34.066Z</lastmod>
+  </url>
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/index.html</loc>
+    <lastmod>2026-05-23T06:38:09.578Z</lastmod>
+  </url>
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/posts/low-precision-rl/index.html</loc>
+    <lastmod>2026-09-02T08:14:47.555Z</lastmod>
+  </url>
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/posts/rethink_sft/index.html</loc>
+    <lastmod>2026-03-10T07:41:47.105Z</lastmod>
+  </url>
+  <url>
+    <loc>https://zhoutongfu.github.io/zhoutong-ai-blog/posts/token_weighting_llm_rl/index.html</loc>
+    <lastmod>2026-08-29T17:44:12.005Z</lastmod>
+  </url>
+</urlset>

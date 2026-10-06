@@ -1,0 +1,24 @@
+/* Keep long equations and tables within the viewport on narrow screens. */
+#quarto-document-content .math.display {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+#quarto-document-content .wide-comparison-table {
+  overflow-x: auto;
+}
+
+/* The SVG remains available at full size through its enclosing link. */
+.diagram-link {
+  display: block;
+  cursor: zoom-in;
+}
+
+.diagram-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+}

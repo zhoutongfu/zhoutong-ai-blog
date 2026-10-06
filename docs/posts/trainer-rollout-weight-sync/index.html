@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Zhoutong">
+<meta name="dcterms.date" content="2026-10-05">
+<meta name="description" content="How distributed trainers deliver updated weights to rollout workers, reduce transfer and installation costs, and safely switch generation to a new policy.">
+
+<title>Weight Synchronization in LLM RL: From Optimizer Step to Rollout – Zhoutong’s Research Log</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="post.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Zhoutong’s Research Log</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/zhoutongfu/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/zhoutong-hai"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-optimizer-finished.-which-policy-is-rollout-using" id="toc-the-optimizer-finished.-which-policy-is-rollout-using" class="nav-link active" data-scroll-target="#the-optimizer-finished.-which-policy-is-rollout-using"><span class="header-section-number">1</span> The optimizer finished. Which policy is rollout using?</a></li>
+  <li><a href="#background-ranks-shards-and-memory" id="toc-background-ranks-shards-and-memory" class="nav-link" data-scroll-target="#background-ranks-shards-and-memory"><span class="header-section-number">2</span> Background: ranks, shards, and memory</a>
+  <ul class="collapse">
+  <li><a href="#processes-shards-and-replicas" id="toc-processes-shards-and-replicas" class="nav-link" data-scroll-target="#processes-shards-and-replicas"><span class="header-section-number">2.1</span> Processes, shards, and replicas</a></li>
+  <li><a href="#gpu-memory-host-ram-and-nics" id="toc-gpu-memory-host-ram-and-nics" class="nav-link" data-scroll-target="#gpu-memory-host-ram-and-nics"><span class="header-section-number">2.2</span> GPU memory, host RAM, and NICs</a></li>
+  <li><a href="#communication-operations-and-hardware-paths" id="toc-communication-operations-and-hardware-paths" class="nav-link" data-scroll-target="#communication-operations-and-hardware-paths"><span class="header-section-number">2.3</span> Communication operations and hardware paths</a></li>
+  <li><a href="#metadata-payloads-and-temporary-buffers" id="toc-metadata-payloads-and-temporary-buffers" class="nav-link" data-scroll-target="#metadata-payloads-and-temporary-buffers"><span class="header-section-number">2.4</span> Metadata, payloads, and temporary buffers</a></li>
+  </ul></li>
+  <li><a href="#which-part-of-the-weight-does-each-rollout-rank-need" id="toc-which-part-of-the-weight-does-each-rollout-rank-need" class="nav-link" data-scroll-target="#which-part-of-the-weight-does-each-rollout-rank-need"><span class="header-section-number">3</span> Which part of the weight does each rollout rank need?</a>
+  <ul class="collapse">
+  <li><a href="#from-coordinates-to-a-transfer-plan" id="toc-from-coordinates-to-a-transfer-plan" class="nav-link" data-scroll-target="#from-coordinates-to-a-transfer-plan"><span class="header-section-number">3.1</span> From coordinates to a transfer plan</a></li>
+  <li><a href="#what-is-stored-what-is-delivered-and-what-crosses-the-network" id="toc-what-is-stored-what-is-delivered-and-what-crosses-the-network" class="nav-link" data-scroll-target="#what-is-stored-what-is-delivered-and-what-crosses-the-network"><span class="header-section-number">3.2</span> What is stored, what is delivered, and what crosses the network</a></li>
+  </ul></li>
+  <li><a href="#from-trainer-storage-to-serving-storage" id="toc-from-trainer-storage-to-serving-storage" class="nav-link" data-scroll-target="#from-trainer-storage-to-serving-storage"><span class="header-section-number">4</span> From NCCL broadcast to mapped P2P</a>
+  <ul class="collapse">
+  <li><a href="#the-baseline-gather-on-the-trainer-then-broadcast-to-rollout" id="toc-the-baseline-gather-on-the-trainer-then-broadcast-to-rollout" class="nav-link" data-scroll-target="#the-baseline-gather-on-the-trainer-then-broadcast-to-rollout"><span class="header-section-number">4.1</span> The baseline: gather on the trainer, then broadcast to rollout</a></li>
+  <li><a href="#why-change-the-delivery-plan" id="toc-why-change-the-delivery-plan" class="nav-link" data-scroll-target="#why-change-the-delivery-plan"><span class="header-section-number">4.2</span> Why change the delivery plan?</a></li>
+  <li><a href="#the-p2p-path-prepare-the-receivers-shard-before-sending-it" id="toc-the-p2p-path-prepare-the-receivers-shard-before-sending-it" class="nav-link" data-scroll-target="#the-p2p-path-prepare-the-receivers-shard-before-sending-it"><span class="header-section-number">4.3</span> The P2P path: prepare the receiver’s shard before sending it</a></li>
+  <li><a href="#what-improves-and-what-does-it-cost" id="toc-what-improves-and-what-does-it-cost" class="nav-link" data-scroll-target="#what-improves-and-what-does-it-cost"><span class="header-section-number">4.4</span> What improves, and what does it cost?</a></li>
+  <li><a href="#a-simpler-case-colocated-lora-updates" id="toc-a-simpler-case-colocated-lora-updates" class="nav-link" data-scroll-target="#a-simpler-case-colocated-lora-updates"><span class="header-section-number">4.5</span> A simpler case: colocated LoRA updates</a></li>
+  </ul></li>
+  <li><a href="#how-much-of-the-exported-weight-actually-changed" id="toc-how-much-of-the-exported-weight-actually-changed" class="nav-link" data-scroll-target="#how-much-of-the-exported-weight-actually-changed"><span class="header-section-number">5</span> Delta updates: from sparse transfer to sparse installation</a>
+  <ul class="collapse">
+  <li><a href="#a-small-optimizer-update-can-leave-bf16-bits-unchanged" id="toc-a-small-optimizer-update-can-leave-bf16-bits-unchanged" class="nav-link" data-scroll-target="#a-small-optimizer-update-can-leave-bf16-bits-unchanged"><span class="header-section-number">5.1</span> A small optimizer update can leave BF16 bits unchanged</a></li>
+  <li><a href="#trl-publish-changed-positions-and-their-new-values" id="toc-trl-publish-changed-positions-and-their-new-values" class="nav-link" data-scroll-target="#trl-publish-changed-positions-and-their-new-values"><span class="header-section-number">5.2</span> TRL: publish changed positions and their new values</a></li>
+  <li><a href="#baseten-keep-the-update-sparse-through-decoding-and-installation" id="toc-baseten-keep-the-update-sparse-through-decoding-and-installation" class="nav-link" data-scroll-target="#baseten-keep-the-update-sparse-through-decoding-and-installation"><span class="header-section-number">5.3</span> Baseten: keep the update sparse through decoding and installation</a></li>
+  <li><a href="#the-parent-version-is-part-of-the-method" id="toc-the-parent-version-is-part-of-the-method" class="nav-link" data-scroll-target="#the-parent-version-is-part-of-the-method"><span class="header-section-number">5.4</span> The parent version is part of the method</a></li>
+  <li><a href="#fireworks-delta-updates-across-clusters" id="toc-fireworks-delta-updates-across-clusters" class="nav-link" data-scroll-target="#fireworks-delta-updates-across-clusters"><span class="header-section-number">5.5</span> Fireworks: delta updates across clusters</a></li>
+  </ul></li>
+  <li><a href="#when-may-generation-use-the-new-version" id="toc-when-may-generation-use-the-new-version" class="nav-link" data-scroll-target="#when-may-generation-use-the-new-version"><span class="header-section-number">6</span> When can rollout safely use the new weights?</a>
+  <ul class="collapse">
+  <li><a href="#safe-installation-and-recovery-from-partial-updates" id="toc-safe-installation-and-recovery-from-partial-updates" class="nav-link" data-scroll-target="#safe-installation-and-recovery-from-partial-updates"><span class="header-section-number">6.1</span> Safe installation and recovery from partial updates</a></li>
+  <li><a href="#what-happens-to-active-requests-and-their-cached-state" id="toc-what-happens-to-active-requests-and-their-cached-state" class="nav-link" data-scroll-target="#what-happens-to-active-requests-and-their-cached-state"><span class="header-section-number">6.2</span> What happens to active requests and their cached state?</a></li>
+  <li><a href="#local-readiness-and-replica-readiness" id="toc-local-readiness-and-replica-readiness" class="nav-link" data-scroll-target="#local-readiness-and-replica-readiness"><span class="header-section-number">6.3</span> Local readiness and replica readiness</a></li>
+  <li><a href="#verify-that-generation-uses-the-new-weights" id="toc-verify-that-generation-uses-the-new-weights" class="nav-link" data-scroll-target="#verify-that-generation-uses-the-new-weights"><span class="header-section-number">6.4</span> Verify that generation uses the new weights</a></li>
+  </ul></li>
+  <li><a href="#what-does-faster-weight-synchronization-measure" id="toc-what-does-faster-weight-synchronization-measure" class="nav-link" data-scroll-target="#what-does-faster-weight-synchronization-measure"><span class="header-section-number">7</span> Measuring synchronization end to end</a>
+  <ul class="collapse">
+  <li><a href="#one-pipeline-three-different-intervals" id="toc-one-pipeline-three-different-intervals" class="nav-link" data-scroll-target="#one-pipeline-three-different-intervals"><span class="header-section-number">7.1</span> One pipeline, three different intervals</a></li>
+  <li><a href="#placement-bandwidth-and-update-size" id="toc-placement-bandwidth-and-update-size" class="nav-link" data-scroll-target="#placement-bandwidth-and-update-size"><span class="header-section-number">7.2</span> Placement and achieved bandwidth</a></li>
+  <li><a href="#the-slowest-required-rank-and-link" id="toc-the-slowest-required-rank-and-link" class="nav-link" data-scroll-target="#the-slowest-required-rank-and-link"><span class="header-section-number">7.3</span> The slowest required rank and link</a></li>
+  <li><a href="#comparing-results-with-different-timing-boundaries" id="toc-comparing-results-with-different-timing-boundaries" class="nav-link" data-scroll-target="#comparing-results-with-different-timing-boundaries"><span class="header-section-number">7.4</span> Comparing results with different timing boundaries</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">8</span> Conclusion</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Weight Synchronization in LLM RL: From Optimizer Step to Rollout</h1>
+<p class="subtitle lead">Shard mapping, P2P transfer, delta updates, and safe policy switching</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Reinforcement Learning</div>
+    <div class="quarto-category">Distributed Systems</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    How distributed trainers deliver updated weights to rollout workers, reduce transfer and installation costs, and safely switch generation to a new policy.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Zhoutong </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 5, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-optimizer-finished.-which-policy-is-rollout-using" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="the-optimizer-finished.-which-policy-is-rollout-using"><span class="header-section-number">1</span> The optimizer finished. Which policy is rollout using?</h2>
+<p>After an RL training update, we want the next round of generated responses to use the updated model. But the workers generating those responses have their own copies of the weights. How do we get the changes to them, and how long does that take?</p>
+<p>For a large model spread across many GPUs, this handoff can become a substantial part of the training loop. Moving the weights is only part of the work: the receiving workers also need to put them into a form they can use and decide when to switch away from the previous version.</p>
+<p>This post follows that handoff from training to generation. We’ll start with a small example, use it to understand several real implementations, and examine how mapped delivery and delta updates reduce the work.</p>
+<p>The sections build up the explanation in the following order:</p>
+<ul>
+<li><a href="#background-ranks-shards-and-memory">Section 2 — Background</a> introduces ranks, shards, replicas, memory, and communication operations. These terms let us distinguish a tensor’s ownership from the physical path used to deliver it.</li>
+<li><a href="#which-part-of-the-weight-does-each-rollout-rank-need">Section 3 — Ownership mapping</a> works through a small weight split differently by trainer and rollout. It establishes exactly which values each serving rank needs, before we choose a delivery mechanism.</li>
+<li><a href="#from-trainer-storage-to-serving-storage">Section 4 — Broadcast to mapped P2P</a> follows Miles’ NCCL broadcast baseline, the destination-aware replacement, and the preparation and buffer-lifetime trade-offs. A colocated adapter update provides a smaller supporting case.</li>
+<li><a href="#how-much-of-the-exported-weight-actually-changed">Section 5 — Delta updates</a> follows TRL’s indexed patches and Baseten’s sparse decoding and GPU installation, then connects compact updates to Fireworks’ multi-cluster setting.</li>
+<li><a href="#when-may-generation-use-the-new-version">Section 6 — Safe policy switching</a> continues from received values to a usable policy: safe installation, requests carrying old model state, readiness across participating ranks, and checks that the live kernels use the new weights.</li>
+<li><a href="#what-does-faster-weight-synchronization-measure">Section 7 — End-to-end performance</a> measures the complete path. A bucketed pipeline separates transfer time, rollout pause, and the full handoff time, then connects those intervals to the RL cycle and the age of the policy used for generation.</li>
+</ul>
+</section>
+<section id="background-ranks-shards-and-memory" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="background-ranks-shards-and-memory"><span class="header-section-number">2</span> Background: ranks, shards, and memory</h2>
+<p>Before following the updated weights, we need a few terms for who holds each part of a model and where those parts live. This background covers ranks, shards, and replicas; GPU and host memory; communication operations; and the distinction between metadata and weight bytes. These are the ingredients for the ownership example in Section 3 and the delivery paths in Section 4.</p>
+<section id="processes-shards-and-replicas" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="processes-shards-and-replicas"><span class="header-section-number">2.1</span> Processes, shards, and replicas</h3>
+<p>A model’s weights are stored in tensors. A shard is part of a tensor, while a rank is a participant in a distributed job, usually represented by a process. A rank often runs on one GPU, but its rank number identifies a communication participant, not a physical device or tensor coordinate.</p>
+<p>A rollout replica is a complete independently usable serving copy of the model. It can span several ranks whose shards collectively supply the weights needed for inference. A rank holding half a weight is not another full model replica.</p>
+<p>Tensor parallelism (TP) splits computations and tensors within layers; pipeline parallelism (PP) assigns different layers to different stages. Expert parallelism (EP) distributes the experts of a mixture-of-experts (MoE) model. Data parallelism (DP) processes different samples in parallel, conventionally with replicated model weights <a href="https://docs.nvidia.com/megatron-core/developer-guide/latest/user-guide/parallelism-guide.html">[13]</a>. Fully sharded data parallelism (FSDP) also shards parameters, gradients, and optimizer state across its workers, gathering parameters when needed for computation <a href="https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html">[14]</a>. These strategies can be combined, and the trainer and serving engine can use different combinations.</p>
+</section>
+<section id="gpu-memory-host-ram-and-nics" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="gpu-memory-host-ram-and-nics"><span class="header-section-number">2.2</span> GPU memory, host RAM, and NICs</h3>
+<p>A host, or node, is one machine. Its CPU-addressable host RAM is separate from the GPU’s device memory, often called HBM (high-bandwidth memory). Trainer parameters, serving weights, and temporary buffers can occupy different allocations on these devices. A NIC is the network interface through which the host sends and receives network traffic.</p>
+<p>Trainer and rollout processes may share a GPU, use different GPUs within one host, or run on separate hosts. One possible cross-host route copies weights from GPU memory to host RAM, sends them over the network, then copies them into the receiver’s GPU memory. Other supported paths share allocations or avoid host staging. Placement determines the available paths; it does not determine which tensor entries the receiver needs.</p>
+</section>
+<section id="communication-operations-and-hardware-paths" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="communication-operations-and-hardware-paths"><span class="header-section-number">2.3</span> Communication operations and hardware paths</h3>
+<p>A process group is the set of ranks participating in a communication operation. All-gather collects their pieces and gives every participant the assembled result, without summing values. All-reduce combines corresponding entries, for example by summing gradient contributions, and gives every participant the result. Broadcast distributes one source’s existing tensor to the group <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html">[2]</a>.</p>
+<p>These operations describe what participants receive. NCCL is a library implementing collectives and peer send/receive operations over supported local or network paths. NVLink, PCIe, and network interconnects provide the underlying connectivity <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/overview.html">[15]</a>. Naming an all-gather alone therefore does not specify whether bytes cross a host boundary.</p>
+</section>
+<section id="metadata-payloads-and-temporary-buffers" class="level3" data-number="2.4">
+<h3 data-number="2.4" class="anchored" data-anchor-id="metadata-payloads-and-temporary-buffers"><span class="header-section-number">2.4</span> Metadata, payloads, and temporary buffers</h3>
+<p>An update carries metadata—tensor names, shapes, versions, and locations—as well as the actual weight values. A message containing a memory handle tells the receiver how to access an allocation; it need not contain or copy the tensor bytes. CUDA IPC uses such a handle to expose GPU memory to another local process <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/inter-process-communication.html">[5]</a>.</p>
+<p>A transfer bucket packages ranges from one or more tensors in a buffer. Its boundaries need not match a model shard or a complete serving tensor. The receiver may use temporary staging before installing values in the storage its kernels read. Because copies and GPU work can be asynchronous, an API return may precede their completion. The source must remain allocated and unchanged until the operations reading it have finished.</p>
+</section>
+</section>
+<section id="which-part-of-the-weight-does-each-rollout-rank-need" class="level2 page-columns page-full" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="which-part-of-the-weight-does-each-rollout-rank-need"><span class="header-section-number">3</span> Which part of the weight does each rollout rank need?</h2>
+<p>A rollout rank needs eight weight values, and a trainer rank has an eight-value shard ready to send. That sounds like a straightforward copy. But if the trainer owns two rows of a matrix while rollout needs two columns, copying the shard into the serving tensor would fill it with the wrong values.</p>
+<p>The first task is to work out which values belong in each serving tensor. A small example will let us trace that mapping, see which metadata has to travel with the values, and compare the payload under two delivery plans. Section 4 then follows these same values through the memory and communication paths.</p>
+<p>Throughout the example, version 17 is the policy installed in rollout and version 18 is the updated policy on the trainer.</p>
+<p>Consider one logical <span class="math inline">\(4\times4\)</span> weight <span class="math inline">\(W_{18}\)</span> from the updated policy. Here, 18 identifies the policy version. Element labels such as <span class="math inline">\(w_{20}\)</span> identify coordinates—row 2, column 0—not numerical values.</p>
+<p>The trainer has two owners: T0 stores rows 0–1, and T1 stores rows 2–3.</p>
+<p>Assume two complete rollout replicas, A and B. Replica A is split across A0 and A1; replica B repeats the same layout across B0 and B1. Each replica collectively stores all 16 elements.</p>
+<p>Rollout partitions the weight by columns: A0 and B0 need columns 0–1, while A1 and B1 need columns 2–3.</p>
+<div class="column-page">
+<p><a class="diagram-link" href="images/ownership-map.svg" target="_blank" rel="noopener" aria-label="Open Figure 1 at full size"><img src="images/ownership-map.svg" class="img-fluid" alt="A version-18 weight is split by rows across T0 and T1, then mapped into complementary column shards on A0 and A1. Replica B repeats the serving layout. The highlighted T1 bottom-left values fill A0’s bottom rows."></a></p>
+<p><em>Figure 1: One logical weight, two trainer owners, and two complete rollout replicas. The trainer row shards must be mapped into serving column shards. A0 requires contributions from both T0 and T1; A1 requires the complementary contributions. A simplified example of different training and serving layouts.</em></p>
+</div>
+<p>Focus on A0. Sending T1’s entire <span class="math inline">\(2\times4\)</span> row shard would give A0 columns it does not need and still leave it missing T0’s rows. Its correct local tensor is</p>
+<p><span class="math display">\[
+W_{A0,18}
+=\operatorname{concat}_{\mathrm{rows}}\!\left(
+W_{T0,18}[:,0{:}2],
+W_{T1,18}[:,0{:}2]
+\right).
+\]</span></p>
+<p>This is assembly of different coordinates. An all-reduce would instead combine contributions to the same coordinates, such as gradients computed on different data-parallel workers. Summing T0’s rows with T1’s rows would not reconstruct A0’s weight.</p>
+<p>One implementation could first all-gather the trainer shards, giving its exporters a complete tensor, then select the columns for each destination. Another could route the required slices directly. Either way, T1’s bottom-left values must end up in A0’s bottom rows. All-gather reconstructs the disjoint pieces; broadcast delivers an already assembled tensor to a group <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html">[2]</a>.</p>
+<section id="from-coordinates-to-a-transfer-plan" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="from-coordinates-to-a-transfer-plan"><span class="header-section-number">3.1</span> From coordinates to a transfer plan</h3>
+<p>For the bottom half of A0, the semantic mapping is</p>
+<pre class="text"><code>version: 18
+source: T1 / W[2:4, 0:2]
+destination: replica A / rank A0 / local W[2:4, :]
+contents: w20, w21, w30, w31</code></pre>
+<p>A correct coordinate map also needs a consistent source snapshot. The trainer can continue training while the weights are being prepared and delivered if version 18 has a stable snapshot or protected export storage. Without that protection, A0 could assemble T0’s version-18 values with T1’s version-19 values under a version-18 label. It would contain the expected coordinates but could represent a weight that never existed on the trainer.</p>
+<p>A transfer plan adds source allocations, byte offsets, destination addresses, and operations. If T1 stores its row shard in row-major order, the two left-column pairs are separated by the right-column values. Packing the four required values into a contiguous buffer can make them easier to transfer.</p>
+<p>A0 needs the tensor name, shape, coordinates, version, and representation alongside the payload. Four values from T1’s right columns would have the expected length but fill A0 with the wrong part of the weight.</p>
+<p>These identifiers recur across full weights, adapters, and deltas: the target policy version, type of update, destination layout, and numerical representation. An adapter also identifies its frozen base; a delta identifies the exact parent it reconstructs from. Checksums can help verify received bytes, but Section 6 returns to the separate question of whether the live serving kernels use them.</p>
+<p>A real model may also fuse separate query, key, and value projections into one tensor, reorder experts, or select the experts owned by a serving rank. Quantized weights add packed codes, scales, and auxiliary metadata: the codes store low-precision values, while scales supply the magnitude factors used to interpret them. The export map has to describe where these objects belong in the tensors read by the serving kernels.</p>
+</section>
+<section id="what-is-stored-what-is-delivered-and-what-crosses-the-network" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="what-is-stored-what-is-delivered-and-what-crosses-the-network"><span class="header-section-number">3.2</span> What is stored, what is delivered, and what crosses the network</h3>
+<p>The ownership map also lets us count the update. We need to distinguish three quantities:</p>
+<ul>
+<li><strong>Final stored state:</strong> Each of the four serving ranks retains eight elements. Each replica holds a complete copy of the 16-element weight, so replicas A and B store 32 elements in total.</li>
+<li><strong>Endpoint payload:</strong> A deliberately simple plan broadcasts the full 16-element matrix to every serving rank, then each rank selects its columns. It delivers <span class="math inline">\(4\times16=64\)</span> elements to the receivers. Mapped delivery sends only each rank’s required eight-element shard, for <span class="math inline">\(4\times8=32\)</span> elements. These counts include all values delivered to the ranks, even those they later discard.</li>
+<li><strong>Network traffic:</strong> This cannot be inferred from endpoint payload alone. It depends on where the ranks run and how the update is distributed. One cross-host transfer followed by local distribution has different network traffic from separate cross-host transfers to every rank. A local CUDA IPC handoff may need no network transfer, although reading or copying the values still uses local memory or GPU interconnects.</li>
+</ul>
+<p>Mapped delivery halves the endpoint payload in this example, but it does not necessarily halve network traffic. That depends on where the ranks run and how the update is distributed.</p>
+<p>For BF16, the final stored state across the two replicas is 64 bytes. The full-matrix delivery plan has an endpoint payload of 128 bytes; mapped delivery has an endpoint payload of 64 bytes.</p>
+<p>For MoE, count attention, routed experts, shared experts, and routers according to their actual ownership and replication. Some tensor families are replicated where others are sharded. Start by identifying complete serving replicas, then map each family’s destinations; GPU count or total parameters divided by TP can hide those differences.</p>
+</section>
+</section>
+<section id="from-trainer-storage-to-serving-storage" class="level2 page-columns page-full" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="from-trainer-storage-to-serving-storage"><span class="header-section-number">4</span> From NCCL broadcast to mapped P2P</h2>
+<p>Miles replaces its NCCL broadcast delivery stage from Megatron to separate SGLang engines with destination-aware P2P transfers through Mooncake. The change reduces redundant delivery and distributes sending work across more trainer sources <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>.</p>
+<p>This is a comparison of two delivery plans, not “NCCL versus P2P” as mutually exclusive technologies. NCCL supports both collectives and point-to-point operations, and can use an RDMA-capable network <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/overview.html">[15]</a>, <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/p2p.html">[22]</a>. What changes in the Miles implementation is who prepares each destination’s values, who sends them, and how the transfers are scheduled.</p>
+<p>Here, publication means the complete handoff: securing a consistent source version, preparing and delivering its weights, installing them, and permitting generation. A fast transfer is one stage of that process.</p>
+<section id="the-baseline-gather-on-the-trainer-then-broadcast-to-rollout" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="the-baseline-gather-on-the-trainer-then-broadcast-to-rollout"><span class="header-section-number">4.1</span> The baseline: gather on the trainer, then broadcast to rollout</h3>
+<p>The broadcast path first gathers bucketed TP/EP weight pieces within each trainer PP stage. Each stage exports the layers it owns; rollout does not participate in those trainer-side gathers. A head rank for the stage then broadcasts the gathered tensors over a separate update group, and each SGLang rank’s loader selects its own shard <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>.</p>
+<p>Apply that plan to our <span class="math inline">\(4\times4\)</span> matrix. T0 and T1 initially own different rows. After reconstruction, a publisher has all 16 values. Broadcasting that tensor to A0, A1, B0, and B1 delivers 16 values to each endpoint, although each retains only eight.</p>
+<p>The four receivers therefore receive 64 values in total and retain 32. This is endpoint accounting for the illustrated plan, not a claim that 64 values cross one source NIC: NCCL’s broadcast algorithm and physical topology determine the actual link traffic.</p>
+<p>The baseline is straightforward because each receiver can use an existing full-tensor loader. The sender need not construct a different shard for every serving rank. That convenience has a cost when the serving layout discards much of what each receiver receives.</p>
+</section>
+<section id="why-change-the-delivery-plan" class="level3 page-columns page-full" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="why-change-the-delivery-plan"><span class="header-section-number">4.2</span> Why change the delivery plan?</h3>
+<p>Miles identifies three opportunities in this path <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>:</p>
+<ul>
+<li>Deliver each receiver’s needed ranges instead of sending a full tensor for it to slice.</li>
+<li>Use more available trainer sources rather than concentrating delivery on the publishing head ranks.</li>
+<li>Schedule mapped transfers without requiring every receiver to join the same sequence of broadcast operations.</li>
+</ul>
+<p>The last point is about coordination, not merely bandwidth. Participants in a collective must agree on the operations they execute; a receiver that is not ready can delay progress. Direct mapped transfers allow a different schedule, but the application must now manage destination metadata, completion, and version consistency explicitly.</p>
+<p>Figure 2 holds the trainer gather and serving destinations fixed so that the delivery change is visible.</p>
+<div id="broadcast-versus-mapped-p2p" class="column-page">
+<p><a class="diagram-link" href="images/broadcast-vs-mapped-p2p.svg" target="_blank" rel="noopener" aria-label="Open Figure 2 at full size"><img src="images/broadcast-vs-mapped-p2p.svg" class="img-fluid" alt="Both plans first gather trainer-owned weight pieces. The broadcast plan sends all 16 matrix values to each of four serving ranks, which each keep eight. The mapped P2P plan prepares left and right column shards and sends eight values to each matching receiver."></a></p>
+<p><em>Figure 2: Broadcast and mapped P2P delivery in Miles, illustrated with Figure 1’s matrix. Both paths retain trainer-side reconstruction. Broadcast delivers 64 values across four endpoints; mapped delivery supplies the 32 values those endpoints retain. Arrows represent logical delivery, not physical network links or NCCL’s internal broadcast algorithm.</em></p>
+</div>
+</section>
+<section id="the-p2p-path-prepare-the-receivers-shard-before-sending-it" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="the-p2p-path-prepare-the-receivers-shard-before-sending-it"><span class="header-section-number">4.3</span> The P2P path: prepare the receiver’s shard before sending it</h3>
+<p>Miles moves serving-layout preparation to the sender. Its CPU “replicas” on trainer hosts hold SGLang-shaped weights and reusable transfer storage; they do not generate tokens. Mooncake then transfers the prepared ranges through RDMA, and the receiving engine finishes any required GPU-specific post-processing <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>.</p>
+<p>For our matrix, preparation produces an eight-value left-column shard for A0/B0 and an eight-value right-column shard for A1/B1. Both contain values originally owned by T0 and T1. The initial row owner need not be the final network sender: reconstruction and source assignment precede delivery.</p>
+<p>The implementation has two distinct phases:</p>
+<ol type="1">
+<li>During setup, obtain receiver layouts and registered-memory information, construct source-to-destination mappings, and assign available sources to the required ranges. Reusable registrations avoid repeating expensive setup for every update.</li>
+<li>During an update, pause the receiving engines as required, gather trainer buckets, load the pieces into the corresponding CPU serving representations, and transfer completed destination ranges. After delivery, run the receiving engine’s post-load processing, update its version, and resume generation.</li>
+</ol>
+<p>The benefit comes from preparing exactly what the receiver needs and distributing the sending work. RDMA carries those ranges; it does not derive the shard mapping or make a partially assembled tensor valid.</p>
+<section id="assembling-serving-tensors-across-buckets" class="level4" data-number="4.3.1">
+<h4 data-number="4.3.1" class="anchored" data-anchor-id="assembling-serving-tensors-across-buckets"><span class="header-section-number">4.3.1</span> Assembling serving tensors across buckets</h4>
+<p>Suppose <code>q_proj</code>, <code>k_proj</code>, and <code>v_proj</code> become one fused <code>qkv_proj</code> at the receiver, but their pieces arrive in different trainer buckets. Receiving the first bucket does not make that fused destination ready. The exporter must retain the pieces until it can complete the destination’s layout, then send the appropriate range.</p>
+<p>Miles discusses this cross-bucket assembly explicitly <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>. It is why temporary memory is not always bounded by one input bucket: completed export ranges, partial serving tensors, and in-flight transfers can coexist. Expert ordering and fusion add similar dependencies.</p>
+</section>
+<section id="when-can-the-sender-reuse-a-buffer" class="level4" data-number="4.3.2">
+<h4 data-number="4.3.2" class="anchored" data-anchor-id="when-can-the-sender-reuse-a-buffer"><span class="header-section-number">4.3.2</span> When can the sender reuse a buffer?</h4>
+<p>Suppose one temporary buffer first holds A0’s left-column shard and will next hold A1’s right-column shard. If the first transfer is asynchronous, rewriting the buffer too early can send a mixture of both shards. Keeping the allocation alive is not enough; its contents must remain stable until that transfer has finished reading them.</p>
+<p>Miles’ path waits where temporary storage must be reused and can leave a final transfer asynchronous when no subsequent preparation will overwrite its source <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>. That dependency determines which preparation and transfers can overlap.</p>
+<p>Receiver readiness is a separate boundary. Registered memory lets the NIC access a range, but source-use completion is not a statement that the destination’s serving kernels are ready. A GPU destination also needs the required completion notification and GPU memory ordering; the loader may still have expert rearrangement, derived-weight construction, or other post-processing to perform <a href="https://docs.nvidia.com/cuda/gpudirect-rdma/">[6]</a>. Section 6 follows those steps through activation.</p>
+</section>
+</section>
+<section id="what-improves-and-what-does-it-cost" class="level3" data-number="4.4">
+<h3 data-number="4.4" class="anchored" data-anchor-id="what-improves-and-what-does-it-cost"><span class="header-section-number">4.4</span> What improves, and what does it cost?</h3>
+<p>Mapped delivery removes the illustrated receivers’ unwanted values and can use more sources. It also takes on CPU serving-model storage, layout-aware loading, partial-tensor buffering, and explicit transfer scheduling.</p>
+<p>The trade-off appears in the report’s results. One Kimi-K2 FP8 configuration drops from about 53.3 seconds with broadcast to 7.2 seconds with mapped P2P. A smaller GLM-4.7-9B-Flash configuration goes the other way: about 2.51 seconds for broadcast versus 4.23 seconds for P2P, with CPU loading costs outweighing the delivery savings. These are vendor-reported configuration-specific results, measured from the engine pause call’s return to the generation-resume call—not optimizer completion to the first new-policy response <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>.</p>
+<p>Destination-aware delivery helps when avoided traffic and broader source participation outweigh its preparation costs. The transport alone does not determine which path is faster.</p>
+<p>CPU preparation is not required by mapped P2P itself. fabric-lib’s RL application reconstructs FSDP parameters on trainer GPUs, performs serving-format preparation there, and overlaps one-sided RDMA writes with preparation under a temporary GPU-memory budget <a href="https://arxiv.org/html/2510.27656v2">[3]</a>. That moves work and storage from host RAM onto the GPUs. It illustrates another preparation choice, not a controlled performance comparison with Miles’ Megatron path.</p>
+<p>Additional rollout replicas can also receive compatible weights from peers. TensorHub tracks versioned copies with model-parallel consistency rules; ModelExpress uses compatible serving peers for model loading <a href="https://arxiv.org/html/2604.09107v1">[9]</a>, <a href="https://developer.nvidia.com/blog/modelexpress-distributing-model-artifacts-at-the-speed-of-light/">[10]</a>. Those are extensions to source selection and fanout, not substitutes for constructing the correct destination representation.</p>
+</section>
+<section id="a-simpler-case-colocated-lora-updates" class="level3" data-number="4.5">
+<h3 data-number="4.5" class="anchored" data-anchor-id="a-simpler-case-colocated-lora-updates"><span class="header-section-number">4.5</span> A simpler case: colocated LoRA updates</h3>
+<p>LoRA simplifies the amount of state being published, rather than defining a competing communication method. If rollout keeps the base frozen and applies the adapter separately, the trainer only needs to publish the updated factors <a href="https://arxiv.org/abs/2106.09685v2">[16]</a>.</p>
+<p>The Miles/SGLang K3 Day-0 setup uses BF16 adapters alongside a frozen native-MXFP4 rollout base. The exporter still reconstructs the serving factors: for some expert adapters, it retains one shared factor and gathers the expert-dependent factor in expert order <a href="https://www.lmsys.org/blog/2026-07-27-kimi-k3-day0-support/">[4]</a>, <a href="https://github.com/radixark/miles/blob/cccbaa6baa9a7e3d202dabf81a071d40c6854abe/miles_plugins/models/kimi_k3/lora.py#L490-L684">[12]</a>. Adapter-only publication removes the base from the per-update payload; it does not remove layout reconstruction.</p>
+<p>For a colocated handoff, flattened GPU buckets can be exposed through CUDA IPC. Opening an IPC handle maps an allocation rather than copying its contents. The receiver must finish its reads or its own copy before the exporter reuses that bucket; the K3 report describes an acknowledgement and synchronization rule for releasing consumed buckets <a href="https://www.lmsys.org/blog/2026-07-27-kimi-k3-day0-support/">[4]</a>, <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/inter-process-communication.html">[5]</a>. Whether the unchanged base stays resident or is restored from local host storage is a separate memory-management question.</p>
+<p>Mapped delivery removes values a destination does not need. Since each destination already holds version 17, unchanged values offer another opportunity to reduce the transfer.</p>
+</section>
+</section>
+<section id="how-much-of-the-exported-weight-actually-changed" class="level2 page-columns page-full" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="how-much-of-the-exported-weight-actually-changed"><span class="header-section-number">5</span> Delta updates: from sparse transfer to sparse installation</h2>
+<p>Mapped delivery avoids sending values to ranks that do not own them. Delta synchronization avoids sending values those ranks already have. Replicas A and B hold version 17; if most exported values remain unchanged, a patch and the correct parent can reconstruct version 18.</p>
+<p>TRL uses indexed BF16 replacements delivered through a Hub Bucket. Baseten keeps decoding and GPU installation sparse as well. Fireworks uses compact updates to connect training and rollout in independent clusters <a href="https://huggingface.co/blog/delta-weight-sync">[7]</a>, <a href="https://www.baseten.co/blog/optimizing-delta-weight-syncs-for-managed-rollouts/">[8]</a>, <a href="https://fireworks.ai/blog/frontier-rl-is-cheaper-than-you-think">[21]</a>.</p>
+<p>Whether a value is unchanged depends on the exported representation, not merely the optimizer’s higher-precision parameters.</p>
+<section id="a-small-optimizer-update-can-leave-bf16-bits-unchanged" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="a-small-optimizer-update-can-leave-bf16-bits-unchanged"><span class="header-section-number">5.1</span> A small optimizer update can leave BF16 bits unchanged</h3>
+<p>TRL’s delta-sync walkthrough points to BF16 rounding as a reason exported weights can stay unchanged <a href="https://huggingface.co/blog/delta-weight-sync">[7]</a>. Let <span class="math inline">\(\theta_v\)</span> denote FP32 master parameters after optimizer step <span class="math inline">\(v\)</span>. For this example, define the exported weight as</p>
+<p><span class="math display">\[
+W_v=\operatorname{cast}_{\mathrm{BF16}}(\theta_v).
+\]</span></p>
+<p>Between 1 and 2, adjacent BF16 values are separated by <span class="math inline">\(2^{-7}=0.0078125\)</span>. Under round-to-nearest, several successive master values can therefore export to the same stored BF16 value:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">FP32 master value</th>
+<th style="text-align: left;">Exported BF16 value</th>
+<th style="text-align: left;">Change in exported bits</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1.001</td>
+<td style="text-align: left;">1.0000000</td>
+<td style="text-align: left;">Initial value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">1.002</td>
+<td style="text-align: left;">1.0000000</td>
+<td style="text-align: left;">None</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">1.003</td>
+<td style="text-align: left;">1.0000000</td>
+<td style="text-align: left;">None</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">1.004</td>
+<td style="text-align: left;">1.0078125</td>
+<td style="text-align: left;">Replacement required</td>
+</tr>
+</tbody>
+</table>
+<p><em>Table 1: FP32 updates crossing a BF16 rounding boundary. The master retains the updates; the exported value changes only when rounding selects the next representable value.</em></p>
+<p>A value already near a rounding boundary can change its BF16 bits after a tiny update. The learning rate alone tells us little about how many elements change; compare the actual exported bit patterns.</p>
+<p>A patch that reconstructs <span class="math inline">\(W_{18}\)</span> exactly is lossless relative to this BF16 export. The FP32 master continues to retain its updates, including those that have not yet changed the exported bits.</p>
+</section>
+<section id="trl-publish-changed-positions-and-their-new-values" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="trl-publish-changed-positions-and-their-new-values"><span class="header-section-number">5.2</span> TRL: publish changed positions and their new values</h3>
+<p>An indexed patch identifies changed positions and supplies their complete new values. Conceptually, for a bit-exact BF16 export,</p>
+<p><span class="math display">\[
+I=\left\{i:\operatorname{bits}(W_{18}[i])
+\ne\operatorname{bits}(W_{17}[i])\right\},
+\qquad
+P_{17\to18}=(I,W_{18}[I]).
+\]</span></p>
+<p>The receiver overwrites those positions and inherits every omitted position from its version-17 parent. This is replacement, not addition: the transmitted value is <span class="math inline">\(W_{18}[i]\)</span>, not the numerical difference <span class="math inline">\(W_{18}[i]-W_{17}[i]\)</span>.</p>
+<p>TRL’s walkthrough uses BF16 index/value artifacts in safetensors, delivered through a Hub Bucket, with periodic full anchors. Its receiver applies the patch to a CPU snapshot and then loads full changed tensors into vLLM <a href="https://huggingface.co/blog/delta-weight-sync">[7]</a>. The compact artifact reduces network and storage movement, but a tensor with a handful of changes can still pass through the full-tensor loading path.</p>
+<p>Sparse transfer therefore does not necessarily reduce GPU installation work. TRL reloads full changed tensors; Baseten, discussed below, applies changes at finer granularity.</p>
+<section id="map-two-changes-through-the-same-weight" class="level4" data-number="5.2.1">
+<h4 data-number="5.2.1" class="anchored" data-anchor-id="map-two-changes-through-the-same-weight"><span class="header-section-number">5.2.1</span> Map two changes through the same weight</h4>
+<p>Return to Figure 1. Suppose only <span class="math inline">\(w_{1,3}\)</span> and <span class="math inline">\(w_{2,0}\)</span> change from version 17 to 18.</p>
+<p>T0 owns <span class="math inline">\(w_{1,3}\)</span>. It belongs to the right-column serving shard, so A1 and B1 need its replacement. In their <span class="math inline">\(4\times2\)</span> row-major local tensors, its flat position is</p>
+<p><span class="math display">\[
+j=2(1)+(3-2)=3.
+\]</span></p>
+<p>T1 owns <span class="math inline">\(w_{2,0}\)</span>. It belongs to A0 and B0, at local position</p>
+<p><span class="math display">\[
+j=2(2)+0=4.
+\]</span></p>
+<pre class="text"><code>T0 -&gt; A1 and B1: local offset 3, absolute version-18 value of w13
+T1 -&gt; A0 and B0: local offset 4, absolute version-18 value of w20</code></pre>
+<p>The patch supplies four replacement values across the two replicas instead of the 32 values in a complete mapped update. With a four-byte index and two-byte BF16 value, that is 24 payload bytes versus 64 dense bytes, before headers, compression, and physical hops. Eight times fewer values becomes only about 2.7 times fewer raw bytes in this tiny example because indices also cost space.</p>
+<p>More generally, with <span class="math inline">\(N\)</span> exported BF16 elements and changed fraction <span class="math inline">\(f\)</span>,</p>
+<p><span class="math display">\[
+B_{\mathrm{dense}}=2N,
+\qquad
+B_{\mathrm{patch}}\approx(4+2)fN,
+\qquad
+\frac{B_{\mathrm{patch}}}{B_{\mathrm{dense}}}\approx3f.
+\]</span></p>
+<p>At an illustrative <span class="math inline">\(f=1\%\)</span>, this encoding is about 3% of dense size before additional metadata or compression. Wider indices increase that fraction; compressed indices or runs can reduce it. This estimates one export’s payload, before accounting for replica fanout and physical placement.</p>
+<p>For a fused expert tensor, compute receiver-local offsets using its permutations, padding, and packing. The change at a global coordinate has to be translated into the final serving layout before it can be applied there.</p>
+</section>
+</section>
+<section id="baseten-keep-the-update-sparse-through-decoding-and-installation" class="level3 page-columns page-full" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="baseten-keep-the-update-sparse-through-decoding-and-installation"><span class="header-section-number">5.3</span> Baseten: keep the update sparse through decoding and installation</h3>
+<section id="encode-byte-changes-then-avoid-reconstructing-the-zero-regions" class="level4" data-number="5.3.1">
+<h4 data-number="5.3.1" class="anchored" data-anchor-id="encode-byte-changes-then-avoid-reconstructing-the-zero-regions"><span class="header-section-number">5.3.1</span> Encode byte changes, then avoid reconstructing the zero regions</h4>
+<p>Baseten uses a different encoding: bytewise XOR followed by compression. Let <span class="math inline">\(B_v\)</span> be the serialized bytes of the exported version:</p>
+<p><span class="math display">\[
+D_{17\to18}=B_{17}\oplus B_{18},
+\qquad
+B_{18}=B_{17}\oplus D_{17\to18}.
+\]</span></p>
+<p>Unchanged bytes produce zeros. The logical XOR array still has the full serialized length, but long zero regions can compress well. Baseten reports a fixture with 716.56 GiB of logical weights represented by a 1.55 GiB compressed update; that is evidence about its tested fixture, not a guaranteed compression ratio for RL updates <a href="https://www.baseten.co/blog/optimizing-delta-weight-syncs-for-managed-rollouts/">[8]</a>.</p>
+<p>A conventional receiver could decompress the entire XOR array, XOR it with the entire parent, and reload the resulting tensors. The downloaded artifact would be small, yet decoding, scanning, allocation, and installation could still touch hundreds of GiB.</p>
+<p>Baseten instead implements sparse decoding of the compressed XOR stream. Zero regions advance the logical output position without requiring a full dense output allocation. The decoder still has to respect the compression format’s history and match-copy semantics, including matches containing nonzero bytes; “skip zeros” alone is not a correct decompressor <a href="https://www.baseten.co/blog/optimizing-delta-weight-syncs-for-managed-rollouts/">[8]</a>.</p>
+<p>The output is a compact description of changed positions. The receiver combines those changes with its CPU parent to obtain absolute replacement values. An XOR byte mask is useful for reconstructing a value; it is not itself the BF16 value that a GPU weight slot should receive.</p>
+</section>
+<section id="convert-changes-into-final-gpu-destinations" class="level4 page-columns page-full" data-number="5.3.2">
+<h4 data-number="5.3.2" class="anchored" data-anchor-id="convert-changes-into-final-gpu-destinations"><span class="header-section-number">5.3.2</span> Convert changes into final GPU destinations</h4>
+<p>The reconstructed changes still use exported tensor coordinates. Serving may fuse projections, permute experts, slice TP shards, or store a tensor in a different layout. The receiver translates each change into its final GPU destination and groups the resulting writes. Otherwise, millions of small changes can turn into millions of tiny copy operations.</p>
+<p>The ownership mapping in Figure 1 also applies to delta updates. The change to <span class="math inline">\(w_{2,0}\)</span> still belongs at local offset 4 in A0 and B0. A real loader additionally accounts for its actual tensor layout and groups nearby or compatible destinations for installation.</p>
+<p>Figure 3 contrasts the documented TRL and Baseten paths. They use different patch encodings; the comparison is about the work performed after a compact update arrives, not identical artifacts sent through two interchangeable loaders.</p>
+<div id="delta-transfer-and-installation" class="column-page">
+<p><a class="diagram-link" href="images/delta-sync-installation.svg" target="_blank" rel="noopener" aria-label="Open Figure 3 at full size"><img src="images/delta-sync-installation.svg" class="img-fluid" alt="TRL sends indexed replacement values through a Hub Bucket, patches a CPU parent, and loads full changed tensors. Baseten sends compressed XOR through object storage, decodes changed positions, reconstructs absolute values from a CPU parent, maps and batches them, and performs sparse GPU installation. Both require safe installation and activation."></a></p>
+<p><em>Figure 3: A compact transfer can lead to different amounts of receiver work. TRL reconstructs the CPU snapshot and loads full changed tensors. Baseten avoids dense XOR materialization and maps reconstructed changes into batched GPU updates. Both depend on the correct parent and a safe serving transition. The paths use different encodings and are not a controlled performance comparison.</em></p>
+</div>
+<p>Baseten reports reducing pause/load/resume from roughly 12 seconds to six seconds on one 8×B300 replica. The old policy can continue serving while download and CPU preparation occur; only the safe installation and transition need fall inside the rollout pause. Its broader marker-in-S3 to first-new-policy-response measurement is about 36 seconds, illustrating why the pause and complete update latency should not be conflated <a href="https://www.baseten.co/blog/optimizing-delta-weight-syncs-for-managed-rollouts/">[8]</a>. Section 7 puts these timing boundaries on a common timeline.</p>
+</section>
+</section>
+<section id="the-parent-version-is-part-of-the-method" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="the-parent-version-is-part-of-the-method"><span class="header-section-number">5.4</span> The parent version is part of the method</h3>
+<p>Suppose version 17 has <span class="math inline">\((x,y)=(1,1)\)</span>. The patch to 18 replaces <span class="math inline">\(x\)</span> with 2. The patch from 18 to 19 replaces <span class="math inline">\(y\)</span> with 2.</p>
+<p>Applying only the second patch to version 17 yields <span class="math inline">\((1,2)\)</span>, not version 19’s <span class="math inline">\((2,2)\)</span>. Every omitted entry inherited from the parent matters, even though the transmitted values are absolute replacements.</p>
+<p>Repeated absolute overwrites are safe for a fixed target version. Applying XOR twice undoes the patch. Both need version gating: a delayed old absolute patch can corrupt a newer committed version just as surely as an incorrect XOR parent can.</p>
+<p>Recovery can load a complete anchor and replay an ordered patch chain, or use a patch built against the receiver’s actual parent. Periodic anchors are one way to bound replay and give late-joining receivers a starting point.</p>
+<p>Baseten advances its CPU parent in the background after the new GPU weights become active <a href="https://www.baseten.co/blog/optimizing-delta-weight-syncs-for-managed-rollouts/">[8]</a>. If serving has switched to 18 while that parent is still at 17, the receiver must finish advancing it before decoding a delta built against 18.</p>
+</section>
+<section id="fireworks-delta-updates-across-clusters" class="level3" data-number="5.5">
+<h3 data-number="5.5" class="anchored" data-anchor-id="fireworks-delta-updates-across-clusters"><span class="header-section-number">5.5</span> Fireworks: delta updates across clusters</h3>
+<p>Mapped RDMA delivery is attractive when trainer and rollout have a suitable fabric. Independent clusters may instead share ordinary network connectivity and object storage. Fireworks describes periodic full checkpoints plus compressed deltas for transferring policy updates across such deployments <a href="https://fireworks.ai/blog/frontier-rl-is-cheaper-than-you-think">[21]</a>; its rollout interface separates uploading weights from synchronizing the serving deployment <a href="https://docs.fireworks.ai/guides/rollout-inference">[11]</a>.</p>
+<p>The trainer can publish completed versioned objects once, and rollout clusters can download and install them independently. Compact updates reduce the bytes on the upload and download legs, while full anchors provide a starting point for new or recovering receivers. Storage-mediated publication also decouples the trainer’s export-buffer lifetime from every receiver’s installation schedule.</p>
+<p>Fireworks describes the storage-mediated update architecture but does not disclose enough detail to compare its delta codec or GPU installation path with Baseten’s.</p>
+<p>There are still costs that a compact delta does not eliminate. Export may gather all parameters, construct a complete representation, compare old and new tensors, or retain a full CPU parent. For quantized serving, a changed block scale can alter the interpretation of all codes in its group; sparse BF16 changes need not remain sparse after requantization. Patch the complete serving representation, or account for the conversion that regenerates matching codes, scales, and derived metadata.</p>
+<p>The same question can be asked of a LoRA adapter, but the frozen base is already excluded from its update. Measure the adapter’s own changed fraction and export/install costs instead of importing full-model sparsity numbers.</p>
+<p>Mapped delivery and delta updates reduce transfer and installation work. Serving can switch to the new policy only after the required weights are installed and active requests are handled safely.</p>
+</section>
+</section>
+<section id="when-may-generation-use-the-new-version" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="when-may-generation-use-the-new-version"><span class="header-section-number">6</span> When can rollout safely use the new weights?</h2>
+<p>The last bucket has arrived. A0 has installed its values, A1 is still finishing post-load work, and a paused request retains state computed with version 17. When may replica A generate with version 18? Receiving all the bytes is not enough, whether they arrived as full weights, a complete adapter, or a reconstructed delta.</p>
+<p>Before in-place writes start, active kernels must stop reading the affected weights. Switching generation also requires handling requests with older cached state, confirming that all participating ranks are ready, and verifying that the live kernels use the new weights.</p>
+<section id="safe-installation-and-recovery-from-partial-updates" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="safe-installation-and-recovery-from-partial-updates"><span class="header-section-number">6.1</span> Safe installation and recovery from partial updates</h3>
+<p>When the runtime overwrites its only serving buffers, it must drain or safely pause the active requests that read them. Blocking new requests leaves already-running decode kernels using those addresses, where they could observe a partially updated tensor.</p>
+<p>If installation fails halfway, some old values have already been destroyed. Inference may have to remain blocked until a complete reload. Rollback requires a recoverable copy of the old version.</p>
+<p>A second set of serving buffers can retain the old version while the new one is prepared. Keeping both versions takes extra memory. Before switching, the runtime has to update or preserve any address assumptions in CUDA graphs and other captured objects so kernels read the intended version <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html#updating-instantiated-graphs">[17]</a>.</p>
+</section>
+<section id="what-happens-to-active-requests-and-their-cached-state" class="level3" data-number="6.2">
+<h3 data-number="6.2" class="anchored" data-anchor-id="what-happens-to-active-requests-and-their-cached-state"><span class="header-section-number">6.2</span> What happens to active requests and their cached state?</h3>
+<p>During prefill, the model processes the input prompt and caches attention’s key (K) and value (V) vectors for its tokens. During decode, it reuses this KV cache as it generates further tokens, rather than recomputing those vectors for the entire prefix.</p>
+<p>A request that prefills under version 17 has KV entries computed with version-17 weights. A hybrid model can also have recurrent and convolution state. Continuing under version 18 with that state is generally different from executing version 18 from the beginning.</p>
+<p>Letting a request finish before the update, or retaining the old weights and state for it, keeps it on one policy version. Switching an active request to new weights requires an explicit choice about its model-dependent state, including whether affected state is rebuilt. Reusable prefix caches also need to identify which weight version produced their entries.</p>
+<p>Fireworks documents two hot-load choices. Its asynchronous transition pauses an active stream, swaps weights, then resumes with existing active KV/state. Its synchronous transition lets active requests finish under old weights. Resetting a reusable prompt-cache namespace does not rebuild an active stream’s state <a href="https://docs.fireworks.ai/guides/rollout-inference">[11]</a>.</p>
+<p>Training and rollout can run asynchronously while each request stays on one policy version. The hot-load choice answers a different question: whether an already-running request continues after its weights change. The serving runtime has to specify that behavior separately from the trainer/rollout schedule.</p>
+</section>
+<section id="local-readiness-and-replica-readiness" class="level3" data-number="6.3">
+<h3 data-number="6.3" class="anchored" data-anchor-id="local-readiness-and-replica-readiness"><span class="header-section-number">6.3</span> Local readiness and replica readiness</h3>
+<p>Once local installation and its checks are complete, the rank can report readiness. New-version generation waits for all ranks required by the replica, with admission following the chosen request-state policy.</p>
+<p>Return to our two replicas. A0 and A1 have installed all their version-18 tensors. B0 is ready, while B1 is missing a scale required by one quantized weight.</p>
+<p>Replica A has a complete version 18. B1 has the new codes but cannot execute the weight correctly without its scale, so replica B must keep waiting.</p>
+<p>For replica A,</p>
+<p><span class="math display">\[
+\operatorname{ready}(A,18)
+=\operatorname{ready}(A0,18)\land\operatorname{ready}(A1,18).
+\]</span></p>
+<p>A fleet-wide barrier waits for both A and B. With replica-local activation, the scheduler can send version-18 work to A while B waits. What B can do during that wait depends on its serving storage: if installation has overwritten its only version-17 buffers, it must remain paused until a complete version is restored or installed. If B retains a complete, usable version-17 copy, it can continue serving that copy while version 18 is prepared in separate buffers.</p>
+<p>In the latter case, A can produce version-18 trajectories while B produces version-17 trajectories. Keep every model-parallel request on compatible ranks, and record the actual behavior version and any behavior log-probabilities used by the training objective for each trajectory. If training assumes that all responses in a rollout group share one behavior policy, route that group to compatible replicas or wait until their versions agree. Whether these samples can train together depends on the objective and how it uses their recorded behavior probabilities.</p>
+<p>Activation is the point when the scheduler permits new-version execution, after the required memory updates and readiness checks have finished.</p>
+</section>
+<section id="verify-that-generation-uses-the-new-weights" class="level3" data-number="6.4">
+<h3 data-number="6.4" class="anchored" data-anchor-id="verify-that-generation-uses-the-new-weights"><span class="header-section-number">6.4</span> Verify that generation uses the new weights</h3>
+<p>Suppose every received adapter tensor passes its checksum, but a fused kernel still reads an old slot. The next rollout uses the previous adapter despite a successful transfer.</p>
+<p>The update metadata identifies expected names, shapes, shards, expert IDs, codes, and scales. Hashes check the received bytes. Inspecting the installed tensors and adapter bindings checks where those bytes ended up. To test whether the live kernels use them, score a fixed prefix or trajectory through the serving runtime. K3’s public report combines this canary with weight-sync assertions and trainer/rollout comparisons <a href="https://www.lmsys.org/blog/2026-07-27-kimi-k3-day0-support/">[4]</a>.</p>
+<p>An unchanged canary score is not conclusive either: a small update may barely affect that prompt. Check exported-tensor changes and optimizer steps alongside the execution probe. A BF16 trainer and low-bit rollout can also differ numerically at the same version, so compare their scores against a measured baseline.</p>
+<p>Finally, a trajectory generated with 17 but labelled 18 gives the trainer a false account of sample age. If the loss uses the actual stored behavior log-probabilities, the label alone leaves its importance ratio unchanged. If the trainer uses the label to look up the old policy instead, it may retrieve the wrong probabilities. Recording the version and recording the behavior probabilities serve related but distinct purposes.</p>
+</section>
+</section>
+<section id="what-does-faster-weight-synchronization-measure" class="level2 page-columns page-full" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="what-does-faster-weight-synchronization-measure"><span class="header-section-number">7</span> Measuring synchronization end to end</h2>
+<p>Halving weight-transfer time does not necessarily halve the rollout pause. Preparation, installation, and overlap determine how soon generation can use the new policy.</p>
+<p>Publication is complete when the serving runtime can admit generation with the new version. A transfer timer may stop earlier, while installation or waiting for other ranks is still in progress.</p>
+<p>For timing, we measure publication from optimizer completion, including any delay before a stable export is available. A report may start later, after export or pause, and end at a resume call or the first new-policy response. Keep those start and end events attached to the reported number so it is clear which work was timed.</p>
+<p>The transfer span runs from the first payload movement to completion of the last required transfer. The rollout pause measures the interruption of generation/admission under the chosen request policy. Publication time includes the work between optimizer completion and permission to generate with the new version. First-response latency can extend beyond that permission through queueing, prefill, and decoding.</p>
+<section id="one-pipeline-three-different-intervals" class="level3 page-columns page-full" data-number="7.1">
+<h3 data-number="7.1" class="anchored" data-anchor-id="one-pipeline-three-different-intervals"><span class="header-section-number">7.1</span> One pipeline, three different intervals</h3>
+<p><a href="#publication-timing-example">Figure 4</a> illustrates a three-stage pipeline with independent preparation, transfer, and installation resources, sufficient buffering, and equal-size buckets. The timings are illustrative rather than measured. Section 7.4 discusses measurements from real implementations.</p>
+<p>Take three equal-size buckets. Each needs one time unit of preparation, one of transfer, and one of installation. Executing every stage sequentially takes nine units.</p>
+<p>Under these assumptions, preparation of bucket 2 can overlap transfer of bucket 1; installation of bucket 1 can then overlap both. Figure 4 shows this overlap: the final bucket finishes installation at time 5, followed by verification and activation through time 5.5.</p>
+<div id="publication-timing-example" class="column-page">
+<p><a class="diagram-link" href="images/publication-timeline.svg" target="_blank" rel="noopener" aria-label="Open Figure 4 at full size"><img src="images/publication-timeline.svg" class="img-fluid" alt="Three buckets overlap preparation, transfer, and installation. On a common illustrative timeline, transfer spans 1–4, publication 0–5.5, and rollout pause 2–5.5. Installation finishes at 5 and verification and activation take another 0.5 unit."></a></p>
+<p><em>Figure 4: An illustrative pipeline with preparation, transfer, and installation overlapping across three buckets. The example assumes a stable source at optimizer completion, no active requests at the first in-place install, independent stage resources, and another 0.5 unit for verification/activation. Transfer, publication, and pause share one timeline but have different boundaries.</em></p>
+</div>
+<p>In Figure 4, transfer spans time 1–4, the rollout pause spans 2–5.5, and publication spans 0–5.5. These are intervals on the same timeline, not three durations to add together. The example starts with a frozen source at optimizer completion (time 0) and places the pause at the first in-place installation (time 2), with no active requests left reading the weights. A delayed export extends publication, and draining requests before time 2 starts the pause earlier.</p>
+<p>Overlap reduces elapsed time while the schedule still performs nine units of stage work. Installation completes at time 5; the extra 0.5 unit belongs to verification and activation, outside the three-stage pipeline.</p>
+<p>For <span class="math inline">\(K\)</span> buckets with fixed stage durations <span class="math inline">\(p\)</span> for preparation, <span class="math inline">\(w\)</span> for transfer, and <span class="math inline">\(i\)</span> for installation, this ideal three-stage pipeline has makespan</p>
+<p><span class="math display">\[
+T_{\mathrm{pipe}}
+=p+w+i+(K-1)\max(p,w,i).
+\]</span></p>
+<p>The first bucket takes <span class="math inline">\(p+w+i\)</span> to pass through all three stages. In this ideal schedule, each of the remaining <span class="math inline">\(K-1\)</span> buckets completes after another <span class="math inline">\(\max(p,w,i)\)</span>, the duration of the slowest stage. With <span class="math inline">\(K=3\)</span> and <span class="math inline">\(p=w=i=1\)</span>, the result is five units. Halving only transfer gives</p>
+<p><span class="math display">\[
+T_{\mathrm{pipe}}=1+0.5+1+2(1)=4.5.
+\]</span></p>
+<p>A twofold improvement to that stage reduces pipeline completion by only 10%, before the additional activation cost. Preparation and installation still limit later completions.</p>
+<p>On an actual node, GPU conversion and installation can contend with other kernels, while copies and network activity can share PCIe capacity. Buffer pressure can also block the next stage. If <span class="math inline">\(q\)</span> buckets of up to <span class="math inline">\(B\)</span> bytes are independently live, each location owning their copies may need roughly <span class="math inline">\(qB\)</span> bytes of staging. Count an owned copy as additional storage; an IPC view aliases the existing allocation.</p>
+<p>Increasing the in-flight bucket count can improve overlap, but it also raises the memory peak and can keep source buffers live longer. Check peak buffer usage alongside latency when increasing that count.</p>
+</section>
+<section id="placement-bandwidth-and-update-size" class="level3 page-columns page-full" data-number="7.2">
+<h3 data-number="7.2" class="anchored" data-anchor-id="placement-bandwidth-and-update-size"><span class="header-section-number">7.2</span> Placement and achieved bandwidth</h3>
+<p>A delivery plan’s byte counts become a time estimate only after we specify placement and achieved throughput. Table 2 separates the available mechanisms from the resources that limit their performance.</p>
+<div class="column-page wide-comparison-table">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Trainer and rollout placement</th>
+<th style="text-align: left;">Possible mechanism</th>
+<th style="text-align: left;">What limits payload access or movement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Different processes on the same GPU</td>
+<td style="text-align: left;">CUDA IPC exposes a shared allocation <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/inter-process-communication.html">[5]</a></td>
+<td style="text-align: left;">Opening the handle does not copy the weights. Later reads or chosen copies use GPU memory bandwidth and compete with other GPU work.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Different GPUs on one host</td>
+<td style="text-align: left;">Across processes, an IPC handle exposes the allocation; supported peer access or copies consume its bytes <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/inter-process-communication.html">[5]</a>, <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/multi-gpu-systems.html">[20]</a></td>
+<td style="text-align: left;">NVLink or PCIe topology, peer-access support, and contention. A path without peer access may need host staging.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Hosts connected by a usable RDMA fabric</td>
+<td style="text-align: left;">RDMA from registered host or GPU memory; GPUDirect RDMA where supported <a href="https://docs.nvidia.com/cuda/gpudirect-rdma/">[6]</a></td>
+<td style="text-align: left;">NIC and fabric bandwidth, PCIe connectivity, registration, memory placement, and shared traffic.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Hosts with ordinary IP connectivity, including separate clusters</td>
+<td style="text-align: left;">Direct TCP transfer or an HTTPS upload/download path through storage</td>
+<td style="text-align: left;">Achieved network throughput, CPU and storage work, connection reuse, and request concurrency.</td>
+</tr>
+</tbody>
+</table>
+<p><em>Table 2: Placement and the resources used to deliver weights. These are possible paths, not mutually exclusive choices or a fixed speed ranking.</em></p>
+</div>
+<p>CUDA IPC shares access to GPU memory; it does not automatically copy the weights. A colocated rollout process gets access to the trainer’s existing GPU export buffer <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/inter-process-communication.html">[5]</a>, then copies the weights into its own serving storage if needed. If the processes use different GPUs, reads or copies still move data over NVLink or PCIe <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/multi-gpu-systems.html">[20]</a>.</p>
+<p>Advertised link bandwidth is an upper limit, not measured transfer throughput. For example, 200 Gb/s corresponds to 25 GB/s before overhead <a href="https://networking-docs.nvidia.com/connectx7hw/specifications">[18]</a>. RDMA can reduce CPU and copying overhead, but it does not increase the link’s bandwidth <a href="https://docs.nvidia.com/cuda/gpudirect-rdma/">[6]</a>. TCP can also use high-speed Ethernet. For separate clusters, first check which connections are actually available.</p>
+<p>Estimate transfer time by dividing payload size by sustained throughput. As an illustration, a 20 GB update takes about 0.8 seconds at 25 GB/s, or 20 seconds at 1 GB/s. With object storage, upload and download are separate transfers: if they run sequentially at 1 GB/s each, they take 40 seconds together. Parallel requests and connection reuse can improve S3 throughput <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance-design-patterns.html">[19]</a>.</p>
+<p>Smaller updates save transfer time, but preparation and installation still matter. At 1 GB/s, a 1 GB delta takes about one second instead of 20 seconds for the full 20 GB update. Both can use the same transfer path. Export, reconstruction, installation, and temporary buffers still have costs. These transfer estimates exclude the export, installation, and activation work shown in Figure 4.</p>
+</section>
+<section id="the-slowest-required-rank-and-link" class="level3" data-number="7.3">
+<h3 data-number="7.3" class="anchored" data-anchor-id="the-slowest-required-rank-and-link"><span class="header-section-number">7.3</span> The slowest required rank and link</h3>
+<p>Let <span class="math inline">\(t_r\)</span> be the ready time of serving rank <span class="math inline">\(r\)</span>, measured from a common start. If <span class="math inline">\(\mathcal R\)</span> is the set required by the activation rule,</p>
+<p><span class="math display">\[
+t_{\mathrm{activate}}\geq\max_{r\in\mathcal R}t_r.
+\]</span></p>
+<p>If A0, A1, and B0 finish at time 5 while B1 finishes at 8, a fleet barrier waits until at least 8. Replica-local activation may permit A to switch at 5 while B continues waiting. Average readiness does not describe either critical path.</p>
+<p>Likewise, a data-movement lower bound is</p>
+<p><span class="math display">\[
+T_{\mathrm{wire}}\geq\max_j\frac{B_j}{b_j},
+\]</span></p>
+<p>where <span class="math inline">\(B_j\)</span> is the actual payload crossing constrained link or endpoint <span class="math inline">\(j\)</span>, and <span class="math inline">\(b_j\)</span> is its achievable payload bandwidth.</p>
+<p>The <a href="#placement-bandwidth-and-update-size">20 GB placement example above</a> takes 0.8 seconds on one leg at an assumed sustained 25 GB/s. Now suppose four destinations each require 20 GB through separate paths sustaining that rate, but all 80 GB must first leave one shared source NIC with the same 25 GB/s payload capacity. That source alone imposes a 3.2-second lower bound despite 100 GB/s of aggregate destination capacity. Adding destination NICs does not increase the source’s bandwidth. These estimates assume sustained payload throughput, not advertised link rates.</p>
+<p>Calculate <span class="math inline">\(B_j\)</span> for each physical hop using the chosen delivery plan. Figure 1’s endpoint counts need a placement and communication algorithm before they become link-traffic estimates. Copies, registration, mapping, and installation add time beyond the wire lower bound.</p>
+</section>
+<section id="comparing-results-with-different-timing-boundaries" class="level3" data-number="7.4">
+<h3 data-number="7.4" class="anchored" data-anchor-id="comparing-results-with-different-timing-boundaries"><span class="header-section-number">7.4</span> Comparing results with different timing boundaries</h3>
+<p>As discussed in Section 4, Miles’ pause-to-resume results include both a large speedup and a smaller-model regression. Their interval starts after the engine pause call returns, later than optimizer completion, and the P2P path also uses additional CPU source storage <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">[1]</a>. Compare a deployment’s full preparation and delivery path, not only its transport.</p>
+<p>fabric-lib’s per-rank profile shows substantial time in FSDP reconstruction and waiting for other ranks, with RDMA overlapped against preparation. The time spent submitting requests covers only that operation, rather than the full transfer. Its hardware, preparation path, and reported timing endpoint also differ from Miles’ pause-to-resume measurement <a href="https://arxiv.org/html/2510.27656v2">[3]</a>.</p>
+<p>Baseten reports approximately six seconds of pause/load/resume on one 8×B300 replica, while its marker-in-S3 to first-new-policy-response path averages 36 seconds. Preparation overlaps serving the old policy, so both numbers can describe the same update <a href="https://www.baseten.co/blog/optimizing-delta-weight-syncs-for-managed-rollouts/">[8]</a>.</p>
+<p>A synchronization profile should record:</p>
+<ul>
+<li>Optimizer completion and the export, serving-format preparation, transfer, installation, and readiness boundaries, using a common start across the required ranks.</li>
+<li>Trainer stall, rollout pause, publication latency, and peak temporary CPU/GPU memory separately.</li>
+<li>RL cycle time, rollout serving throughput, and the age of the policy actually used for generation relative to the trainer’s current version.</li>
+</ul>
+<p>In a synchronous run, a shorter publication can let the next cycle start sooner. In an asynchronous run, it may let rollout use newer weights or spend less time paused while the trainer’s step time stays the same. These measurements show what the synchronization change improved in the run.</p>
+</section>
+</section>
+<section id="conclusion" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">8</span> Conclusion</h2>
+<p>The next rollout can use version 18 once the required serving tensors are installed safely, participating ranks are ready, and the runtime has handled any requests carrying older model state. The wait from optimizer completion to that moment includes preparation and installation as well as transfer, with overlap determining how much each adds to elapsed time.</p>
+<p>Before optimizing synchronization, verify that the update reaches the live serving kernels. Follow one tensor from its trainer owners through the export map and installed storage, then check execution with a fixed-prefix probe alongside the tensor and optimizer checks. A successful transfer is only part of that evidence.</p>
+<p>For performance, time export and installation alongside transfer, using the same start point across required ranks. A compact delta can still pass through a full-tensor loader; a fast network can still wait on parameter reconstruction. If most of the pause is spent assembling or installing weights, further compression or a different transport leaves that work in place. Those measurements should guide which part of synchronization to change next.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div class="references-list">
+<ol type="1">
+<li>LMSYS Org (2026). <em>Updating 1T parameters in seconds — P2P weight transfer in Large Scale Distributed RL.</em> <a href="https://www.lmsys.org/blog/2026-04-29-p2p-update/">Blog post</a></li>
+<li>NVIDIA. <em>NCCL Collective Operations.</em> <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html">Documentation</a></li>
+<li>Licker, N. et al.&nbsp;(2025). <em>fabric-lib: RDMA Point-to-Point Communication for LLM Systems.</em> <a href="https://arxiv.org/html/2510.27656v2">arXiv:2510.27656v2</a></li>
+<li>LMSYS Org (2026). <em>SGLang and Miles Add Day-0 Support for Kimi K3.</em> <a href="https://www.lmsys.org/blog/2026-07-27-kimi-k3-day0-support/">Blog post</a></li>
+<li>NVIDIA. <em>CUDA Interprocess Communication.</em> <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/inter-process-communication.html">Documentation</a></li>
+<li>NVIDIA. <em>GPUDirect RDMA.</em> <a href="https://docs.nvidia.com/cuda/gpudirect-rdma/">Documentation</a></li>
+<li>Hugging Face (2026). <em>Shipping a Trillion Parameters With a Hub Bucket: Delta Weight Sync in TRL.</em> <a href="https://huggingface.co/blog/delta-weight-sync">Blog post</a></li>
+<li>Baseten (2026). <em>Optimizing delta weight syncs for managed RL rollouts.</em> <a href="https://www.baseten.co/blog/optimizing-delta-weight-syncs-for-managed-rollouts/">Blog post</a></li>
+<li>Ye, C. et al.&nbsp;(2026). <em>TensorHub: Scalable and Elastic Weight Transfer for LLM RL Training.</em> <a href="https://arxiv.org/html/2604.09107v1">arXiv:2604.09107v1</a></li>
+<li>NVIDIA (2026). <em>ModelExpress: Distributing Model Artifacts at the Speed of Light.</em> <a href="https://developer.nvidia.com/blog/modelexpress-distributing-model-artifacts-at-the-speed-of-light/">Blog post</a></li>
+<li>Fireworks AI. <em>Inference for RL Rollouts.</em> <a href="https://docs.fireworks.ai/guides/rollout-inference">Documentation</a></li>
+<li>RadixArk. <em>Kimi K3 LoRA export: gathers and serving-name reconstruction.</em> <a href="https://github.com/radixark/miles/blob/cccbaa6baa9a7e3d202dabf81a071d40c6854abe/miles_plugins/models/kimi_k3/lora.py#L490-L684">GitHub</a></li>
+<li>NVIDIA. <em>Megatron Core Parallelism Strategies Guide.</em> <a href="https://docs.nvidia.com/megatron-core/developer-guide/latest/user-guide/parallelism-guide.html">Documentation</a></li>
+<li>PyTorch. <em>Getting Started with Fully Sharded Data Parallel (FSDP2).</em> <a href="https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html">Tutorial</a></li>
+<li>NVIDIA. <em>Overview of NCCL.</em> <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/overview.html">Documentation</a></li>
+<li>Hu, E. J. et al.&nbsp;(2021). <em>LoRA: Low-Rank Adaptation of Large Language Models.</em> <a href="https://arxiv.org/abs/2106.09685v2">arXiv:2106.09685v2</a></li>
+<li>NVIDIA. <em>CUDA Graphs.</em> <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html#updating-instantiated-graphs">Documentation</a></li>
+<li>NVIDIA. <em>ConnectX-7 Adapter Cards: Specifications.</em> <a href="https://networking-docs.nvidia.com/connectx7hw/specifications">Documentation</a></li>
+<li>AWS. <em>Performance design patterns for Amazon S3.</em> <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance-design-patterns.html">Documentation</a></li>
+<li>NVIDIA. <em>Programming Systems with Multiple GPUs.</em> <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/multi-gpu-systems.html">Documentation</a></li>
+<li>Fireworks AI. <em>Frontier RL Is Cheaper Than You Think.</em> <a href="https://fireworks.ai/blog/frontier-rl-is-cheaper-than-you-think">Blog post</a></li>
+<li>NVIDIA. <em>Point-to-point communication.</em> <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/p2p.html">Documentation</a></li>
+</ol>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/zhoutongfu\.github\.io\/zhoutong-ai-blog\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

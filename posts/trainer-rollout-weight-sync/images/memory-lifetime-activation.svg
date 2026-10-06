@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="960" viewBox="0 0 1400 960" role="img" aria-labelledby="title desc">
+<title id="title">Weight handoffs and export-buffer lifetime</title>
+<desc id="desc">Two alternative handoffs of version-18 values from T1 to A0. Panel a shows CUDA IPC between processes on the same GPU. Handle metadata exposes a mapped view of the same allocation; a separate copy creates receiver-owned storage. After that copy and every other source-dependent read finish, the receiver acknowledges completion and T1 may reuse the export buffer. If rollout keeps reading the mapped view instead, the source must remain unchanged until its final read. Panel b shows RDMA from registered host or GPU source memory into a registered GPU destination. Source reuse follows the transfer API's source-use completion rule. The receiver waits for completion and required GPU ordering before consuming the received bytes. Neither condition means that the entire serving replica is ready.</desc>
+<defs>
+  <marker id="payload-arrow" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#475569"/></marker>
+  <marker id="control-arrow" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#7c3aed"/></marker>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; fill: #172033; }
+    .title { font-size: 32px; font-weight: 700; }
+    .head { font-size: 26px; font-weight: 700; }
+    .label { font-size: 24px; font-weight: 700; }
+    .outcome { font-size: 22px; font-weight: 700; }
+    .note { font-size: 21px; fill: #475569; }
+    .arrow-label { font-size: 20px; fill: #475569; }
+    .detail { font-size: 19px; fill: #475569; }
+    .payload { fill: none; stroke: #475569; stroke-width: 3; marker-end: url(#payload-arrow); }
+    .control { fill: none; stroke: #7c3aed; stroke-width: 3; stroke-dasharray: 8 6; marker-end: url(#control-arrow); }
+  </style>
+</defs>
+<rect width="1400" height="960" fill="#ffffff"/>
+<text x="48" y="49" class="title">Weight handoffs and export-buffer lifetime</text>
+<text x="48" y="85" class="note">Two alternative ways to deliver the same version-18 values.</text>
+
+<rect x="32" y="112" width="1336" height="397" rx="18" fill="#f8fafc" stroke="#cbd5e1"/>
+<text x="56" y="154" class="head">(a) Local handoff: CUDA IPC</text>
+<text x="56" y="188" class="note">Different processes on the same GPU; this example copies into rollout-owned storage.</text>
+
+<rect x="56" y="218" width="294" height="100" rx="14" fill="#dbeafe" stroke="#60a5fa"/>
+<text x="203" y="254" class="label" text-anchor="middle">T1: export buffer</text>
+<text x="203" y="294" class="note" text-anchor="middle">retain version-18 values</text>
+
+<rect x="548" y="218" width="280" height="100" rx="14" fill="#eff6ff" stroke="#60a5fa"/>
+<text x="688" y="254" class="label" text-anchor="middle">A0: mapped view</text>
+<text x="688" y="294" class="note" text-anchor="middle">not a separate copy</text>
+
+<line x1="354" y1="268" x2="542" y2="268" class="control"/>
+<text x="448" y="245" class="arrow-label" text-anchor="middle">handle + metadata</text>
+
+<rect x="1037" y="218" width="305" height="100" rx="14" fill="#ecfdf5" stroke="#34d399"/>
+<text x="1189.5" y="254" class="label" text-anchor="middle">A0: owned buffer</text>
+<text x="1189.5" y="294" class="note" text-anchor="middle">separate version-18 copy</text>
+
+<line x1="833" y1="268" x2="1031" y2="268" class="payload"/>
+<text x="932" y="245" class="arrow-label" text-anchor="middle">copy values</text>
+
+<path d="M203 322 V356 H688 V322" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="445.5" y="346" class="detail" text-anchor="middle">same GPU allocation</text>
+
+<rect x="1026" y="368" width="316" height="66" rx="14" fill="#ffffff" stroke="#94a3b8"/>
+<text x="1184" y="395" class="arrow-label" text-anchor="middle">Copy + other source reads</text>
+<text x="1184" y="422" class="arrow-label" text-anchor="middle">have finished</text>
+<line x1="1189.5" y1="322" x2="1189.5" y2="362" class="payload"/>
+
+<rect x="56" y="378" width="340" height="60" rx="14" fill="#ecfdf5" stroke="#34d399"/>
+<text x="226" y="416" class="outcome" text-anchor="middle">Export buffer may be reused</text>
+
+<line x1="1020" y1="408" x2="402" y2="408" class="control"/>
+<text x="711" y="387" class="detail" text-anchor="middle">receiver acknowledges completed reads</text>
+
+<text x="56" y="478" class="note">Keeping the mapped view instead? Retain the source unchanged until its final read.</text>
+
+<rect x="32" y="537" width="1336" height="342" rx="18" fill="#f8fafc" stroke="#cbd5e1"/>
+<text x="56" y="579" class="head">(b) Cross-host transfer: RDMA</text>
+<text x="56" y="613" class="note">Different hosts; GPU destination shown. The source may be host RAM or GPU memory.</text>
+
+<rect x="56" y="642" width="420" height="94" rx="14" fill="#dbeafe" stroke="#60a5fa"/>
+<text x="266" y="679" class="label" text-anchor="middle">T1: registered source</text>
+<text x="266" y="717" class="note" text-anchor="middle">host RAM or GPU memory</text>
+
+<rect x="922" y="642" width="420" height="94" rx="14" fill="#eff6ff" stroke="#60a5fa"/>
+<text x="1132" y="679" class="label" text-anchor="middle">A0: registered GPU buffer</text>
+<text x="1132" y="717" class="note" text-anchor="middle">received version-18 values</text>
+
+<line x1="482" y1="688" x2="916" y2="688" class="payload"/>
+<text x="699" y="666" class="arrow-label" text-anchor="middle">RDMA payload transfer</text>
+
+<rect x="56" y="787" width="520" height="64" rx="14" fill="#ecfdf5" stroke="#34d399"/>
+<text x="316" y="813" class="outcome" text-anchor="middle">Source buffer may be reused</text>
+<text x="316" y="841" class="arrow-label" text-anchor="middle">only when the transfer API permits</text>
+<line x1="266" y1="742" x2="266" y2="781" class="payload"/>
+
+<rect x="802" y="787" width="540" height="64" rx="14" fill="#ffffff" stroke="#94a3b8"/>
+<text x="1072" y="813" class="outcome" text-anchor="middle">Received bytes are GPU-visible</text>
+<text x="1072" y="841" class="arrow-label" text-anchor="middle">after completion + required GPU ordering</text>
+<line x1="1132" y1="742" x2="1132" y2="781" class="payload"/>
+
+<text x="48" y="921" class="note">Buffer reuse is not replica readiness. Installation and new-version admission follow in Section 6.</text>
+</svg>

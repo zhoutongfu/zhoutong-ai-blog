@@ -1,8 +1,17 @@
 project:
   type: website
   output-dir: docs
+  render:
+    - index.qmd
+    - posts/**/*.qmd
+  resources:
+    - .nojekyll
+    - "!drafts/"
+    - "!AGENTS.md"
+    - "!CLAUDE.md"
 
 website:
+  site-url: https://zhoutongfu.github.io/zhoutong-ai-blog/
   title: "Zhoutong's Research Log"
   description: "Notes on LLMs, Post Training, and Recommender Systems."
   navbar:

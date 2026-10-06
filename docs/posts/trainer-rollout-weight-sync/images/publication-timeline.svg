@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="858" viewBox="0 0 1440 858" role="img" aria-labelledby="title desc">
+<title id="title">One update, three timing intervals</title>
+<desc id="desc">Three buckets overlap preparation, transfer, and installation. Each stage takes one illustrative time unit per bucket. The pipeline completes installation at time 5; verification and activation take another 0.5. Transfer spans 1–4, publication 0–5.5, and rollout pause 2–5.5. The example assumes a stable source at time 0, old readers gone by time 2, and independent stage resources. These units are not measured seconds.</desc>
+<defs>
+  <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#475569"/></marker>
+  <marker id="control" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#7c3aed"/></marker>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; fill: #172033; }
+    .title { font-size: 32px; font-weight: 700; }
+    .head { font-size: 27px; font-weight: 700; }
+    .body { font-size: 24px; }
+    .note { font-size: 22px; fill: #475569; }
+    .small { font-size: 20px; fill: #475569; }
+    .mono { font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 27px; }
+    .strong { font-size: 24px; font-weight: 700; }
+  </style>
+</defs>
+<rect width="1440" height="858" fill="#ffffff"/>
+<text x="48" y="56" class="title" >One update, three timing intervals</text>
+<text x="48" y="94" class="note" >Three buckets; preparation, transfer, and installation each take one unit per bucket.</text>
+<text x="740" y="142" class="strong" text-anchor="middle">Illustrative time units—not seconds</text>
+<line x1="300" y1="205" x2="1180" y2="205" stroke="#475569" stroke-width="2"/>
+<line x1="300" y1="198" x2="300" y2="737" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 6"/>
+<text x="300" y="184" class="note" text-anchor="middle">0</text>
+<line x1="460" y1="198" x2="460" y2="737" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 6"/>
+<text x="460" y="184" class="note" text-anchor="middle">1</text>
+<line x1="620" y1="198" x2="620" y2="737" stroke="#d97706" stroke-width="2" stroke-dasharray="7 6"/>
+<text x="620" y="184" class="note" text-anchor="middle">2</text>
+<line x1="780" y1="198" x2="780" y2="737" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 6"/>
+<text x="780" y="184" class="note" text-anchor="middle">3</text>
+<line x1="940" y1="198" x2="940" y2="737" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 6"/>
+<text x="940" y="184" class="note" text-anchor="middle">4</text>
+<line x1="1100" y1="198" x2="1100" y2="737" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 6"/>
+<text x="1100" y="184" class="note" text-anchor="middle">5</text>
+<line x1="1180" y1="198" x2="1180" y2="737" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 6"/>
+<text x="1180" y="184" class="note" text-anchor="middle">5.5</text>
+<text x="70" y="266" class="strong" >Prepare</text>
+<text x="70" y="351" class="strong" >Transfer</text>
+<text x="70" y="436" class="strong" >Install</text>
+<text x="70" y="516" class="strong" >Verify / activate</text>
+<rect x="302" y="235" width="156" height="50" rx="7" fill="#dbeafe" stroke="#60a5fa" />
+<text x="380" y="268" class="strong" text-anchor="middle">b1</text>
+<rect x="462" y="235" width="156" height="50" rx="7" fill="#ffedd5" stroke="#fb923c" />
+<text x="540" y="268" class="strong" text-anchor="middle">b2</text>
+<rect x="622" y="235" width="156" height="50" rx="7" fill="#dcfce7" stroke="#4ade80" />
+<text x="700" y="268" class="strong" text-anchor="middle">b3</text>
+<rect x="462" y="320" width="156" height="50" rx="7" fill="#dbeafe" stroke="#60a5fa" />
+<text x="540" y="353" class="strong" text-anchor="middle">b1</text>
+<rect x="622" y="320" width="156" height="50" rx="7" fill="#ffedd5" stroke="#fb923c" />
+<text x="700" y="353" class="strong" text-anchor="middle">b2</text>
+<rect x="782" y="320" width="156" height="50" rx="7" fill="#dcfce7" stroke="#4ade80" />
+<text x="860" y="353" class="strong" text-anchor="middle">b3</text>
+<rect x="622" y="405" width="156" height="50" rx="7" fill="#dbeafe" stroke="#60a5fa" />
+<text x="700" y="438" class="strong" text-anchor="middle">b1</text>
+<rect x="782" y="405" width="156" height="50" rx="7" fill="#ffedd5" stroke="#fb923c" />
+<text x="860" y="438" class="strong" text-anchor="middle">b2</text>
+<rect x="942" y="405" width="156" height="50" rx="7" fill="#dcfce7" stroke="#4ade80" />
+<text x="1020" y="438" class="strong" text-anchor="middle">b3</text>
+<rect x="1102" y="490" width="76" height="50" rx="7" fill="#ede9fe" stroke="#a78bfa" />
+<text x="1140" y="523" class="strong" text-anchor="middle">0.5</text>
+<text x="70" y="609" class="strong" >Transfer span</text>
+<text x="70" y="664" class="strong" >Publication time</text>
+<text x="70" y="719" class="strong" >Rollout pause</text>
+<line x1="460" y1="600" x2="940" y2="600" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
+<line x1="460" y1="591" x2="460" y2="609" stroke="#2563eb" stroke-width="2"/>
+<line x1="940" y1="591" x2="940" y2="609" stroke="#2563eb" stroke-width="2"/>
+<text x="1240" y="608" class="strong" >3 units</text>
+<line x1="300" y1="655" x2="1180" y2="655" stroke="#7c3aed" stroke-width="8" stroke-linecap="round"/>
+<line x1="300" y1="646" x2="300" y2="664" stroke="#7c3aed" stroke-width="2"/>
+<line x1="1180" y1="646" x2="1180" y2="664" stroke="#7c3aed" stroke-width="2"/>
+<text x="1240" y="663" class="strong" >5.5 units</text>
+<line x1="620" y1="710" x2="1180" y2="710" stroke="#c2410c" stroke-width="8" stroke-linecap="round"/>
+<line x1="620" y1="701" x2="620" y2="719" stroke="#c2410c" stroke-width="2"/>
+<line x1="1180" y1="701" x2="1180" y2="719" stroke="#c2410c" stroke-width="2"/>
+<text x="1240" y="718" class="strong" >3.5 units</text>
+<text x="48" y="784" class="note" >Stage completion: 9 units sequential → 5 pipelined; verification/activation adds 0.5.</text>
+<text x="48" y="823" class="note" >Assumptions: stable source at 0; old readers gone by 2; independent stage resources.</text>
+</svg>
