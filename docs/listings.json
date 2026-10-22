@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/entropy-in-llm-rl/index.html",
       "/posts/trainer-rollout-weight-sync/index.html",
       "/posts/low-precision-rl/index.html",
       "/posts/fixed-state-or-sparse-retrieval/index.html",

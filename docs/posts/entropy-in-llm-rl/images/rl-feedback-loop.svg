@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="485" viewBox="0 0 1080 485" role="img" aria-labelledby="title desc">
+<title id="title">Three places to change the RL feedback loop</title><desc id="desc">Current policy generates responses through sampling. Rewards and advantages drive the task update, which produces an updated policy together with auxiliary regularization. The updated policy generates the next batch. Sampling, task-update design, and regularization intervene at different points.</desc>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}</style>
+<rect width="1080" height="485" fill="white"/>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#64748b"/></marker></defs>
+<text x="540" y="39" font-size="24" fill="#0f172a" text-anchor="middle" font-weight="650">Three places to change the RL feedback loop</text>
+<rect x="30" y="140" width="160" height="110" rx="13" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+<text x="110.0" y="172" font-size="19" fill="#0f172a" text-anchor="middle" font-weight="650">Current policy</text>
+<text x="110.0" y="200" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Token probabilities</text>
+<rect x="230" y="125" width="220" height="140" rx="13" fill="#eef6fc" stroke="#2563a6" stroke-width="2"/>
+<text x="340.0" y="157" font-size="19" fill="#174879" text-anchor="middle" font-weight="650">Rollout sampling</text>
+<text x="340.0" y="185" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Which responses appear?</text>
+<text x="340.0" y="208" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Temperature · groups</text>
+<circle cx="247" cy="125" r="15" fill="#2563a6"/>
+<text x="247" y="130" font-size="15" fill="white" text-anchor="middle" font-weight="650">1</text>
+<rect x="490" y="140" width="170" height="110" rx="13" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+<text x="575.0" y="172" font-size="19" fill="#0f172a" text-anchor="middle" font-weight="650">Reward signal</text>
+<text x="575.0" y="200" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Rewards</text>
+<text x="575.0" y="223" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">and advantages</text>
+<rect x="700" y="125" width="340" height="140" rx="13" fill="#fff6ed" stroke="#b95b12" stroke-width="2"/>
+<text x="870.0" y="157" font-size="19" fill="#87400c" text-anchor="middle" font-weight="650">Policy-update design</text>
+<text x="870.0" y="185" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Which gradients contribute?</text>
+<text x="870.0" y="208" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Weighting · clipping · selection</text>
+<circle cx="717" cy="125" r="15" fill="#b95b12"/>
+<text x="717" y="130" font-size="15" fill="white" text-anchor="middle" font-weight="650">2</text>
+<rect x="350" y="325" width="310" height="110" rx="13" fill="#f7f0fc" stroke="#7946a5" stroke-width="2"/>
+<text x="505.0" y="357" font-size="19" fill="#603784" text-anchor="middle" font-weight="650">Regularization</text>
+<text x="505.0" y="385" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">What additional preference?</text>
+<text x="505.0" y="408" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Entropy bonus · anchor penalty</text>
+<circle cx="367" cy="325" r="15" fill="#7946a5"/>
+<text x="367" y="330" font-size="15" fill="white" text-anchor="middle" font-weight="650">3</text>
+<rect x="700" y="325" width="340" height="110" rx="13" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+<text x="870.0" y="357" font-size="19" fill="#0f172a" text-anchor="middle" font-weight="650">Updated policy</text>
+<text x="870.0" y="385" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Task and auxiliary gradients</text>
+<text x="870.0" y="408" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">jointly change parameters</text>
+<path d="M190 195H225" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M450 195H485" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M660 195H695" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M870 265V320" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M660 380H695" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M700 410H690V465H110V255" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="210" y="446" font-size="15" fill="#334155" text-anchor="middle" font-weight="400">Next rollout batch</text>
+</svg>

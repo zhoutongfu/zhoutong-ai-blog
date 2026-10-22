@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Zhoutong">
+<meta name="dcterms.date" content="2026-10-21">
+<meta name="description" content="Why entropy collapse and uncontrolled growth can stall RL—and how update rules, regularization, and sampling shape effective learning.">
+
+<title>Entropy in LLM RL: Dynamics and Control – Zhoutong’s Research Log</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="post.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Zhoutong’s Research Log</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/zhoutongfu/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/zhoutong-hai"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#opening" id="toc-opening" class="nav-link active" data-scroll-target="#opening"><span class="header-section-number">1</span> When concentration helps—and when it stalls RL</a>
+  <ul class="collapse">
+  <li><a href="#the-empirical-problem" id="toc-the-empirical-problem" class="nav-link" data-scroll-target="#the-empirical-problem"><span class="header-section-number">1.1</span> The empirical problem</a></li>
+  </ul></li>
+  <li><a href="#dynamics" id="toc-dynamics" class="nav-link" data-scroll-target="#dynamics"><span class="header-section-number">2</span> How RL updates change entropy</a>
+  <ul class="collapse">
+  <li><a href="#from-a-sampled-reward-to-a-logit-update" id="toc-from-a-sampled-reward-to-a-logit-update" class="nav-link" data-scroll-target="#from-a-sampled-reward-to-a-logit-update"><span class="header-section-number">2.1</span> From a sampled reward to a logit update</a></li>
+  <li><a href="#from-a-logit-update-to-an-entropy-change" id="toc-from-a-logit-update-to-an-entropy-change" class="nav-link" data-scroll-target="#from-a-logit-update-to-an-entropy-change"><span class="header-section-number">2.2</span> From a logit update to an entropy change</a></li>
+  <li><a href="#why-the-next-rollout-batch-matters" id="toc-why-the-next-rollout-batch-matters" class="nav-link" data-scroll-target="#why-the-next-rollout-batch-matters"><span class="header-section-number">2.3</span> Why the next rollout batch matters</a></li>
+  </ul></li>
+  <li><a href="#task-update" id="toc-task-update" class="nav-link" data-scroll-target="#task-update"><span class="header-section-number">3</span> Shaping the policy update</a>
+  <ul class="collapse">
+  <li><a href="#ppo-and-dapo-retaining-useful-positive-updates" id="toc-ppo-and-dapo-retaining-useful-positive-updates" class="nav-link" data-scroll-target="#ppo-and-dapo-retaining-useful-positive-updates"><span class="header-section-number">3.1</span> PPO and DAPO: retaining useful positive updates</a></li>
+  <li><a href="#cispo-cap-the-weight-keep-the-gradient" id="toc-cispo-cap-the-weight-keep-the-gradient" class="nav-link" data-scroll-target="#cispo-cap-the-weight-keep-the-gradient"><span class="header-section-number">3.2</span> CISPO: cap the weight, keep the gradient</a></li>
+  <li><a href="#weighting-and-selection-are-related-but-distinct" id="toc-weighting-and-selection-are-related-but-distinct" class="nav-link" data-scroll-target="#weighting-and-selection-are-related-but-distinct"><span class="header-section-number">3.3</span> Weighting and selection are related, but distinct</a></li>
+  </ul></li>
+  <li><a href="#regularization" id="toc-regularization" class="nav-link" data-scroll-target="#regularization"><span class="header-section-number">4</span> Entropy regularization: bonuses, targets, and feedback</a>
+  <ul class="collapse">
+  <li><a href="#a-bonus-changes-the-optimum" id="toc-a-bonus-changes-the-optimum" class="nav-link" data-scroll-target="#a-bonus-changes-the-optimum"><span class="header-section-number">4.1</span> A bonus changes the optimum</a></li>
+  <li><a href="#a-fixed-coefficient-has-changing-influence" id="toc-a-fixed-coefficient-has-changing-influence" class="nav-link" data-scroll-target="#a-fixed-coefficient-has-changing-influence"><span class="header-section-number">4.2</span> A fixed coefficient has changing influence</a></li>
+  <li><a href="#feedback-control-instead-of-a-fixed-bonus" id="toc-feedback-control-instead-of-a-fixed-bonus" class="nav-link" data-scroll-target="#feedback-control-instead-of-a-fixed-bonus"><span class="header-section-number">4.3</span> Feedback control instead of a fixed bonus</a></li>
+  </ul></li>
+  <li><a href="#collection" id="toc-collection" class="nav-link" data-scroll-target="#collection"><span class="header-section-number">5</span> Exploration through rollout sampling</a>
+  <ul class="collapse">
+  <li><a href="#temperature-changes-proposals-not-weights" id="toc-temperature-changes-proposals-not-weights" class="nav-link" data-scroll-target="#temperature-changes-proposals-not-weights"><span class="header-section-number">5.1</span> Temperature changes proposals, not weights</a></li>
+  <li><a href="#group-sampling-must-produce-reward-contrast" id="toc-group-sampling-must-produce-reward-contrast" class="nav-link" data-scroll-target="#group-sampling-must-produce-reward-contrast"><span class="header-section-number">5.2</span> Group sampling must produce reward contrast</a></li>
+  </ul></li>
+  <li><a href="#outcomes" id="toc-outcomes" class="nav-link" data-scroll-target="#outcomes"><span class="header-section-number">6</span> What better entropy dynamics should achieve</a></li>
+  <li><a href="#measurement" id="toc-measurement" class="nav-link" data-scroll-target="#measurement">Technical note: entropy values and entropy gradients</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Entropy in LLM RL: Dynamics and Control</h1>
+<p class="subtitle lead">Policy updates, entropy regularization, and rollout sampling</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Reinforcement Learning</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    Why entropy collapse and uncontrolled growth can stall RL—and how update rules, regularization, and sampling shape effective learning.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Zhoutong </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 21, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="opening" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="opening"><span class="header-section-number">1</span> When concentration helps—and when it stalls RL</h2>
+<p>An RL policy generates its own training data. Once an update makes some responses more likely, the next rollout batch tends to contain more of them. Their rewards drive another update, which changes the next batch again. Learning depends on this feedback loop continuing to produce useful evidence.</p>
+<p>Concentration is part of successful learning: a model should become more reliable at decisions it has learned to make correctly. But it can also concentrate too early. If a narrow set of responses dominates before the task is solved well, better alternatives may become too unlikely to appear in the rollout budget. Training then has fewer opportunities to discover and reinforce them.</p>
+<p>Adding randomness addresses only part of that problem. More varied responses can expose useful alternatives, or simply produce more invalid answers. An intervention that raises entropy while degrading the learning signal has not solved the underlying failure.</p>
+<section id="the-empirical-problem" class="level3" data-number="1.1">
+<h3 data-number="1.1" class="anchored" data-anchor-id="the-empirical-problem"><span class="header-section-number">1.1</span> The empirical problem</h3>
+<p>Skywork-OR1 provides a concrete example. Figure 1 shows the fixed-coefficient ablation reported by the Skywork-OR1 authors: at <span class="math inline">\(10^{-4}\)</span>, entropy declines while AIME24 performance improves and then largely plateaus. Larger coefficients do not simply preserve useful exploration. The <span class="math inline">\(10^{-3}\)</span>, <span class="math inline">\(5\times10^{-3}\)</span>, and <span class="math inline">\(10^{-2}\)</span> runs show sharp entropy growth alongside severe performance degradation; at <span class="math inline">\(5\times10^{-4}\)</span>, entropy rises more gradually while performance eventually declines. The low-entropy run remains the strongest of these runs at the end of the plotted window—low entropy alone is not evidence of failed learning. <a href="https://arxiv.org/html/2505.22312v2">[1]</a></p>
+<p><a class="diagram-link" href="images/skywork-or1-figure-19.png" target="_blank" rel="noopener" aria-label="Open Figure 1 at full size"><img src="images/skywork-or1-figure-19.png" width="2964" height="1162" alt="Skywork-OR1 fixed entropy-coefficient ablation. Left: entropy across training steps for five coefficients. Right: corresponding AIME24 average-at-eight accuracy. Larger coefficients show entropy growth with declining accuracy; the smallest coefficient retains the highest final accuracy despite low entropy."></a></p>
+<p><em>Figure 1. Entropy and AIME24 performance under different fixed entropy-bonus coefficients. Original figure from He et al., Skywork Open Reasoner 1 Technical Report, Figure 19 (§4.5). <a href="https://arxiv.org/html/2505.22312v2">[1]</a></em></p>
+<p>The report’s Figure 20 also shows opposite entropy trends after changing only the math dataset, with the coefficient held at <span class="math inline">\(10^{-3}\)</span>. Together, these results motivate adaptive control and show why a fixed coefficient is difficult to transfer. The paired entropy and evaluation curves—not the entropy curve alone—establish whether an intervention helps. <a href="https://arxiv.org/html/2505.22312v2">[1]</a></p>
+<p>The useful distinction is between productive and unproductive changes in the policy:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Observed behavior</th>
+<th style="text-align: left;">Possible interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Entropy falls while held-out success improves</td>
+<td style="text-align: left;">Productive concentration on better responses</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Entropy falls rapidly, progress stalls, and sampled responses become repetitive</td>
+<td style="text-align: left;">Premature concentration that may limit further learning</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Entropy rises while useful solutions and performance improve</td>
+<td style="text-align: left;">Productive exploration</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Entropy rises while validity or performance deteriorates</td>
+<td style="text-align: left;">Unproductive dispersion</td>
+</tr>
+</tbody>
+</table>
+<p>These are patterns to interpret, not diagnoses from curve shape. Low entropy on a mastered problem is not a failure. Nor is declining entropy a requirement for progress: <em>Revisiting Entropy</em> reports experiments in which accuracy improves while adaptive regularization maintains entropy near a reference level. <a href="https://arxiv.org/html/2511.05993v3">[10]</a></p>
+<p>The practical objective is therefore to make successful behavior more reliable without prematurely eliminating useful learning opportunities. Entropy is relevant because it describes policy concentration and can be influenced during training. It is not itself a measure of correctness or the number of distinct reasoning strategies.</p>
+<p>This post focuses on outcome-reward RL, particularly math and coding with verifiable rewards. Its main examples are reported training recipes and ablations; narrower research variants illustrate additional design choices.</p>
+<ul>
+<li><a href="#dynamics">How RL updates change entropy</a>: the derivatives behind concentration and dispersion.</li>
+<li><a href="#task-update">Shaping the policy update</a>: which reward-driven gradients survive and how strongly they count.</li>
+<li><a href="#regularization">Entropy regularization</a>: bonuses, targets, and feedback.</li>
+<li><a href="#collection">Exploration through rollout sampling</a>: obtaining more informative training responses.</li>
+<li><a href="#outcomes">Evaluating the result</a>: reliability, coverage, and the limits of the entropy curve.</li>
+</ul>
+</section>
+</section>
+<section id="dynamics" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="dynamics"><span class="header-section-number">2</span> How RL updates change entropy</h2>
+<section id="from-a-sampled-reward-to-a-logit-update" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="from-a-sampled-reward-to-a-logit-update"><span class="header-section-number">2.1</span> From a sampled reward to a logit update</h3>
+<p>At a fixed prefix <span class="math inline">\(s=(x,y_{&lt;t})\)</span>, let <span class="math inline">\(z_i\)</span> be the logit for vocabulary item <span class="math inline">\(i\)</span> and</p>
+<p><span id="eq-policy-entropy"><span class="math display">\[
+p_i=p_\theta(i\mid s)=\frac{e^{z_i}}{\sum_k e^{z_k}},
+\qquad
+H(p)=-\sum_i p_i\log p_i.
+\tag{1}\]</span></span></p>
+<p>Natural logarithms give entropy in nats. This is uncertainty over the next-token distribution at one prefix. A training curve averages such quantities over many prefixes, usually from changing rollouts.</p>
+<p>For a sampled action <span class="math inline">\(a\)</span> with a detached advantage <span class="math inline">\(\hat A\)</span>, the unclipped score-function surrogate is <span class="math inline">\(J_{\mathrm{sample}}=\hat A\log p_a\)</span>. Since</p>
+<p><span class="math display">\[
+\log p_a=z_a-\log\sum_i e^{z_i},
+\]</span></p>
+<p>its derivative is</p>
+<p><span id="eq-score-gradient"><span class="math display">\[
+\frac{\partial \log p_a}{\partial z_j}
+=\mathbf 1[j=a]-\frac{e^{z_j}}{\sum_i e^{z_i}}
+=\mathbf 1[j=a]-p_j.
+\tag{2}\]</span></span></p>
+<p>Under plain gradient ascent on independently trainable logits,</p>
+<p><span id="eq-logit-update"><span class="math display">\[
+\Delta z_j
+=\eta\hat A\bigl(\mathbf 1[j=a]-p_j\bigr).
+\tag{3}\]</span></span></p>
+<p>Reinforcement changes all logits through softmax normalization, not just the sampled action’s logit. With two actions initially at <span class="math inline">\((p_A,p_B)=(0.8,0.2)\)</span> and <span class="math inline">\(\eta=0.1\)</span>:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Sample and advantage</th>
+<th style="text-align: left;"><span class="math inline">\((\Delta z_A,\Delta z_B)\)</span></th>
+<th style="text-align: left;">New <span class="math inline">\(p_A\)</span></th>
+<th style="text-align: left;">New entropy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(A\)</span>, <span class="math inline">\(\hat A=+1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\((+0.02,-0.02)\)</span></td>
+<td style="text-align: left;">0.8063</td>
+<td style="text-align: left;">0.4915</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(A\)</span>, <span class="math inline">\(\hat A=-1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\((-0.02,+0.02)\)</span></td>
+<td style="text-align: left;">0.7935</td>
+<td style="text-align: left;">0.5093</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(B\)</span>, <span class="math inline">\(\hat A=+1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\((-0.08,+0.08)\)</span></td>
+<td style="text-align: left;">0.7732</td>
+<td style="text-align: left;">0.5354</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(B\)</span>, <span class="math inline">\(\hat A=-1\)</span></td>
+<td style="text-align: left;"><span class="math inline">\((+0.08,-0.08)\)</span></td>
+<td style="text-align: left;">0.8244</td>
+<td style="text-align: left;">0.4647</td>
+</tr>
+</tbody>
+</table>
+<p><em>Calculated example: exact softmax evaluations after one logit step, from an initial entropy of 0.5004 nats.</em></p>
+<p>Reinforcing the dominant action lowers entropy here; reinforcing the less likely action raises it. Advantage sign alone does not determine entropy direction.</p>
+<p>If <span class="math inline">\(A\)</span> is correct and <span class="math inline">\(B\)</span> is wrong, expected reward is <span class="math inline">\(p_A\)</span>. Moving <span class="math inline">\(p_A\)</span> from <span class="math inline">\(0.2\)</span> through <span class="math inline">\(0.5\)</span> to <span class="math inline">\(0.8\)</span> improves reward throughout, while entropy first rises and then falls. The same learning objective can produce either direction depending on where probability starts.</p>
+</section>
+<section id="from-a-logit-update-to-an-entropy-change" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="from-a-logit-update-to-an-entropy-change"><span class="header-section-number">2.2</span> From a logit update to an entropy change</h3>
+<p>The softmax derivative follows directly from the quotient rule:</p>
+<p><span class="math display">\[
+\frac{\partial p_i}{\partial z_j}
+=\frac{\mathbf 1[i=j]e^{z_i}\sum_k e^{z_k}-e^{z_i}e^{z_j}}
+{\left(\sum_k e^{z_k}\right)^2}
+=p_i\bigl(\mathbf 1[i=j]-p_j\bigr).
+\]</span></p>
+<p>Substituting it into the entropy derivative gives</p>
+<p><span id="eq-entropy-logit-gradient"><span class="math display">\[
+\begin{aligned}
+\frac{\partial H}{\partial z_j}
+&amp;=-\sum_i(\log p_i+1)\frac{\partial p_i}{\partial z_j}\\
+&amp;=-p_j(\log p_j+1)
++p_j\sum_i p_i(\log p_i+1)\\
+&amp;=-p_j(\log p_j+1)+p_j(1-H)\\
+&amp;=-p_j(\log p_j+H).
+\end{aligned}
+\tag{4}\]</span></span></p>
+<p>The third line uses <span class="math inline">\(\sum_i p_i=1\)</span> and <span class="math inline">\(\sum_i p_i\log p_i=-H\)</span>. A first-order expansion now connects an actual logit displacement to entropy:</p>
+<p><span id="eq-entropy-covariance"><span class="math display">\[
+\begin{aligned}
+\Delta H
+&amp;=\sum_j\frac{\partial H}{\partial z_j}\Delta z_j
++O(\|\Delta z\|^2)\\
+&amp;=-\mathbb E_{j\sim p}[\log p_j\,\Delta z_j]
+-H\,\mathbb E_{j\sim p}[\Delta z_j]
++O(\|\Delta z\|^2)\\
+&amp;=-\left(
+\mathbb E_p[\log p\,\Delta z]
+-\mathbb E_p[\log p]\mathbb E_p[\Delta z]
+\right)
++O(\|\Delta z\|^2)\\
+&amp;=-\operatorname{Cov}_{j\sim p}(\log p_j,\Delta z_j)
++O(\|\Delta z\|^2).
+\end{aligned}
+\tag{5}\]</span></span></p>
+<p>Entropy decreases to first order when the update preferentially raises logits of already likely actions. It increases when the displacement favors less likely actions. The covariance is over vocabulary actions at a fixed prefix and uses their actual logit changes.</p>
+<p>The distinction matters when connecting this identity to advantages. At one fixed prefix, assume independently trainable logits, on-policy sampling, and true centered advantages <span class="math inline">\(A_j\)</span> with <span class="math inline">\(\sum_j p_jA_j=0\)</span>. Taking the expectation of <a href="#eq-logit-update" class="quarto-xref">Equation&nbsp;3</a> gives</p>
+<p><span id="eq-ordinary-pg-logit-change"><span class="math display">\[
+\begin{aligned}
+\mathbb E[\Delta z_j]
+&amp;=\eta\sum_a p_aA_a\bigl(\mathbf 1[j=a]-p_j\bigr)\\
+&amp;=\eta p_jA_j.
+\end{aligned}
+\tag{6}\]</span></span></p>
+<p>Ordinary policy gradient therefore weights the advantage by the action’s probability. Natural policy gradient changes this geometry: the categorical Fisher matrix is <span class="math inline">\(F=\operatorname{diag}(p)-pp^\top\)</span>, and <span class="math inline">\(FA=pA\)</span> for centered advantages. Its logit direction is consequently <span class="math inline">\(A\)</span>, up to a common shift that leaves softmax probabilities unchanged. Substitution into <a href="#eq-entropy-covariance" class="quarto-xref">Equation&nbsp;5</a> gives, to first order,</p>
+<p><span id="eq-pg-npg-entropy"><span class="math display">\[
+\begin{aligned}
+\mathbb E[\Delta H]_{\mathrm{PG}}
+&amp;\approx-\eta\operatorname{Cov}_{j\sim p}(\log p_j,p_jA_j),\\
+\mathbb E[\Delta H]_{\mathrm{NPG}}
+&amp;\approx-\eta\operatorname{Cov}_{j\sim p}(\log p_j,A_j).
+\end{aligned}
+\tag{7}\]</span></span></p>
+<p>These are the distinct tabular results in <em>The Entropy Mechanism</em>, §3.2. Substituting advantage directly for logit displacement assumes the natural-gradient geometry; PPO with estimated group advantages and Adam on a shared transformer does not automatically follow either tabular update. <a href="https://arxiv.org/html/2505.22617v1">[5]</a></p>
+<p>In a neural model, parameters are shared across prefixes and vocabulary items:</p>
+<p><span id="eq-parameter-entropy-change"><span class="math display">\[
+\Delta H_\theta(s)
+\approx\nabla_\theta H_\theta(s)^\top\Delta\theta.
+\tag{8}\]</span></span></p>
+<p>Gradients from other responses and the optimizer influence <span class="math inline">\(\Delta\theta\)</span>. The binary example isolates the mechanism; it does not predict a transformer’s entire training trajectory. At an exactly uniform distribution, the first-order entropy gradient is zero, but a finite update can still reduce entropy through higher-order terms.</p>
+<p>A logged curve also changes because the policy visits different prefixes. Let <span class="math inline">\(H_k(s)\)</span> be conditional entropy at checkpoint <span class="math inline">\(k\)</span>, and let <span class="math inline">\(d_k(s)\)</span> be the normalized prefix distribution induced by the logging procedure, including its token or response weighting. With <span class="math inline">\(\bar H_k=\mathbb E_{s\sim d_k}[H_k(s)]\)</span>, adding and subtracting <span class="math inline">\(\mathbb E_{d_k}[H_{k+1}]\)</span> gives the exact decomposition</p>
+<p><span id="eq-logged-entropy-change"><span class="math display">\[
+\begin{aligned}
+\bar H_{k+1}-\bar H_k
+={}&amp;\underbrace{\mathbb E_{d_k}[H_{k+1}-H_k]}_{\text{policy change at fixed prefixes}}\\
+&amp;+\underbrace{\sum_s\bigl(d_{k+1}(s)-d_k(s)\bigr)H_{k+1}(s)}_{\text{change in measured prefixes}}.
+\end{aligned}
+\tag{9}\]</span></span></p>
+<p>The local derivative describes the first term. The second can change the aggregate curve even when entropy on a fixed set of prefixes stays constant. This identity concerns the underlying means; finite-sample estimates introduce additional noise.</p>
+</section>
+<section id="why-the-next-rollout-batch-matters" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="why-the-next-rollout-batch-matters"><span class="header-section-number">2.3</span> Why the next rollout batch matters</h3>
+<p>The consequence of concentration is operational. If a useful response family has sampling probability <span class="math inline">\(\varepsilon\)</span>, its chance of appearing in <span class="math inline">\(K\)</span> independent rollouts is <span class="math inline">\(1-(1-\varepsilon)^K\)</span>. With <span class="math inline">\(\varepsilon=10^{-4}\)</span> and <span class="math inline">\(K=8\)</span>, that is about <span class="math inline">\(0.08\%\)</span>. Nonzero probability can still mean practically unavailable training evidence.</p>
+<p>The three intervention points address different parts of this loop:</p>
+<p><a class="diagram-link" href="images/rl-feedback-loop.svg" target="_blank" rel="noopener" aria-label="Open Figure 2 at full size"><img src="images/rl-feedback-loop.svg" alt="The current policy generates responses through sampling; rewards and advantages drive the task update, and regularization adds an auxiliary preference. Their combined update generates the next rollout batch."></a></p>
+<p><em>Figure 2. Three intervention points in the RL feedback loop. Blue changes the sampled evidence, orange changes how task feedback is used, and purple adds a preference beyond task reward. The updated policy closes the loop.</em></p>
+<p>They are not interchangeable entropy controllers. A sampling change may improve reward comparisons without increasing model entropy; an update change may preserve useful gradients without specifying any target entropy.</p>
+</section>
+</section>
+<section id="task-update" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="task-update"><span class="header-section-number">3</span> Shaping the policy update</h2>
+<p>A rare successful response is useful only if its feedback can change the policy. Clipping, normalization, and selection determine how much of that feedback survives. They can also change how aggressively already common behavior is reinforced.</p>
+<section id="ppo-and-dapo-retaining-useful-positive-updates" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="ppo-and-dapo-retaining-useful-positive-updates"><span class="header-section-number">3.1</span> PPO and DAPO: retaining useful positive updates</h3>
+<p>Let <span class="math inline">\(\pi_{\mathrm{old}}\)</span> be the frozen old-policy anchor and define the recorded-token ratio</p>
+<p><span id="eq-importance-ratio"><span class="math display">\[
+r(\theta)=\frac{\pi_\theta(a\mid s)}{\pi_{\mathrm{old}}(a\mid s)}.
+\tag{10}\]</span></span></p>
+<p>For this comparison, assume the rollout sampler uses the same old-policy distribution as the denominator. Temperature or filtering can break that match, as discussed in <a href="#collection">rollout sampling</a>. With a detached advantage, the maximized PPO term is</p>
+<p><span id="eq-ppo-objective"><span class="math display">\[
+u_{\mathrm{PPO}}
+=\min\!\left(r\hat A,\operatorname{clip}(r,\ell,h)\hat A\right),
+\qquad
+\ell=1-\epsilon_{\mathrm{low}},\quad h=1+\epsilon_{\mathrm{high}}.
+\tag{11}\]</span></span></p>
+<p>On an active branch, <span class="math inline">\(\nabla_\theta r=r\nabla_\theta\log\pi_\theta(a\mid s)\)</span>. On a flat branch, the direct derivative vanishes. Thus, away from boundaries,</p>
+<p><span id="eq-ppo-gradient"><span class="math display">\[
+\nabla_\theta u_{\mathrm{PPO}}
+=
+\begin{cases}
+r\hat A\,\nabla_\theta\log\pi_\theta(a\mid s),
+&amp;\hat A&gt;0,\ r&lt;h,\\
+r\hat A\,\nabla_\theta\log\pi_\theta(a\mid s),
+&amp;\hat A&lt;0,\ r&gt;\ell,\\
+0,&amp;\text{otherwise}.
+\end{cases}
+\tag{12}\]</span></span></p>
+<p>Clipping removes a token’s direct contribution, rather than imposing a hard constraint on its probability. Other loss terms still move shared parameters. <a href="https://arxiv.org/abs/1707.06347">[2]</a></p>
+<p>The DAPO authors motivate Clip-Higher with entropy collapse and nearly identical sampled responses observed in their training runs. Raising the upper threshold retains positive-advantage gradients over a wider range. Its reported bounds use <span class="math inline">\(\epsilon_{\mathrm{low}}=0.2\)</span> and <span class="math inline">\(\epsilon_{\mathrm{high}}=0.28\)</span>. <a href="https://arxiv.org/html/2503.14476v1">[3]</a></p>
+<p>For an old probability of <span class="math inline">\(0.01\)</span>, a ratio threshold of <span class="math inline">\(1.2\)</span> is reached at <span class="math inline">\(0.012\)</span>: a small absolute increase before that positive term becomes flat. Widening the threshold gives a rare successful token more room to learn. It also retains gradients for common successful tokens; the mechanism enables learning rather than directly maximizing entropy.</p>
+<p>At the first matched-policy update, with identical scoring/execution, all ratios are 1 and ordinary clipping is inactive. After one optimizer step, ratios for the remaining rollout data can differ from 1, even if those responses have not yet contributed to an update. Multiple optimizer minibatches and repeated epochs both create policy drift relative to the frozen anchor. Physical gradient accumulation does not: parameters remain fixed until the optimizer step.</p>
+</section>
+<section id="cispo-cap-the-weight-keep-the-gradient" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="cispo-cap-the-weight-keep-the-gradient"><span class="header-section-number">3.2</span> CISPO: cap the weight, keep the gradient</h3>
+<p>MiniMax-M1 addresses the loss of token contributions differently. CISPO detaches the clipped ratio and multiplies it by a live log-probability:</p>
+<p><span id="eq-cispo-objective"><span class="math display">\[
+u_{\mathrm{CISPO}}
+=\operatorname{sg}\!\left[\operatorname{clip}(r,\ell,h)\right]
+\hat A\log\pi_\theta(a\mid s).
+\tag{13}\]</span></span></p>
+<p>Consequently,</p>
+<p><span id="eq-cispo-gradient"><span class="math display">\[
+\nabla_\theta u_{\mathrm{CISPO}}
+=\operatorname{clip}(r,\ell,h)\hat A
+\nabla_\theta\log\pi_\theta(a\mid s).
+\tag{14}\]</span></span></p>
+<p>Beyond the upper threshold, the weight stops growing but the score gradient remains. The report’s experiments use no restrictive lower bound on the importance weight. Removing the stop-gradient would introduce an extra derivative through <span class="math inline">\(r\)</span>, defining a different update. <a href="https://arxiv.org/html/2506.13585v1">[4]</a></p>
+<p>Figure 3 compares the positive-advantage branches of <a href="#eq-ppo-gradient" class="quarto-xref">Equation&nbsp;12</a> and <a href="#eq-cispo-gradient" class="quarto-xref">Equation&nbsp;14</a> over a range of ratios. At <span class="math inline">\(r=1.25\)</span>, their coefficients are 0, 1.25, and 1.2 respectively.</p>
+<p><a class="diagram-link" href="images/gradient-coefficients.svg" target="_blank" rel="noopener" aria-label="Open Figure 3 at full size"><img src="images/gradient-coefficients.svg" alt="Three analytical panels with shared scales: PPO drops its positive-advantage gradient coefficient to zero above ratio 1.2; Clip-Higher does so above 1.28; CISPO retains a coefficient capped at 1.2. At ratio 1.25 the coefficients are zero, 1.25, and 1.2."></a></p>
+<p><em>Figure 3. Analytical score-gradient coefficients for a positive advantage of +1—not objective values or measured training curves. Clipping thresholds are illustrative comparison settings. Open circles mark the undefined derivatives at PPO branch boundaries; the detached CISPO weight remains active at its cap.</em></p>
+<details class="figure-data">
+<summary>
+Numerical comparison at ratio 1.25
+</summary>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Update rule</th>
+<th style="text-align: left;">Coefficient on the token score gradient</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">PPO, upper threshold 1.2</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Clip-Higher, upper threshold 1.28</td>
+<td style="text-align: left;">1.25</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CISPO, upper cap 1.2</td>
+<td style="text-align: left;">1.2</td>
+</tr>
+</tbody>
+</table>
+</details>
+<p>This comparison separates three behaviors: remove the contribution, delay its removal, or retain it with a capped weight. None determines entropy direction without knowing which actions receive those gradients.</p>
+</section>
+<section id="weighting-and-selection-are-related-but-distinct" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="weighting-and-selection-are-related-but-distinct"><span class="header-section-number">3.3</span> Weighting and selection are related, but distinct</h3>
+<p>Normalization changes which samples dominate even before clipping. Dr.&nbsp;GRPO removes group standard-deviation scaling and response-length normalization, using fixed normalization instead. DAPO retains standardized advantages and aggregates at token level. Their effects on gradient balance should not be conflated with explicit entropy regularization. <a href="https://arxiv.org/html/2503.20783v2">[7]</a>; <a href="https://arxiv.org/html/2503.14476v1">[3]</a></p>
+<p>Other methods refine the unit or location of control:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Design</th>
+<th style="text-align: left;">What changes</th>
+<th style="text-align: left;">Connection to entropy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">GSPO <a href="https://arxiv.org/html/2507.18071v2">[9]</a></td>
+<td style="text-align: left;">Clips using a length-normalized sequence ratio</td>
+<td style="text-align: left;">Changes response-level eligibility rather than token-level eligibility</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Positive-Advantage Reweighting <a href="https://arxiv.org/html/2511.05993v3">[10]</a></td>
+<td style="text-align: left;">Rescales retained positive feedback</td>
+<td style="text-align: left;">Changes reinforcement relative to negative feedback</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">High-entropy position selection <a href="https://arxiv.org/html/2506.01939v1">[11]</a></td>
+<td style="text-align: left;">Applies task gradients at uncertain positions</td>
+<td style="text-align: left;">Allocates learning using current uncertainty</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Clip-Cov / KL-Cov <a href="https://arxiv.org/html/2505.22617v1">[5]</a></td>
+<td style="text-align: left;">Suppresses or constrains selected updates with high batch covariance scores</td>
+<td style="text-align: left;">Targets a proxy for concentration-driving feedback</td>
+</tr>
+</tbody>
+</table>
+<p>These are complementary research directions, not equivalent formulas for preserving diversity. In particular, high-entropy selection reinforces rewarded actions at selected positions; it does not require those positions to remain uncertain. Covariance-based methods use sampled-token batch statistics, not the exact fixed-prefix vocabulary covariance derived above. A masked token also remains part of the context and can change through shared parameters.</p>
+<p>The common lesson is narrower: entropy can change because the task update changed, even with no entropy bonus. Whether that change helps depends on the useful feedback retained and the learning outcomes that follow.</p>
+</section>
+</section>
+<section id="regularization" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="regularization"><span class="header-section-number">4</span> Entropy regularization: bonuses, targets, and feedback</h2>
+<p>Update rules reshape reward-driven learning. An explicit regularizer adds another preference. This can counter premature concentration, but it can also compete with making correct behavior reliable.</p>
+<section id="a-bonus-changes-the-optimum" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="a-bonus-changes-the-optimum"><span class="header-section-number">4.1</span> A bonus changes the optimum</h3>
+<p>On a fixed batch of recorded prefixes, consider</p>
+<p><span id="eq-entropy-bonus"><span class="math display">\[
+J(\theta)=J_{\mathrm{task}}(\theta)+\alpha\bar H(\theta),
+\qquad \alpha\ge0.
+\tag{15}\]</span></span></p>
+<p>For two actions, with reward 1 for <span class="math inline">\(A\)</span> and 0 for <span class="math inline">\(B\)</span>, write <span class="math inline">\(p=P(A)\)</span>:</p>
+<p><span class="math display">\[
+J(p)=p+\alpha[-p\log p-(1-p)\log(1-p)].
+\]</span></p>
+<p>For <span class="math inline">\(\alpha&gt;0\)</span>, the stationary point satisfies</p>
+<p><span id="eq-regularized-optimum"><span class="math display">\[
+\frac{dJ}{dp}
+=1+\alpha\log\frac{1-p}{p}=0,
+\qquad
+p^*=\operatorname{sigmoid}(1/\alpha).
+\tag{16}\]</span></span></p>
+<p>The second derivative is <span class="math inline">\(-\alpha/[p(1-p)]&lt;0\)</span>, so this is the unique interior maximum. At <span class="math inline">\(\alpha=1\)</span>, <span class="math inline">\(p^*\approx0.7311\)</span>, rather than 1. For reward gap <span class="math inline">\(\Delta R\)</span>, the argument becomes <span class="math inline">\(\Delta R/\alpha\)</span>.</p>
+<p>The bonus trades immediate reward for stochasticity. In online RL, that stochasticity can improve later data collection, but the fixed-prefix objective does not include every effect on future visited states. Sequential maximum-entropy RL, as developed in SAC, accounts for future entropy in its return/value construction. That is a useful foundation, not an equivalence between an LLM auxiliary loss and the full SAC algorithm. <a href="https://arxiv.org/html/1812.05905v2">[8]</a></p>
+<p>The logit-space gradient also weakens near determinism. With <span class="math inline">\(p=\operatorname{sigmoid}(d)\)</span>,</p>
+<p><span id="eq-binary-entropy-gradient"><span class="math display">\[
+\frac{dH}{dd}
+=\frac{dH}{dp}\frac{dp}{dd}
+=\log\frac{1-p}{p}\,p(1-p).
+\tag{17}\]</span></span></p>
+<p>It approaches zero as <span class="math inline">\(p\)</span> approaches either boundary. The reward gradient also vanishes in this parameterization. For reward gap <span class="math inline">\(\Delta R\)</span>, <span class="math inline">\(J(d)=R_B+\Delta R\,p(d)+\alpha H(p(d))\)</span>, so</p>
+<p><span id="eq-saturated-objective-gradient"><span class="math display">\[
+\frac{dJ}{dd}
+=p(1-p)\bigl(\Delta R-\alpha d\bigr).
+\tag{18}\]</span></span></p>
+<p>Here <span class="math inline">\(\log((1-p)/p)=-d\)</span>. For fixed <span class="math inline">\(\alpha&gt;0\)</span> and nonzero <span class="math inline">\(\Delta R\)</span>, the entropy contribution relative to the reward contribution has magnitude <span class="math inline">\(\alpha|d|/|\Delta R|\)</span>, which grows with saturation. Both absolute contributions nevertheless approach zero. Recovery from a saturated decision can therefore be slow even when the entropy term dominates the direction of the update.</p>
+</section>
+<section id="a-fixed-coefficient-has-changing-influence" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="a-fixed-coefficient-has-changing-influence"><span class="header-section-number">4.2</span> A fixed coefficient has changing influence</h3>
+<p>Under a small plain-ascent step on the fixed-batch objective,</p>
+<p><span class="math display">\[
+\Delta\theta=\eta\left(\nabla J_{\mathrm{task}}+\alpha\nabla\bar H\right).
+\]</span></p>
+<p>Substituting this into the first-order entropy expansion gives</p>
+<p><span id="eq-task-bonus-balance"><span class="math display">\[
+\Delta\bar H
+\approx
+\eta\,\nabla\bar H^\top\nabla J_{\mathrm{task}}
++\eta\alpha\|\nabla\bar H\|^2.
+\tag{19}\]</span></span></p>
+<p>The first term in <a href="#eq-task-bonus-balance" class="quarto-xref">Equation&nbsp;19</a> can increase or decrease entropy. The second is nonnegative. Their balance changes with the reward signal, clipping, selected samples, and the policy itself.</p>
+<p>For example, if useful task-gradient contributions disappear while the entropy term remains active, the bonus can become relatively dominant without any change in <span class="math inline">\(\alpha\)</span>. This supplies a mechanism for changing training behavior at a fixed coefficient, not a diagnosis of every rising curve. With Adam, the relevant expression remains <span class="math inline">\(\nabla\bar H^\top\Delta\theta\)</span>; preconditioning and momentum prevent directly reading the outcome from the two raw gradient norms.</p>
+<p>A fixed-reference KL penalty adds a different preference: proximity to the reference. Only for a uniform reference does <span class="math inline">\(-D_{\mathrm{KL}}(p\|q)\)</span> equal entropy plus a constant. A concentrated reference can instead pull the policy toward lower entropy. Reference anchoring and entropy encouragement should remain separate design choices.</p>
+</section>
+<section id="feedback-control-instead-of-a-fixed-bonus" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="feedback-control-instead-of-a-fixed-bonus"><span class="header-section-number">4.3</span> Feedback control instead of a fixed bonus</h3>
+<p>Skywork’s pinned controller increases a stored coefficient when its monitored metric is below target and decreases it otherwise, subject to bounds. A separate gate disables the bonus above target. The driver updates this state after the actor update. <a href="https://github.com/SkyworkAI/Skywork-OR1/blob/64e96afa213ae89d0ad21932106d3b8aafe9ace2/verl/trainer/ppo/core_algos.py#L52-L69">[14]</a>; <a href="https://github.com/SkyworkAI/Skywork-OR1/blob/64e96afa213ae89d0ad21932106d3b8aafe9ace2/verl/trainer/ppo/ray_trainer.py#L1148-L1169">[15]</a></p>
+<p>Writing the observed metric as <span class="math inline">\(e_k\)</span>, target as <span class="math inline">\(h_*\)</span>, and stored state as <span class="math inline">\(c_k\)</span>:</p>
+<p><span id="eq-controller-state"><span class="math display">\[
+c_{k+1}
+=\operatorname{clip}\left(c_k+\delta d_k,c_{\min},c_{\max}\right),
+\qquad
+d_k=
+\begin{cases}
++1,&amp;e_k&lt;h_*,\\
+-1,&amp;e_k\ge h_*,
+\end{cases}
+\tag{20}\]</span></span></p>
+<p><span id="eq-controller-gate"><span class="math display">\[
+\alpha_{k+1}=c_{k+1}\mathbf 1[e_k&lt;h_*].
+\tag{21}\]</span></span></p>
+<p>This controller has memory: identical observations can produce different applied coefficients depending on prior state. It also acts with delay and competes with the task update. The target is therefore not a hard entropy bound.</p>
+<p>In the linked Skywork-OR1 code commit, the monitored value comes from negative old sampled-token log-probabilities, whereas the actor’s differentiable term uses categorical entropy. The observation and gradient are distinct objects. <a href="https://github.com/SkyworkAI/Skywork-OR1/blob/64e96afa213ae89d0ad21932106d3b8aafe9ace2/verl/workers/actor/dp_actor.py#L179-L256">[16]</a></p>
+<p>With nonnegative coefficients, the controller can stop encouraging entropy but cannot actively penalize excess entropy. SIREN illustrates a two-sided alternative: it selects high-entropy positions using probabilities renormalized inside a nucleus, then penalizes deviation of their mean entropy from an initial anchor. <a href="https://arxiv.org/html/2509.25133v1">[12]</a></p>
+<p>For a selected mean <span class="math inline">\(\bar H_{\mathrm{sel}}\)</span>, its penalty has the form <span class="math inline">\(-\lambda(\bar H_{\mathrm{sel}}-H_a)^2\)</span>. Holding selections fixed locally, its gradient is <span class="math inline">\(-2\lambda(\bar H_{\mathrm{sel}}-H_a)\nabla\bar H_{\mathrm{sel}}\)</span>. The sign reverses above the anchor. This is a targeted research extension, not evidence that the initial entropy is optimal throughout training.</p>
+<p>The choice is thus not simply “more or less entropy loss.” It includes which distribution and positions receive pressure, whether the pressure can reverse, and how its strength changes over time.</p>
+</section>
+</section>
+<section id="collection" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="collection"><span class="header-section-number">5</span> Exploration through rollout sampling</h2>
+<p>Neither a better update rule nor a stronger regularizer supplies the reward of a response that was never generated. Sampling interventions address that missing evidence. Their immediate target is the next batch, not necessarily the model’s entropy.</p>
+<section id="temperature-changes-proposals-not-weights" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="temperature-changes-proposals-not-weights"><span class="header-section-number">5.1</span> Temperature changes proposals, not weights</h3>
+<p>For fixed logits and an untruncated vocabulary, temperature <span class="math inline">\(\tau&gt;0\)</span> defines</p>
+<p><span id="eq-temperature-policy"><span class="math display">\[
+b_\tau(i)=\frac{\exp(z_i/\tau)}{Z(\tau)},
+\qquad
+H(b_\tau)=\log Z(\tau)-\frac{\mathbb E_{b_\tau}[z]}{\tau}.
+\tag{22}\]</span></span></p>
+<p>The two derivatives needed to differentiate the entropy are</p>
+<p><span class="math display">\[
+\frac{d\log Z}{d\tau}
+=-\frac{\mathbb E_{b_\tau}[z]}{\tau^2},
+\qquad
+\frac{d\mathbb E_{b_\tau}[z]}{d\tau}
+=-\frac{\operatorname{Var}_{b_\tau}(z)}{\tau^2}.
+\]</span></p>
+<p>The mean terms cancel, giving</p>
+<p><span id="eq-temperature-entropy"><span class="math display">\[
+\frac{dH(b_\tau)}{d\tau}
+=\frac{\operatorname{Var}_{b_\tau}(z)}{\tau^3}\ge0.
+\tag{23}\]</span></span></p>
+<p>For raw probabilities <span class="math inline">\((0.8,0.2)\)</span>, temperature 2 produces <span class="math inline">\((2/3,1/3)\)</span> and increases sampler entropy from <span class="math inline">\(0.5004\)</span> to <span class="math inline">\(0.6365\)</span>. The model parameters have not changed. Subsequent training depends on what those new samples reveal; <a href="#eq-temperature-entropy" class="quarto-xref">Equation&nbsp;23</a> says nothing about whether they improve reward.</p>
+<p>Temperature also changes the policy-matching assumption in <a href="#task-update">the PPO comparison</a>. Suppose the old raw policy is <span class="math inline">\(\pi_{\mathrm{old}}\)</span>, but sampling uses its temperature-transformed distribution <span class="math inline">\(b_{\tau,\mathrm{old}}\)</span>. At a fixed prefix, the raw-policy ratio alone omits a behavior correction:</p>
+<p><span id="eq-sampler-policy-ratios"><span class="math display">\[
+\frac{\pi_\theta(a\mid s)}{b_{\tau,\mathrm{old}}(a\mid s)}
+=
+\underbrace{\frac{\pi_{\mathrm{old}}(a\mid s)}
+{b_{\tau,\mathrm{old}}(a\mid s)}}_{\text{sampling correction}}
+\underbrace{\frac{\pi_\theta(a\mid s)}
+{\pi_{\mathrm{old}}(a\mid s)}}_{\text{policy update ratio}}.
+\tag{24}\]</span></span></p>
+<p>For a corresponding unclipped expectation, the first factor restores sampling under the old raw policy, provided the behavior distribution covers its support. Alternatively, sampling and scoring can consistently use temperature-transformed policies, which changes the policy objective. Using raw-policy scores with transformed sampling and no correction generally accepts bias.</p>
+<p>For a full-response expectation, exact correction uses the product of conditional behavior ratios along the response; earlier token choices also change which prefixes appear. A single token’s conditional ratio does not generally correct that prefix distribution. Truncating importance weights trades bias for variance control, while top-<span class="math inline">\(p\)</span> filtering can remove support needed for exact correction. These issues are separate from PPO’s clipping of the update ratio. EAD’s Appendix B discusses the sampling mismatch and its truncated correction. <a href="https://arxiv.org/html/2510.05251v1">[13]</a></p>
+<p>The Nemotron-Cascade report compares temperatures 0.6, 0.8, and 1.0 in an 8B code-RL ablation. In those runs, lower temperatures produce more stable entropy curves but worse code-reasoning performance than higher-temperature settings; higher settings can also become unstable. This is evidence for a collection trade-off, not a universal best temperature. <a href="https://arxiv.org/html/2512.13607v1">[6]</a></p>
+<p>EAD explores a finer-grained version: a position-dependent schedule favors exploration early in a response and more focused continuation later. It includes truncated importance correction for the changed behavior distribution. That is an empirical sampling design, not a theorem that uncertainty must decrease with response position. <a href="https://arxiv.org/html/2510.05251v1">[13]</a></p>
+<p>These changes also affect interpretation of logged entropy. The model distribution, temperature-transformed sampler, and sampled-token surprisal are different quantities. Top-<span class="math inline">\(p\)</span> filtering can additionally change support, outside the fixed-support derivative above. Their measurement distinction is summarized in the <a href="#measurement">technical note</a>.</p>
+</section>
+<section id="group-sampling-must-produce-reward-contrast" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="group-sampling-must-produce-reward-contrast"><span class="header-section-number">5.2</span> Group sampling must produce reward contrast</h3>
+<p>In group-relative outcome training, an all-equal-reward group has zero centered task advantages. More responses can reveal a contrast, but their value depends on the prompt’s success probability.</p>
+<p>For binary rewards with IID success probability <span class="math inline">\(p\)</span>, the chance of at least one success and one failure among <span class="math inline">\(G\)</span> responses is</p>
+<p><span id="eq-mixed-group"><span class="math display">\[
+P_{\mathrm{mixed}}=1-p^G-(1-p)^G.
+\tag{25}\]</span></span></p>
+<p>At <span class="math inline">\(p=0.01\)</span>, this probability rises from <span class="math inline">\(7.73\%\)</span> for 8 responses to <span class="math inline">\(47.44\%\)</span> for 64. That costs eight times as many responses for about a sixfold increase in the chance of obtaining a mixed group. The probability of obtaining a signal and its efficiency per generated token are different objectives.</p>
+<p>DAPO filters groups without reward variation and samples further to fill the training batch. This improves the availability of centered reward comparisons; rejected generation still consumes resources, and filtering changes which prompts contribute. <a href="https://arxiv.org/html/2503.14476v1">[3]</a></p>
+<p>All-correct and all-incorrect groups therefore deserve different interpretations. The former can indicate that a prompt is already easy under the sampler. The latter can indicate that useful responses remain inaccessible. Both lack within-group contrast, but they do not call for the same sampling change.</p>
+<p>Sampling methods are useful when they expose reward-bearing alternatives at an acceptable cost. Increasing randomness indiscriminately can instead turn a batch into uniformly poor responses. The relevant outcome is improved training evidence, not the sampler entropy increase by itself.</p>
+</section>
+</section>
+<section id="outcomes" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="outcomes"><span class="header-section-number">6</span> What better entropy dynamics should achieve</h2>
+<p>The three intervention points address different limitations: policy-update rules preserve or rebalance feedback, regularization changes concentration pressure, and sampling changes the evidence available. Their value should be judged by whether learning becomes more effective under a stated compute budget.</p>
+<p>One useful distinction is between getting a correct answer on the first attempt and finding one within several attempts. Consider two equally weighted questions, evaluated with the same decoding settings before and after training. Suppose training improves Question 1 but hurts Question 2:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Probability that one sampled answer is correct</th>
+<th style="text-align: left;">Before</th>
+<th style="text-align: left;">After</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Question 1</td>
+<td style="text-align: left;">60%</td>
+<td style="text-align: left;">85%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Question 2</td>
+<td style="text-align: left;">20%</td>
+<td style="text-align: left;">5%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Mean Pass@1</td>
+<td style="text-align: left;">40%</td>
+<td style="text-align: left;">45%</td>
+</tr>
+</tbody>
+</table>
+<p>The gain on Question 1 outweighs the loss on Question 2, so average single-attempt accuracy rises from <span class="math inline">\((60\%+20\%)/2=40\%\)</span> to <span class="math inline">\((85\%+5\%)/2=45\%\)</span>.</p>
+<p>Now allow eight independent attempts per question and count a question as solved if at least one answer is correct. For a fixed question <span class="math inline">\(x\)</span> with single-attempt success probability <span class="math inline">\(p_x\)</span>, all <span class="math inline">\(k\)</span> attempts fail with probability <span class="math inline">\((1-p_x)^k\)</span>. Therefore,</p>
+<p><span id="eq-pass-k"><span class="math display">\[
+\operatorname{Pass@}k(x)=1-(1-p_x)^k.
+\tag{26}\]</span></span></p>
+<p>Here Pass@8 measures success within eight attempts; it differs from the average correctness of eight answers, such as the avg@8 metric in Figure 1. Applying <a href="#eq-pass-k" class="quarto-xref">Equation&nbsp;26</a> gives:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Probability of at least one correct answer within eight attempts</th>
+<th style="text-align: left;">Before</th>
+<th style="text-align: left;">After</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Question 1</td>
+<td style="text-align: left;">99.93%</td>
+<td style="text-align: left;">Almost 100%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Question 2</td>
+<td style="text-align: left;">83.22%</td>
+<td style="text-align: left;">33.66%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Mean Pass@8</td>
+<td style="text-align: left;">91.58%</td>
+<td style="text-align: left;">66.83%</td>
+</tr>
+</tbody>
+</table>
+<p>Question 1 was already almost certain to be solved within eight attempts, so its improvement adds little to Pass@8. Question 2 loses much of its chance of being solved. The average eight-attempt success rate therefore falls even though average single-attempt accuracy rises. At either question individually, Pass@1 and Pass@8 still move in the same direction.</p>
+<p><em>Calculated example assuming independent, identically distributed attempts at each question and checkpoint. The probabilities are hypothetical; no entropy change is assumed.</em></p>
+<p>For an entropy intervention, this example motivates checking both single-attempt performance and success under repeated sampling. It does not establish that maintaining entropy preserves either metric. That requires comparing actual outcomes under matched evaluation conditions and comparable training budgets. Keep prompts, decoding settings, per-response token budgets, and verification fixed, and inspect per-question gains and losses alongside averages.</p>
+<p>Entropy supplies another view, but it is not strategy coverage. More uncertain wording can increase entropy without producing a new approach; making settled steps more deterministic can decrease it while preserving the important branching decisions. Useful exploration is established by valid alternatives and subsequent learning gains, not string variation alone.</p>
+<p>The same qualification applies to the training curve’s population. As <a href="#eq-logged-entropy-change" class="quarto-xref">Equation&nbsp;9</a> shows, fresh-rollout entropy combines changes in conditional distributions with changes in measured prefixes. Keep response-length weighting and reduction consistent, and use fixed-prefix measurements alongside fresh rollouts to distinguish those effects.</p>
+<p>Healthy concentration makes correct behavior reliable while training continues to obtain useful evidence. Unhealthy concentration closes off that evidence prematurely; unproductive dispersion spends sampling budget without improving it. No single entropy threshold separates these regimes across models and tasks.</p>
+<p>Controlling entropy is one way to influence this process. The stronger objective is to preserve effective learning: reinforce what works, keep promising alternatives reachable, and spend generation on comparisons from which the policy can improve.</p>
+</section>
+<section id="measurement" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="measurement">Technical note: entropy values and entropy gradients</h2>
+<p>If <span class="math inline">\(a\sim p_\theta\)</span>, sampled surprisal <span class="math inline">\(-\log p_\theta(a)\)</span> is an unbiased entropy estimate. If samples instead come from <span class="math inline">\(b\)</span>, then</p>
+<p><span id="eq-sampled-cross-entropy"><span class="math display">\[
+\mathbb E_{a\sim b}[-\log p_\theta(a)]
+=H(b)+D_{\mathrm{KL}}(b\|p_\theta).
+\tag{27}\]</span></span></p>
+<p>This KL term describes a measurement mismatch. It is not a reference-KL penalty in the training objective.</p>
+<p>An unbiased value estimate also does not automatically give an unbiased gradient. Treating the sampled action as fixed yields <span class="math inline">\(\mathbb E_{a\sim p_\theta}[-\nabla_\theta\log p_\theta(a)]=0\)</span>, whereas differentiating entropy, including the sampling distribution, gives</p>
+<p><span id="eq-entropy-score-gradient"><span class="math display">\[
+\nabla_\theta H(p_\theta)
+=-\mathbb E_{a\sim p_\theta}
+\left[(\log p_\theta(a)+1)\nabla_\theta\log p_\theta(a)\right].
+\tag{28}\]</span></span></p>
+<p>Categorical entropy can be differentiated directly. A sampled estimator needs the appropriate score-function weighting; merely backpropagating negative sampled log-probability does not implement the entropy gradient.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div class="references-list">
+<ol type="1">
+<li>He, J. et al.&nbsp;(2025). <em>Skywork Open Reasoner 1 Technical Report.</em> <a href="https://arxiv.org/html/2505.22312v2">arXiv:2505.22312v2</a></li>
+<li>Schulman, J. et al.&nbsp;(2017). <em>Proximal Policy Optimization Algorithms.</em> <a href="https://arxiv.org/abs/1707.06347">arXiv:1707.06347</a></li>
+<li>Yu, Q. et al.&nbsp;(2025). <em>DAPO: An Open-Source LLM Reinforcement Learning System at Scale.</em> <a href="https://arxiv.org/html/2503.14476v1">arXiv:2503.14476v1</a></li>
+<li>MiniMax (2025). <em>MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention.</em> <a href="https://arxiv.org/html/2506.13585v1">arXiv:2506.13585v1</a></li>
+<li>Cui, G. et al.&nbsp;(2025). <em>The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models.</em> <a href="https://arxiv.org/html/2505.22617v1">arXiv:2505.22617v1</a></li>
+<li>Wang, B. et al.&nbsp;(2025). <em>Nemotron-Cascade: Scaling Cascaded Reinforcement Learning for General-Purpose Reasoning Models.</em> <a href="https://arxiv.org/html/2512.13607v1">arXiv:2512.13607v1</a></li>
+<li>Liu, Z. et al.&nbsp;(2025). <em>Understanding R1-Zero-Like Training: A Critical Perspective.</em> <a href="https://arxiv.org/html/2503.20783v2">arXiv:2503.20783v2</a></li>
+<li>Haarnoja, T. et al.&nbsp;(2018). <em>Soft Actor-Critic Algorithms and Applications.</em> <a href="https://arxiv.org/html/1812.05905v2">arXiv:1812.05905v2</a></li>
+<li>Zheng, C. et al.&nbsp;(2025). <em>Group Sequence Policy Optimization.</em> <a href="https://arxiv.org/html/2507.18071v2">arXiv:2507.18071v2</a></li>
+<li>Jin, R. et al.&nbsp;(2025). <em>Revisiting Entropy in Reinforcement Learning for Large Reasoning Models.</em> <a href="https://arxiv.org/html/2511.05993v3">arXiv:2511.05993v3</a></li>
+<li>Wang, S. et al.&nbsp;(2025). <em>Beyond the 80/20 Rule: High-Entropy Minority Tokens Drive Effective Reinforcement Learning for LLM Reasoning.</em> <a href="https://arxiv.org/html/2506.01939v1">arXiv:2506.01939v1</a></li>
+<li>Jiang, Y. et al.&nbsp;(2025). <em>Rethinking Entropy Regularization in Large Reasoning Models.</em> <a href="https://arxiv.org/html/2509.25133v1">arXiv:2509.25133v1</a></li>
+<li>Yang, C. et al.&nbsp;(2025). <em>Let it Calm: Exploratory Annealed Decoding for Verifiable Reinforcement Learning.</em> <a href="https://arxiv.org/html/2510.05251v1">arXiv:2510.05251v1</a></li>
+<li>SkyworkAI. <em>Skywork-OR1 adaptive entropy controller.</em> <a href="https://github.com/SkyworkAI/Skywork-OR1/blob/64e96afa213ae89d0ad21932106d3b8aafe9ace2/verl/trainer/ppo/core_algos.py#L52-L69">GitHub, pinned commit</a></li>
+<li>SkyworkAI. <em>Skywork-OR1 actor-update and controller timing.</em> <a href="https://github.com/SkyworkAI/Skywork-OR1/blob/64e96afa213ae89d0ad21932106d3b8aafe9ace2/verl/trainer/ppo/ray_trainer.py#L1148-L1169">GitHub, pinned commit</a></li>
+<li>SkyworkAI. <em>Skywork-OR1 entropy metric and actor regularizer.</em> <a href="https://github.com/SkyworkAI/Skywork-OR1/blob/64e96afa213ae89d0ad21932106d3b8aafe9ace2/verl/workers/actor/dp_actor.py#L179-L256">GitHub, pinned commit</a></li>
+</ol>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/zhoutongfu\.github\.io\/zhoutong-ai-blog\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

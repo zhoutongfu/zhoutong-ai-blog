@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="470" viewBox="0 0 1080 470" role="img" aria-labelledby="title desc">
+<title id="title">Remove the contribution or cap its weight?</title><desc id="desc">Analytical positive-advantage gradient coefficients. PPO is r below 1.2 and zero above; Clip-Higher is r below 1.28 and zero above; CISPO is min(r,1.2) over the displayed range. At ratio 1.25 the coefficients are 0, 1.25, and 1.2. Threshold settings are illustrative.</desc>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}</style>
+<rect width="1080" height="470" fill="white"/>
+<text x="540" y="34" font-size="23" fill="#0f172a" text-anchor="middle" font-weight="650">Remove the contribution—or cap its weight?</text>
+<text x="540" y="61" font-size="16" fill="#334155" text-anchor="middle" font-weight="400">Coefficient on the token score gradient · positive advantage = +1</text>
+<text x="200.0" y="105" font-size="20" fill="#2563a6" text-anchor="middle" font-weight="650">PPO</text>
+<text x="200.0" y="130" font-size="15" fill="#334155" text-anchor="middle" font-weight="400">Flat branch above 1.20</text>
+<path d="M65 350.0H335" stroke="#e2e8f0"/>
+<text x="55" y="355.0" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0</text>
+<path d="M65 295.7142857142857H335" stroke="#e2e8f0"/>
+<text x="55" y="300.7142857142857" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0.4</text>
+<path d="M65 241.42857142857142H335" stroke="#e2e8f0"/>
+<text x="55" y="246.42857142857142" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0.8</text>
+<path d="M65 187.14285714285714H335" stroke="#e2e8f0"/>
+<text x="55" y="192.14285714285714" font-size="13" fill="#334155" text-anchor="end" font-weight="400">1.2</text>
+<path d="M65.0 350v5" stroke="#94a3b8"/>
+<text x="65.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">0.8</text>
+<path d="M132.5 350v5" stroke="#94a3b8"/>
+<text x="132.5" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1</text>
+<path d="M199.99999999999997 350v5" stroke="#94a3b8"/>
+<text x="199.99999999999997" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.2</text>
+<path d="M267.49999999999994 350v5" stroke="#94a3b8"/>
+<text x="267.49999999999994" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.4</text>
+<path d="M335.0 350v5" stroke="#94a3b8"/>
+<text x="335.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.6</text>
+<path d="M65 160V350H335" fill="none" stroke="#94a3b8"/>
+<path d="M216.87499999999997 160V350" stroke="#94a3b8" stroke-dasharray="3 5"/>
+<path d="M65.0 241.42857142857142L199.99999999999997 187.14285714285714" fill="none" stroke="#2563a6" stroke-width="3.5" stroke-dasharray=""/>
+<path d="M199.99999999999997 350.0H335.0" fill="none" stroke="#2563a6" stroke-width="3.5" stroke-dasharray=""/>
+<circle cx="199.99999999999997" cy="187.14285714285714" r="4.5" fill="white" stroke="#2563a6" stroke-width="2"/>
+<circle cx="199.99999999999997" cy="350.0" r="4.5" fill="white" stroke="#2563a6" stroke-width="2"/>
+<circle cx="216.87499999999997" cy="350.0" r="5" fill="#2563a6"/>
+<text x="230.87499999999997" y="337.0" font-size="17" fill="#2563a6" text-anchor="start" font-weight="650">0</text>
+<text x="200.0" y="406" font-size="15" fill="#334155" text-anchor="middle" font-weight="400">Probability ratio r</text>
+<text x="545.0" y="105" font-size="20" fill="#b95b12" text-anchor="middle" font-weight="650">Clip-Higher</text>
+<text x="545.0" y="130" font-size="15" fill="#334155" text-anchor="middle" font-weight="400">Flat branch above 1.28</text>
+<path d="M410 350.0H680" stroke="#e2e8f0"/>
+<text x="400" y="355.0" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0</text>
+<path d="M410 295.7142857142857H680" stroke="#e2e8f0"/>
+<text x="400" y="300.7142857142857" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0.4</text>
+<path d="M410 241.42857142857142H680" stroke="#e2e8f0"/>
+<text x="400" y="246.42857142857142" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0.8</text>
+<path d="M410 187.14285714285714H680" stroke="#e2e8f0"/>
+<text x="400" y="192.14285714285714" font-size="13" fill="#334155" text-anchor="end" font-weight="400">1.2</text>
+<path d="M410.0 350v5" stroke="#94a3b8"/>
+<text x="410.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">0.8</text>
+<path d="M477.5 350v5" stroke="#94a3b8"/>
+<text x="477.5" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1</text>
+<path d="M545.0 350v5" stroke="#94a3b8"/>
+<text x="545.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.2</text>
+<path d="M612.5 350v5" stroke="#94a3b8"/>
+<text x="612.5" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.4</text>
+<path d="M680.0 350v5" stroke="#94a3b8"/>
+<text x="680.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.6</text>
+<path d="M410 160V350H680" fill="none" stroke="#94a3b8"/>
+<path d="M561.875 160V350" stroke="#94a3b8" stroke-dasharray="3 5"/>
+<path d="M410.0 241.42857142857142L572.0 176.28571428571428" fill="none" stroke="#b95b12" stroke-width="3.5" stroke-dasharray="9 5"/>
+<path d="M572.0 350.0H680.0" fill="none" stroke="#b95b12" stroke-width="3.5" stroke-dasharray="9 5"/>
+<circle cx="572.0" cy="176.28571428571428" r="4.5" fill="white" stroke="#b95b12" stroke-width="2"/>
+<circle cx="572.0" cy="350.0" r="4.5" fill="white" stroke="#b95b12" stroke-width="2"/>
+<circle cx="561.875" cy="180.35714285714286" r="5" fill="#b95b12"/>
+<text x="575.875" y="167.35714285714286" font-size="17" fill="#b95b12" text-anchor="start" font-weight="650">1.25</text>
+<text x="545.0" y="406" font-size="15" fill="#334155" text-anchor="middle" font-weight="400">Probability ratio r</text>
+<text x="890.0" y="105" font-size="20" fill="#7946a5" text-anchor="middle" font-weight="650">CISPO</text>
+<text x="890.0" y="130" font-size="15" fill="#334155" text-anchor="middle" font-weight="400">Weight capped at 1.20</text>
+<path d="M755 350.0H1025" stroke="#e2e8f0"/>
+<text x="745" y="355.0" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0</text>
+<path d="M755 295.7142857142857H1025" stroke="#e2e8f0"/>
+<text x="745" y="300.7142857142857" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0.4</text>
+<path d="M755 241.42857142857142H1025" stroke="#e2e8f0"/>
+<text x="745" y="246.42857142857142" font-size="13" fill="#334155" text-anchor="end" font-weight="400">0.8</text>
+<path d="M755 187.14285714285714H1025" stroke="#e2e8f0"/>
+<text x="745" y="192.14285714285714" font-size="13" fill="#334155" text-anchor="end" font-weight="400">1.2</text>
+<path d="M755.0 350v5" stroke="#94a3b8"/>
+<text x="755.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">0.8</text>
+<path d="M822.5 350v5" stroke="#94a3b8"/>
+<text x="822.5" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1</text>
+<path d="M890.0 350v5" stroke="#94a3b8"/>
+<text x="890.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.2</text>
+<path d="M957.5 350v5" stroke="#94a3b8"/>
+<text x="957.5" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.4</text>
+<path d="M1025.0 350v5" stroke="#94a3b8"/>
+<text x="1025.0" y="375" font-size="13" fill="#334155" text-anchor="middle" font-weight="400">1.6</text>
+<path d="M755 160V350H1025" fill="none" stroke="#94a3b8"/>
+<path d="M906.875 160V350" stroke="#94a3b8" stroke-dasharray="3 5"/>
+<path d="M755.0 241.42857142857142L890.0 187.14285714285714H1025.0" fill="none" stroke="#7946a5" stroke-width="3.5" stroke-dasharray="10 4 2 4"/>
+<circle cx="906.875" cy="187.14285714285714" r="5" fill="#7946a5"/>
+<text x="920.875" y="174.14285714285714" font-size="17" fill="#7946a5" text-anchor="start" font-weight="650">1.2</text>
+<text x="890.0" y="406" font-size="15" fill="#334155" text-anchor="middle" font-weight="400">Probability ratio r</text>
+<text x="540" y="442" font-size="14" fill="#334155" text-anchor="middle" font-weight="400">Dotted guides: r = 1.25. Open circles mark undefined branch derivatives at clipping boundaries.</text>
+</svg>
