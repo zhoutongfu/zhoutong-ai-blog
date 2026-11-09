@@ -1,0 +1,31 @@
+.diagram-link {
+  display: block;
+  cursor: zoom-in;
+}
+.diagram-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+#quarto-document-content .math.display {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+.history-sidebar {
+  border-left: 3px solid #94a3b8;
+  padding: 0.8rem 1.1rem;
+  background: #f8fafc;
+  margin: 1.5rem 0;
+  font-size: 0.94rem;
+}
+.history-sidebar summary {
+  color: #334155;
+  cursor: pointer;
+  font-weight: 600;
+}
+.history-sidebar > :last-child {
+  margin-bottom: 0;
+}

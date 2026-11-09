@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/rl-mismatch-mitigation/index.html",
       "/posts/entropy-in-llm-rl/index.html",
       "/posts/trainer-rollout-weight-sync/index.html",
       "/posts/low-precision-rl/index.html",

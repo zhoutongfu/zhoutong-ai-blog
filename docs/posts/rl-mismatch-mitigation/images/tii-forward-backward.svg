@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="380" viewBox="0 0 1120 380" role="img" aria-labelledby="title desc">
+<title id="title">Aligned forward values and a separately validated backward</title><desc id="desc">At identical weights, history, and sampling settings, compare rollout and trainer log-probabilities. Their forward operations use aligned inference arithmetic. The trainer loss feeds a separately validated backward, which supplies gradients to the optimizer. Wider master weights and moments can coexist with the aligned forward. Rollout has no backward counterpart.</desc>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}</style>
+<defs>
+<marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#526477"/></marker>
+<marker id="blue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#23659a"/></marker>
+<marker id="purple" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#74509b"/></marker>
+</defs>
+<rect width="1120" height="380" fill="#fff"/>
+<text x="40" y="39" font-size="26" fill="#172b40" text-anchor="start" font-weight="650">One forward reference; a separately validated backward</text>
+<text x="40" y="72" font-size="18" fill="#526477" text-anchor="start" font-weight="400">Agreement check: same weights, history, and sampling settings</text>
+<rect x="40" y="120" width="300" height="105" rx="12" fill="#fff6ed" stroke="#ad591a" stroke-width="1.6"/>
+<text x="190.0" y="152" font-size="20" fill="#ad591a" text-anchor="middle" font-weight="650">Rollout forward</text>
+<text x="190.0" y="181" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">Aligned inference arithmetic</text>
+<text x="190.0" y="205" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">Recorded log qᵥ</text>
+<rect x="430" y="120" width="300" height="105" rx="12" fill="#eef5fa" stroke="#23659a" stroke-width="1.6"/>
+<text x="580.0" y="152" font-size="20" fill="#23659a" text-anchor="middle" font-weight="650">Trainer forward</text>
+<text x="580.0" y="181" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">Aligned inference arithmetic</text>
+<text x="580.0" y="205" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">Recomputed log pᵥ</text>
+<rect x="820" y="120" width="260" height="105" rx="12" fill="#eff8f3" stroke="#28765a" stroke-width="1.6"/>
+<text x="950.0" y="152" font-size="20" fill="#28765a" text-anchor="middle" font-weight="650">Trainer backward</text>
+<text x="950.0" y="181" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">DGrad / WGrad</text>
+<text x="950.0" y="205" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">Validated separately</text>
+<rect x="820" y="270" width="260" height="85" rx="12" fill="#f7f2fb" stroke="#74509b" stroke-width="1.6"/>
+<text x="950.0" y="302" font-size="20" fill="#74509b" text-anchor="middle" font-weight="650">Optimizer</text>
+<text x="950.0" y="331" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">Master weights / moments</text>
+<path d="M340 173H425" fill="none" stroke="#526477" stroke-width="2.1" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<path d="M730 173H815" fill="none" stroke="#526477" stroke-width="2.1" marker-end="url(#arrow)"/>
+<path d="M950 225V265" fill="none" stroke="#74509b" stroke-width="2.1" marker-end="url(#purple)"/>
+<text x="385" y="153" font-size="15" fill="#526477" text-anchor="middle" font-weight="400">Compare</text>
+<text x="775" y="153" font-size="15" fill="#526477" text-anchor="middle" font-weight="400">Via loss</text>
+<text x="40" y="282" font-size="20" fill="#23659a" text-anchor="start" font-weight="600">Forward equality does not establish gradient correctness.</text>
+<text x="40" y="316" font-size="18" fill="#526477" text-anchor="start" font-weight="400">Backward can use wider arithmetic and a quantization surrogate.</text>
+<text x="40" y="348" font-size="18" fill="#526477" text-anchor="start" font-weight="400">Rollout has no corresponding backward or optimizer.</text>
+</svg>

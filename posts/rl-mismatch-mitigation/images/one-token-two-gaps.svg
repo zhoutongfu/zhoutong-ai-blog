@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="370" viewBox="0 0 1120 370" role="img" aria-labelledby="title desc">
+<title id="title">One token: numerical disagreement and weight movement</title><desc id="desc">Illustrative probabilities at one fixed history. Rollout at v gives 0.20, trainer at v gives 0.21, and trainer at k gives 0.252. Same-version ratio 1.05 times weight-movement ratio 1.20 equals the current-to-behavior ratio 1.26.</desc>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}</style>
+<defs>
+<marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#526477"/></marker>
+<marker id="blue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#23659a"/></marker>
+<marker id="purple" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="#74509b"/></marker>
+</defs>
+<rect width="1120" height="370" fill="#fff"/>
+<text x="40" y="38" font-size="25" fill="#172b40" text-anchor="start" font-weight="650">One token, one fixed history</text>
+<text x="40" y="66" font-size="17" fill="#526477" text-anchor="start" font-weight="400">Illustrative probabilities · temperature 1 · no sampling truncation</text>
+<rect x="40" y="100" width="270" height="105" rx="12" fill="#fff6ed" stroke="#ad591a" stroke-width="1.6"/>
+<text x="175.0" y="132" font-size="20" fill="#ad591a" text-anchor="middle" font-weight="650">Rollout · version v</text>
+<text x="175.0" y="161" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">qᵥ(a | h) = 0.20</text>
+<rect x="425" y="100" width="270" height="105" rx="12" fill="#eef5fa" stroke="#23659a" stroke-width="1.6"/>
+<text x="560.0" y="132" font-size="20" fill="#23659a" text-anchor="middle" font-weight="650">Trainer · version v</text>
+<text x="560.0" y="161" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">pᵥ(a | h) = 0.21</text>
+<rect x="810" y="100" width="270" height="105" rx="12" fill="#f7f2fb" stroke="#74509b" stroke-width="1.6"/>
+<text x="945.0" y="132" font-size="20" fill="#74509b" text-anchor="middle" font-weight="650">Trainer · version k</text>
+<text x="945.0" y="161" font-size="17" fill="#172b40" text-anchor="middle" font-weight="400">pₖ(a | h) = 0.252</text>
+<path d="M175 217V244H560V217" fill="none" stroke="#ad591a" stroke-width="2"/>
+<path d="M560 250V277H945V217" fill="none" stroke="#74509b" stroke-width="2"/>
+<text x="365" y="234" font-size="18" fill="#ad591a" text-anchor="middle" font-weight="550">Same-version ratio = 1.05</text>
+<text x="760" y="267" font-size="18" fill="#74509b" text-anchor="middle" font-weight="550">Weight-movement ratio = 1.20</text>
+<rect x="250" y="302" width="620" height="44" rx="10" fill="#f2f6f9"/>
+<text x="560" y="331" font-size="21" fill="#172b40" text-anchor="middle" font-weight="600">Current / behavior = 1.05 × 1.20 = 1.26</text>
+</svg>
