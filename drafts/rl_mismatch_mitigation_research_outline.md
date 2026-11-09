@@ -10,7 +10,9 @@ Companion: [Low-Precision RL: From Rollout to Update](../posts/low-precision-rl/
 
 ## Proposed argument
 
-**Working title: When Rollout and Training Disagree: Score Centering and REINFORCE Zero.**
+**Title: Rollout–Training Mismatch in LLM RL.**
+
+**Subtitle: Importance sampling, score centering, and REINFORCE Zero.**
 
 Lower-precision rollout can reduce memory and compute costs; asynchronous collection can reduce waiting. Both can separate the policy producing experience from the policy being updated. Neither mismatch nor staleness is mathematically necessary for RL, and BF16 on both sides does not guarantee matching probabilities. The practical question is how to retain useful efficiency gains while preserving effective learning.
 

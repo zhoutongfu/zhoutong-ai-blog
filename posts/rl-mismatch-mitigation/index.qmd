@@ -1,6 +1,6 @@
 ---
-title: "When Rollout and Training Disagree: Score Centering and REINFORCE Zero"
-subtitle: "Forward numerical agreement and stale experience in LLM reinforcement learning"
+title: "Rollout–Training Mismatch in LLM RL"
+subtitle: "Importance sampling, score centering, and REINFORCE Zero"
 author: "Zhoutong"
 date: "2026-11-08"
 categories: [LLMs, Reinforcement Learning, Quantization, Systems]
